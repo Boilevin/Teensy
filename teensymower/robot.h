@@ -115,7 +115,7 @@ enum {
   ERR_ENUM_COUNT,
 };
 
-// finate state machine states NEVER INSERT ALWAYS ADD TO END 
+// finate state machine states NEVER INSERT ALWAYS ADD TO END
 enum {
   STATE_OFF,          // off
   STATE_REMOTE,       // model remote control (R/C)
@@ -168,7 +168,7 @@ enum {
   STATE_ROTATE_RIGHT_360,  // simple mowing rotation at the beginning of the spirale
   STATE_NEXT_SPIRE,  //go to next CIRCLE ARC in SPIRALE MODE
   STATE_ESCAPE_LANE,  //grass is high need to reduce the lenght of the lane
-  STATE_PERI_STOP_TOROLL,  //use when timer start the mowing or when tracking and find RFID need to stop before roll 
+  STATE_PERI_STOP_TOROLL,  //use when timer start the mowing or when tracking and find RFID need to stop before roll
   STATE_ROLL_TONEXTTAG,  //use when tracking and find RFID tag the mower roll to new heading
   STATE_PERI_STOP_TO_NEWAREA,  //use when tracking and find RFID need to stop before roll to leave the area
   STATE_ROLL1_TO_NEWAREA,  //use when tracking and find RFID need to roll to leave the area
@@ -180,19 +180,19 @@ enum {
   STATE_STOP_TO_NEWAREA,  //use to stop the mower in straight line after long distance moving with ODO and IMU
   STATE_PERI_OUT_STOP_ROLL_TOTRACK, // after the mower rool to track we need to stop the right motor because it's reverse and the track is forward
   STATE_PERI_STOP_TO_FAST_START,  // after the mower find a tag for find a new start entry point
-  STATE_CALIB_MOTOR_SPEED,  // we need to know how may ticks the motor can do in 1 ms to compute the maxododuration 
+  STATE_CALIB_MOTOR_SPEED,  // we need to know how may ticks the motor can do in 1 ms to compute the maxododuration
   STATE_ACCEL_FRWRD // when start from calib or off need to accel before motorodo
-  
+
 };
 
 // status mode
-enum { WAIT,NORMAL_MOWING,SPIRALE_MOWING,BACK_TO_STATION, TRACK_TO_START, MANUAL, REMOTE, IN_ERROR, IN_STATION, TESTING,WAITSIG2,WIRE_MOWING };
+enum { WAIT, NORMAL_MOWING, SPIRALE_MOWING, BACK_TO_STATION, TRACK_TO_START, MANUAL, REMOTE, IN_ERROR, IN_STATION, TESTING, WAITSIG2, WIRE_MOWING };
 
 // roll types
 enum { LEFT, RIGHT };
 
 // mow patterns
-enum { MOW_RANDOM, MOW_LANES,MOW_WIRE, MOW_ZIGZAG };
+enum { MOW_RANDOM, MOW_LANES, MOW_WIRE, MOW_ZIGZAG };
 
 //bb
 // console mode
@@ -218,11 +218,11 @@ class Robot
     byte statusCurr;
     //byte statusLast;
     //byte statusNext;
-    
+
     unsigned long stateTime;
     const char* stateName();
     const char* statusName();
-    
+
     unsigned long stateStartTime;
     unsigned long stateEndTime;
     int idleTimeSec;
@@ -242,8 +242,8 @@ class Robot
     byte mowPatternCurr;
     const char *mowPatternName();
     // -------- gps state -------------------------------
-   
-  
+
+
     // -------- odometry state --------------------------
     boolean odometryUse       ;       // use odometry?
     boolean twoWayOdometrySensorUse;  // free for something else
@@ -277,7 +277,7 @@ class Robot
     int DistPeriObstacleRev; // Distance in CM when prei rev obstacle
     int DistPeriOutForw;//Distance in CM after roll to accel
     int currDistToDrive;//IMU staright line and distance control
-   
+
     // -------- RC remote control state -----------------
     boolean remoteUse      ;       // use model remote control (R/C)?
     int remoteSteer ;  // range -100..100
@@ -305,7 +305,7 @@ class Robot
     int motorAccel  ;  // motor wheel acceleration (warning: do not set too high)
     int motorSpeedMaxRpm   ;   // motor wheel max RPM
     int motorSpeedMaxPwm  ;  // motor wheel max Pwm  (8-bit PWM=255, 10-bit PWM=1023)
-    int motorInitialSpeedMaxPwm ;  // motor Initial wheel max Pwm  
+    int motorInitialSpeedMaxPwm ;  // motor Initial wheel max Pwm
     float motorPowerMax   ;    // motor wheel max power (Watt)
     PID motorLeftPID;              // motor left wheel PID controller
     PID motorRightPID;              // motor right wheel PID controller
@@ -401,7 +401,7 @@ class Robot
     int newtagRotAngle2;
     int newtagDistance1;
     int newtagDistance2;
-    
+
     //unsigned long stateMaxiTime;  // maybe safety if the odometry is not reach in this time error
 
     int angleCorresp;
@@ -414,7 +414,7 @@ class Robot
     boolean motorMowRpmLastState ;
     boolean motorMowEnable ;  // motor can be temporary disabled if stucked etc. with this
     boolean motorMowForceOff ; // user switch for mower motor on/off has highest priority
-   // boolean ignoreRfidTag ; // use to stay on wire when mow perimeter
+    // boolean ignoreRfidTag ; // use to stay on wire when mow perimeter
     boolean highGrassDetect;  //detect that the mow motor is on high load so high grass
     float triggerMotorMowHightGrass ;     // motor mower percent of power vs power Max  trigger to start spirale or half lane
     // boolean motorMowEnableOverride ; // user switch for mower motor on/off has highest priority if true the motor is stop
@@ -423,12 +423,12 @@ class Robot
     int motorMowSpeedMaxPwm ;    // motor mower max PWM
     int motorMowSpeedMinPwm ;    // motor mower min PWM (only for speed modulation)
     float motorMowPowerMax ;     // motor mower max power (Watt)
-    
+
     //bb 8
     byte spiraleNbTurn;  //count the number of revolution of the spirale (10 revolutions for example before stop)
     byte halfLaneNb; //count the number of lane same as spirale (10  for example before stop)
 
-   
+
     float motorMowSenseScale ;   // motor mower sense scale (mA=(ADC-zero)/scale)
     PID motorMowPID ;    // motor mower RPM PID controller
     int motorMowSpeedPWMSet;
@@ -439,7 +439,7 @@ class Robot
     float motorMowPower ;       // motor power (range 0..MAX_MOW_POWER)
     int motorMowSenseCounter ;
     int motorMowSenseErrorCounter ;
-    
+
     unsigned long lastMotorMowRpmTime;
 
 
@@ -472,9 +472,9 @@ class Robot
     float imuDriveHeading ;       // drive heading (IMU)
     float periFindDriveHeading;   // drive heading when search for other rfid tag or go to station
     float remoteDriveHeading;   // drive heading  when rfid tag to go to area2
-    float newtagRotAngle1Radian; 
-    
-    
+    float newtagRotAngle1Radian;
+
+
     float imuRollHeading ;      // roll heading  (IMU)
     byte  imuRollDir;
     //point_float_t accMin;
@@ -489,13 +489,13 @@ class Robot
     //float lastLaneYawMedian; //use to know the last lane direction in bylaneodo mowing
     float YawActualDeg;
     byte compassRollSpeedCoeff;
-    
+
     RunningMedian compassYawMedian = RunningMedian(60);
     RunningMedian accelGyroYawMedian = RunningMedian(60);
     RunningMedian motorMowPowerMedian = RunningMedian(30);
     RunningMedian motorSpeedRpmMedian = RunningMedian(35);
-    
-    
+
+
     //bb 5
 
 
@@ -524,7 +524,7 @@ class Robot
     float prevYawCalcOdo;
     unsigned long nextTimeImuLoop ;
     unsigned long nextTimeGpsRead ;
-    
+
     int delayBetweenTwoDmpAutocalib;
     int maxDurationDmpAutocalib;
     float maxDriftPerSecond;
@@ -532,7 +532,7 @@ class Robot
     // ------- perimeter state --------------------------
 
     //bb
-   PerimeterClass perimeter;
+    PerimeterClass perimeter;
 
     // Perimeter perimeter;
     boolean perimeterUse       ;      // use perimeter?
@@ -603,7 +603,7 @@ class Robot
     // ultra sonic sensor distance-to-obstacle (cm)
     boolean sonarUse          ;      // use ultra sonic sensor?
     boolean sonarLikeBumper   ;      // sonar behaviour is the same as bumper
-  
+
     boolean sonarLeftUse;
     boolean sonarRightUse;
     boolean sonarCenterUse;
@@ -634,7 +634,7 @@ class Robot
     boolean startByTimer; // use to know if the start is initiate by timer or manual via PFOD
     unsigned int whereToStart; // use to know where the mower need to leave the wire and start to mow
     unsigned int whereToResetSpeed; // use with Rfid Speed to know when reset to maxpwm
-    
+
     int beaconToStart; // use to know where the mower need to leave the wire and start to mow
     byte areaToGo;// use to know the area where to start by timer
     //-------- DHT22 Temperature humidity ------------------
@@ -643,18 +643,18 @@ class Robot
     float humidityDht;
     float temperatureDht;
     float maxTemperature;  //switch to OFF when reach this temp
-    
+
     // ----- user-defined switch ---------------------------
     boolean userSwitch1       ;       // user-defined switch 1 (default value)
     boolean userSwitch2       ;       // user-defined switch 2 (default value)
     boolean userSwitch3       ;       // user-defined switch 3 (default value)
 
 
-    
-    
-    
-    
-    
+
+
+
+
+
     // --------- charging -------------------------------
 
     boolean batMonitor ;              // monitor battery and charge voltage?
@@ -689,14 +689,14 @@ class Robot
     unsigned long totalDistDrive;  //use to check when to leave the wire in start timer mode
     unsigned long nextTimeBattery ;
     unsigned long nextTimeCheckBattery;
-    unsigned long delayToReadVoltageStation; //wait before read the voltage 
+    unsigned long delayToReadVoltageStation; //wait before read the voltage
     int statsBatteryChargingCounter;
     int statsBatteryChargingCounterTotal;
     float  statsBatteryChargingCapacityTrip;
     float statsBatteryChargingCapacityTotal;
     float statsBatteryChargingCapacityAverage;
     float lastTimeBatCapacity;
-    
+
     // --------- error counters --------------------------
     byte errorCounterMax[ERR_ENUM_COUNT];
     byte errorCounter[ERR_ENUM_COUNT];
@@ -709,7 +709,7 @@ class Robot
     unsigned long nextTimeButtonCheck ;
     unsigned long nextTimeInfo ;
     unsigned long nextTimeScreen ;
-    
+
     unsigned long nextTimePrintConsole;
     byte rollDir;
     unsigned long nextTimeButton ;
@@ -735,7 +735,7 @@ class Robot
     byte mowPatternDuration ; // use to know when need to change, the pattern change each x minutes so byte is OK
     byte mowPatternDurationMax; // value enter into PFOD for setting in Minutes
     //bb
-    
+
 
     // --------------------------------------------------
     Robot();
@@ -746,7 +746,7 @@ class Robot
     virtual void resetIdleTime();
 
     // call this from R/C control interrupt
- 
+
     // call this from hall sensor interrupt
     virtual void setMotorMowRPMState(boolean motorMowRpmState);
 
@@ -763,6 +763,7 @@ class Robot
     // read hardware sensor (HAL)
     //bb
     //virtual int readSensor(char type) {}
+    //virtual void readMowerSensor(char type) {}
 
     // set hardware actuator (HAL)
     virtual void setActuator(char type, int value) {}
@@ -783,20 +784,24 @@ class Robot
     //bb
     virtual void setBeeper(int totalDuration, byte OnDuration, byte OffDuration, byte frequenceOn, byte frequenceOff ); // Set the variable for the beeper
     //virtual void RaspberryPISendStat ();
-    
-    virtual void receivePiPfodCommand (String RpiCmd,float v1,float v2,float v3);
-    
+
+    virtual void receivePiPfodCommand (String RpiCmd, float v1, float v2, float v3);
+
     virtual void ShowMessage(String message);
     virtual void ShowMessageln(String message);
     virtual void ShowMessage(float value);
     virtual void ShowMessageln(float value);
-    
+
     virtual void printSettingSerial();
     const char* mowPatternNameList(byte mowPatternIndex);
 
-    virtual void pfodSetDateTime(byte hr1,byte min1,byte sec1,byte day1,byte month1,short year1);
-    
+    virtual void pfodSetDateTime(byte hr1, byte min1, byte sec1, byte day1, byte month1, short year1);
+
+
   protected:
+    static void OdoRightCountInt(); //odometry interrupt loop
+    static void OdoLeftCountInt();
+
     // convert ppm time to RC slider value
     virtual int rcValue(int ppmTime);
     virtual void loadSaveErrorCounters(boolean readflag);
@@ -804,7 +809,7 @@ class Robot
     virtual void loadSaveRobotStats(boolean readflag);
     virtual void loadUserSettings();
     virtual void checkErrorCounter();
-    
+
 
     // read sensors
     virtual void readSensors();
@@ -823,10 +828,10 @@ class Robot
     virtual void checkPerimeterBoundary();
     virtual void checkStuckOnIsland();
 
-    
+
     virtual void checkSonar();
     virtual void checkSonarPeriTrack();
-       
+
     virtual void checkTilt();
     virtual void checkRain();
     virtual void checkTimeout();
@@ -852,25 +857,28 @@ class Robot
     virtual void reverseOrBidir(byte aRollDir);
 
     // other
-    
+
     virtual void printOdometry();
     virtual void printMenu();
     virtual void delayInfo(int ms);
     virtual void delayWithWatchdog(int ms);
-    
-   // virtual void testOdometry();
+
+    // virtual void testOdometry();
     virtual void testMotors();
     virtual void setDefaults();
     // virtual void receiveGPSTime();
     virtual void calcOdometry();
     virtual void menu();
-    
+
 
     virtual void beeper();
-    
 
 
-    
+
+
+
+
+
 
 };
 

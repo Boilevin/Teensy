@@ -277,92 +277,65 @@ void Mower::setup() {
 
   Console.println("SETUP");
 
-  /*
+  
     // LED, buzzer, battery
-    pinMode(pinLED, OUTPUT);
+   // pinMode(pinLED, OUTPUT);
     pinMode(pinBuzzer, OUTPUT);
     digitalWrite(pinBuzzer, 0);
-    pinMode(pinBatteryVoltage, INPUT);
-    pinMode(pinChargeCurrent, INPUT);
-    pinMode(pinChargeVoltage, INPUT);
-    pinMode(pinChargeRelay, OUTPUT);
+    
+    pinMode(pinChargeEnable, OUTPUT);
     setActuator(ACT_CHGRELAY, 0);
 
     // left wheel motor
-    pinMode(pinMotorEnable, OUTPUT);
-    digitalWrite(pinMotorEnable, HIGH);
+    pinMode(pinMotorLeftEnable, OUTPUT);
+    digitalWrite(pinMotorLeftEnable, LOW);
     pinMode(pinMotorLeftPWM, OUTPUT);
     pinMode(pinMotorLeftDir, OUTPUT);
-    pinMode(pinMotorLeftSense, INPUT);
-    pinMode(pinMotorLeftFault, INPUT);
+    
 
     // right wheel motor
+    pinMode(pinMotorRightEnable, OUTPUT);
+    digitalWrite(pinMotorRightEnable, LOW);
     pinMode(pinMotorRightPWM, OUTPUT);
     pinMode(pinMotorRightDir, OUTPUT);
-    pinMode(pinMotorRightSense, INPUT);
-    pinMode(pinMotorRightFault, INPUT);
+    
 
     // mower motor
     pinMode(pinMotorMowDir, OUTPUT);
     pinMode(pinMotorMowPWM, OUTPUT);
-    pinMode(pinMotorMowSense, INPUT);
-    pinMode(pinMotorMowRpm, INPUT);
     pinMode(pinMotorMowEnable, OUTPUT);
-    digitalWrite(pinMotorMowEnable, HIGH);
-    pinMode(pinMotorMowFault, INPUT);
+    digitalWrite(pinMotorMowEnable, LOW);
+    
 
-    // lawn sensor
-    pinMode(pinLawnBackRecv, INPUT);
-    pinMode(pinLawnBackSend, OUTPUT);
-    pinMode(pinLawnFrontRecv, INPUT);
-    pinMode(pinLawnFrontSend, OUTPUT);
+    
 
     // perimeter
     pinMode(pinPerimeterRight, INPUT);
     pinMode(pinPerimeterLeft, INPUT);
-    pinMode(pinPerimeterCenter, INPUT);
-
+   
 
     // button
-    //pinMode(pinButton, INPUT);
     pinMode(pinButton, INPUT_PULLUP);
 
     // bumpers
-    //pinMode(pinBumperLeft, INPUT);
     pinMode(pinBumperLeft, INPUT_PULLUP); //it's contact
-    //pinMode(pinBumperRight, INPUT);
     pinMode(pinBumperRight, INPUT_PULLUP);
-
-    // drops
-    // pinMode(pinDropLeft, INPUT);                                                                                                         // Dropsensor - Absturzsensor - Deklariert als Eingang
-    pinMode(pinDropLeft, INPUT_PULLUP);                                                                                                  // Dropsensor - Absturzsensor - Intern Pullab Widerstand aktiviert (AuslÃ¶sung erfolgt gegen GND)
-    // pinMode(pinDropRight, INPUT);                                                                                                        // Dropsensor - Absturzsensor - Deklariert als Eingang
-    pinMode(pinDropRight, INPUT_PULLUP);                                                                                                 // Dropsensor - Absturzsensor - Intern Pullab Widerstand aktiviert (AuslÃ¶sung erfolgt gegen GND)
 
     // rain
     pinMode(pinRain, INPUT);
 
-    // R/C
-    pinMode(pinRemoteMow, INPUT);
-    pinMode(pinRemoteSteer, INPUT);
-    pinMode(pinRemoteSpeed, INPUT);
-    pinMode(pinRemoteSwitch, INPUT);
-
+   
     // odometry
     //not sure the pullupis necessary with PCB1.3
-    pinMode(pinOdometryLeft, INPUT_PULLUP);
-    pinMode(pinOdometryLeft2, INPUT_PULLUP);
-    pinMode(pinOdometryRight, INPUT_PULLUP);
-    pinMode(pinOdometryRight2, INPUT_PULLUP);
-
+    pinMode(pinOdometryLeft, INPUT);
+    pinMode(pinOdometryRight, INPUT);
+      
+   
     // user switches
     pinMode(pinUserSwitch1, OUTPUT);
     pinMode(pinUserSwitch2, OUTPUT);
-    pinMode(pinUserSwitch3, OUTPUT);
-
-    // other
-    pinMode(pinVoltageMeasurement, INPUT);
-  */
+  
+  
   // PWM frequency setup
   // For obstacle detection, motor torque should be detectable - torque can be computed by motor current.
   // To get consistent current values, PWM frequency should be 3.9 Khz
@@ -385,27 +358,7 @@ void checkMotorFault() {
   //bb to test without motor board uncomment return
   //return;
   if ((robot.stateCurr == STATE_OFF) || (robot.stateCurr == STATE_ERROR)  ) return;  //do not generate error if the state if OFF to avoid Buzzer when PI power the DUE via the USB native port
-  if (digitalRead(pinMotorLeftFault) == LOW) {
-    robot.addErrorCounter(ERR_MOTOR_LEFT);
-    Console.println(F("Error: motor left fault"));
-    robot.setNextState(STATE_ERROR, 0);
-    return;
-
-  }
-  if  (digitalRead(pinMotorRightFault) == LOW) {
-    robot.addErrorCounter(ERR_MOTOR_RIGHT);
-    Console.println(F("Error: motor right fault"));
-    robot.setNextState(STATE_ERROR, 0);
-    return;
-
-  }
-  if (digitalRead(pinMotorMowFault) == LOW) {
-    robot.addErrorCounter(ERR_MOTOR_MOW);
-    Console.println(F("Error: motor mow fault"));
-    robot.setNextState(STATE_ERROR, 0);
-    return;
-
-  }
+ 
 }
 /*
 int Mower::readSensor(char type) {
@@ -489,13 +442,13 @@ void Mower::setActuator(char type, int value) {
       break; //  Motortreiber einstellung - bei Bedarf Ã¤ndern z.B setL298N auf setMC33926
 
     //case ACT_BUZZER: if (value == 0) Buzzer.noTone(); else Buzzer.tone(value); break;
-    case ACT_LED: digitalWrite(pinLED, value); break;
-    case ACT_USER_SW1: digitalWrite(pinUserSwitch1, value); break;
-    case ACT_USER_SW2: digitalWrite(pinUserSwitch2, value); break;
-    case ACT_USER_SW3: digitalWrite(pinUserSwitch3, value); break;
+    //case ACT_LED: digitalWrite(pinLED, value); break;
+    //case ACT_USER_SW1: digitalWrite(pinUserSwitch1, value); break;
+    //case ACT_USER_SW2: digitalWrite(pinUserSwitch2, value); break;
+    //case ACT_USER_SW3: digitalWrite(pinUserSwitch3, value); break;
 
-    case ACT_CHGRELAY: digitalWrite(pinChargeRelay, value); break;
-    //case ACT_CHGRELAY: digitalWrite(pinChargeRelay, !value); break;
+    case ACT_CHGRELAY: digitalWrite(pinChargeEnable, value); break;
+    //case ACT_CHGRELAY: digitalWrite(pinChargeEnable, !value); break;
     case ACT_BATTERY_SW: digitalWrite(pinBatterySwitch, value); break;
   }
 
