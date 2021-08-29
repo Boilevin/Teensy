@@ -98,13 +98,19 @@ String date2str(date_t date) {
 // IN2/C(10)/PinPWM   IN1/D(12)/PinDir
 // H                  L     Forward
 // L                  H     Reverse
-void setL298N(int pinDir, int pinPWM, int speed) {
+// pinDir  connected to IN1
+// pinEnable  connected to IN2
+// pinPWM  connected to ENA
+
+void setL298N(int pinDir, int pinPWM ,int pinEnable, int speed) {
   if (speed < 0) {
-    //digitalWrite(pinDir, HIGH) ;
-    //PinMan.analogWrite(pinPWM, ((byte)speed));
+    digitalWrite(pinDir, HIGH) ;
+    digitalWrite(pinEnable, LOW) ;
+    analogWrite(pinPWM, speed);
   } else {
-    //digitalWrite(pinDir, LOW) ;
-    //PinMan.analogWrite(pinPWM, ((byte)speed));
+    digitalWrite(pinDir, LOW) ;
+    digitalWrite(pinEnable, HIGH) ;
+    analogWrite(pinPWM, speed);
   }
 }
 

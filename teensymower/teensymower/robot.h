@@ -410,6 +410,10 @@ class Robot
     byte RollToInsideQty; //use to stop if roll non stop
 
     // -------- mower motor state -----------------------
+    float Mow1_Power = 0;  //Use for mower with 3 mow motor and Ina226 sensor
+    float Mow2_Power = 0;
+    float Mow3_Power = 0;
+    
     int motorMowRpmCounter ;  // mower motor speed state
     boolean motorMowRpmLastState ;
     boolean motorMowEnable ;  // motor can be temporary disabled if stucked etc. with this

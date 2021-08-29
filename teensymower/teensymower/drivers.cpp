@@ -23,16 +23,6 @@
 */
 #include "drivers.h"
 
-
-
-
-//#include "config.h"
-//#include "pinman.h"
-//#include "i2c.h"
-//#include "ardumower.h"
-//#include <Wire.h>
-
-
 const char *dayOfWeek[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 
 

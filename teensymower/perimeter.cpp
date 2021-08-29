@@ -2,57 +2,36 @@
 #include <Arduino.h>
 #include <limits.h>
 //#include "adcman.h"
-#include "config.h"
+//#include "config.h"
 
+#include <ADC.h>
+#include <ADC_util.h>
 
 
 PerimeterClass Perimeter;
 
-/*
-  // developer test to be activated in mower.cpp:
-  #ifdef USE_DEVELOPER_TEST
-  // more motor driver friendly signal (receiver)
-  int8_t sigcode_norm[] = {1, -1, 0, 0, 0, 1, -1, 0, 0, 0, -1, 1, 0, 0, 0, 1, -1, 0, 0, 0};
-  #else
-  // http://grauonline.de/alexwww/ardumower/filter/filter.html
-  // "pseudonoise4_pw" signal
-  // if using reconstructed sender signal, use this
-  #if defined (SIGCODE_1) //for station area 1
-*/
+//adc var
+ADC *adc = new ADC(); // adc object;
+#define USE_ADC_0
+#define USE_ADC_1
+#define BUFFER_SIZE 192  //sigcode 24 * 4 subsample *1.5 to scan on a full signal code
+int16_t buffer_ADC_0[BUFFER_SIZE];
+int16_t buffer_adc_0_count = 0xffff;
+uint32_t delta_time_adc_0 = 0;
 
-int8_t sigcode_norm1[] = { 1, 1, -1, -1, 1, -1, 1, -1, -1, 1, -1, 1, 1, -1, -1, 1, -1, -1, 1, -1, -1, 1, 1, -1 };
-int8_t sigcode_diff1[] = { 1, 0, -1, 0, 1, -1, 1, -1, 0, 1, -1, 1, 0, -1, 0, 1, -1, 0, 1, -1, 0, 1, 0, -1 };
+int16_t buffer_ADC_1[BUFFER_SIZE];
+int16_t buffer_adc_1_count = 0xffff;
+uint32_t delta_time_adc_1 = 0;
+elapsedMillis timed_read_elapsed;
+//end adc var
 
+int subSample = 4;
+int16_t *samples;
+int sampleCount = 192;//ADCMan.getSampleCount(idxPin[0]);
 
-int8_t sigcode_norm2[] = { 1, 1, -1, -1, 1, -1, 1, -1, -1, 1, -1, 1, 1, -1, -1, 1, -1, -1, 1, -1, -1, 1, 1, -1 };
-int8_t sigcode_diff2[] = { 1, 0, -1, 0, 1, -1, 1, -1, 0, 1, -1, 1, 0, -1, 0, 1, -1, 0, 1, -1, 0, 1, 0, -1 };
-
-//int8_t sigcode_norm2[] = { 1, 1, -1, -1, 1, -1, 1, -1, -1, 1, -1, 1, 1, -1, -1, 1, -1, -1, 1, -1, -1, 1, 1, -1, 1, 1, -1, -1, -1, 1, -1, -1, 1, -1, 1, -1, -1, 1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1 };
-//int8_t sigcode_diff2[] = { 0, 0, -1,  0, 1, -1, 1, -1,  0, 1, -1, 1, 0, -1,  0, 1, -1,  0, 1, -1,  0, 1, 0, -1, 1, 0, -1,  0,  0, 1, -1,  0, 1, -1, 1, -1,  0, 1, 0, -1, 1, 0, -1,  0, 1, 0, -1, 1 };
-
-int8_t sigcode_norm3[] = { 1, 1, -1, -1, 1, -1, 1, -1, -1, 1, -1, 1, 1, -1, -1, 1, -1, -1, 1, -1, -1, 1, 1, -1 };
-int8_t sigcode_diff3[] = { 1, 0, -1, 0, 1, -1, 1, -1, 0, 1, -1, 1, 0, -1, 0, 1, -1, 0, 1, -1, 0, 1, 0, -1 };
-/*
-int8_t sigcode_norm3[] = { 1, 1, -1, -1, -1, 1, -1, -1, 1, -1, 1, -1, -1, 1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1, -1, 1, -1, 1, -1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, -1, 1, -1, 1, -1, 1, 1, -1, -1, 1, 1, -1, -1, 1, 1, -1, 1, -1, 1, 1, -1, -1, 1, -1,
-                           -1, 1, 1, -1, 1, 1, -1, -1, 1, -1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, -1, 1, -1, -1, 1, 1, -1, 1, -1, -1, 1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, 1, -1, -1, 1, -1, -1, 1, -1, 1, -1, -1, 1, -1, -1, 1, 1, -1, 1, 1, -1, -1, 1
-                         };
-int8_t sigcode_diff3[] = { 0, 0, -1, 0, 0, 1, -1, 0, 1, -1, 1, -1, 0, 1, 0, -1, 1, 0, -1, 0, 1, 0, -1, 1, 0, -1, 1, -1, 1, -1, 0, 1, -1, 0, 1, -1, 1, 0, -1, 1, -1, 1, -1, 1, -1, 1, 0, -1, 0, 1, 0, -1, 0, 1, 0, -1, 1, -1, 1, 0, -1, 0, 1, -1,
-                           0, 1, 0, -1, 1, 0, -1, 0, 1, -1, 0, 1, -1, 1, -1, 1, 0, -1, 1, -1, 0, 1, -1, 0, 1, 0, -1, 1, -1, 0, 1, 0, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, 0, -1, 0, 1, -1, 0, 1, -1, 1, -1, 0, 1, -1, 0, 1, 0, -1, 1, 0, -1, 0, 1
-                         };
-*/
-/*
-  //int8_t sigcode_norm[]        = { 1,1,-1,-1,1,-1,1,-1,-1,1,-1,1,1,-1,-1,1,-1,-1,1,-1,-1,1,1,-1 };
-  // "pseudonoise4_pw" signal (differential)
-  // if using the coil differential signal, use this
-  //int8_t sigcode_diff[]        = { 1,0,-1, 0,1,-1,1,-1, 0,1,-1,1,0,-1, 0,1,-1, 0,1,-1, 0,1,0,-1 };
-
-  #endif
-*/
-
-
-int8_t sigcode_norm[128];
-int8_t sigcode_diff[128];
-int16_t sigcode_size;
+int8_t sigcode_norm[] = { 1, 1, -1, -1, 1, -1, 1, -1, -1, 1, -1, 1, 1, -1, -1, 1, -1, -1, 1, -1, -1, 1, 1, -1 };
+int8_t sigcode_diff[] = { 1, 0, -1, 0, 1, -1, 1, -1, 0, 1, -1, 1, 0, -1, 0, 1, -1, 0, 1, -1, 0, 1, 0, -1 };
+int sigcode_size = 24;
 
 PerimeterClass::PerimeterClass() {
   //useDifferentialPerimeterSignal = true;
@@ -71,167 +50,138 @@ PerimeterClass::PerimeterClass() {
 
 
 void PerimeterClass::changeArea(byte areaInMowing) {
-  Console.print("Change to Area : ");
-  Console.println(areaInMowing);
-  for (int uu = 0 ; uu <= 128; uu++) { //clear the area
-    sigcode_norm[uu] = 0;
-    sigcode_diff[uu] = 0;
+
+}
+
+static void PerimeterClass::adc1_isr() {//this is the main adc1 loop executed each 24 microseconds
+  uint16_t adc_val = adc->adc1->readSingle();
+  if (buffer_adc_1_count < BUFFER_SIZE) {
+    buffer_ADC_1[buffer_adc_1_count++] = adc_val;
+    if (buffer_adc_1_count == BUFFER_SIZE) {
+      delta_time_adc_1 = timed_read_elapsed;
+      Perimeter.matchedFilter(1);
+      buffer_adc_1_count = 0;
+    }
   }
-  switch (areaInMowing) {
+#if defined(__IMXRT1062__)  // Teensy 4.0
+  asm("DSB");
+#endif
+}
 
-    case 1:
-      sigcode_size = sizeof sigcode_norm1;
-      for (int uu = 0 ; uu <= (sigcode_size - 1); uu++) {
-        sigcode_norm[uu] = sigcode_norm1[uu];
-        sigcode_diff[uu] = sigcode_diff1[uu];
-      }
+static void PerimeterClass::adc0_isr() { //this is the main adc0 loop executed each 24 microseconds
+  //Serial.println(buffer_adc_0_count);
+  uint16_t adc_val = adc->adc0->readSingle();
+  if (buffer_adc_0_count < BUFFER_SIZE) {
+    buffer_ADC_0[buffer_adc_0_count++] = adc_val;
+    if (buffer_adc_0_count == BUFFER_SIZE) {
+      /*
+            for (int i = 0; i < BUFFER_SIZE; i++) {
 
-      break;
-    case 2:
-      sigcode_size = sizeof sigcode_norm2;
-      for (int uu = 0 ; uu <= (sigcode_size - 1); uu++) {
-        sigcode_norm[uu] = sigcode_norm2[uu];
-        sigcode_diff[uu] = sigcode_diff2[uu];
-      }
+              Serial.print(" ");
+              Serial.println(buffer_ADC_0[i]);
+            }
+*/
+      
+      delta_time_adc_0 = timed_read_elapsed;
+      Perimeter.matchedFilter(0);
+      //buffer_adc_0_count = 0;
+      buffer_adc_0_count = 0;
 
-      break;
-    case 3:
-      sigcode_size = sizeof sigcode_norm3;
-      for (int uu = 0 ; uu <= (sigcode_size - 1); uu++) {
-        sigcode_norm[uu] = sigcode_norm3[uu];
-        sigcode_diff[uu] = sigcode_diff3[uu];
-      }
-
-      break;
-
+    }
   }
-
-  Console.print("New sigcode in use  : ");
-
-  for (int uu = 0 ; uu <= (sigcode_size - 1); uu++) {
-    Console.print(sigcode_norm[uu]);
-    Console.print(",");
-  }
-  Console.println();
-
+#if defined(__IMXRT1062__)  // Teensy 4.0
+  asm("DSB");
+#endif
 }
 
 
 void PerimeterClass::begin(byte idx0Pin, byte idx1Pin) {
+
   idxPin[0] = idx0Pin;
   idxPin[1] = idx1Pin;
-/*
-  switch (ADCMan.sampleRate) {
-    case SRATE_9615: subSample = 1; break;
-    case SRATE_19231: subSample = 2; break;
-    case SRATE_38462: subSample = 4; break;
-  }
-*/
-  // use max. 1024 samples and multiple of signalsize
-  int adcSampleCount = sigcode_size * subSample;
+
+
   pinMode(idx0Pin, INPUT);
   pinMode(idx1Pin, INPUT);
 
-  
-  //ADCMan.setupChannel(idx0Pin,  2 * adcSampleCount, true);
-  //ADCMan.setupChannel(idx1Pin,  2 * adcSampleCount, true);
+  Serial.println("Begin setup adc0");
+  ///// ADC0 ////
+  adc->adc0->setAveraging(10); // set number of averages
+  adc->adc0->setResolution(10); // set bits of resolution
+  adc->adc0->setConversionSpeed(ADC_CONVERSION_SPEED::MED_SPEED); // change the conversion speed
+  adc->adc0->setSamplingSpeed(ADC_SAMPLING_SPEED::MED_SPEED); // change the sampling speed
+  //adc->adc0->setConversionSpeed(ADC_CONVERSION_SPEED::VERY_HIGH_SPEED); // change the conversion speed
+  //adc->adc0->setSamplingSpeed(ADC_SAMPLING_SPEED::VERY_HIGH_SPEED); // change the sampling speed
+  Serial.println("End setup adc0");
+  Serial.println("Try to Start adc0 Timer Interrupt ");
+  adc->adc0->stopTimer();
+  adc->adc0->startSingleRead(idx0Pin); // call this to setup everything before the Timer starts
+  adc->adc0->enableInterrupts(adc0_isr);
+  //adc->adc0->startTimer(384); //frequency Hz
+
+  adc->adc0->startTimer(38462); //frequency in Hz
+  buffer_adc_0_count = 0;
+  Serial.println("adc0 Timer Interrupt Started");
 
 
 
+  Serial.println("Begin setup adc1");
+  ////// ADC1 /////
+  adc->adc1->setAveraging(1); // set number of averages
+  adc->adc1->setResolution(10); // set bits of resolution
+  adc->adc1->setConversionSpeed(ADC_CONVERSION_SPEED::VERY_HIGH_SPEED); // change the conversion speed
+  adc->adc1->setSamplingSpeed(ADC_SAMPLING_SPEED::VERY_HIGH_SPEED); // change the sampling speed
+  Serial.println("End setup adc1");
+  Serial.println("Try to Start adc1 Timer Interrupt ");
+  adc->adc1->stopTimer();
+  adc->adc1->startSingleRead(idx1Pin); // call this to setup everything before the Timer starts
+  adc->adc1->enableInterrupts(adc1_isr);
+  //adc->adc1->startTimer(38462); //frequency in Hz
+  timed_read_elapsed = 0;
+  buffer_adc_1_count = 0;
+  Serial.println("adc1 Timer Interrupt Started");
 
-  Console.print(F("matchSignal size="));
-  Console.println(sigcode_size);
-  Console.print(F("subSample="));
-  Console.println((int)subSample);
-  Console.print(F("capture size="));
-  //Console.println(ADCMan.getSampleCount(idx0Pin));
 }
 
-void PerimeterClass::speedTest() {
-  int loops = 0;
-  unsigned long endTime = millis() + 1000;
-  while (millis() < endTime) {
-    matchedFilter(0);
-    loops++;
-  }
-  Console.print("Read in 1 sec ");
-  Console.println(loops);
 
-}
-
-const int8_t* PerimeterClass::getRawSignalSample(byte idx) {
-  //return rawSignalSample[idx];
-  return NULL;
-}
-
-void PerimeterClass::run() {
-  byte maxindex;
-  //bb 2 coil read
-  if (read2Coil) maxindex = 2;
-  else maxindex = 1;
-
-  for (int idx = 0; idx < maxindex; idx++) {
-/*
-    if (ADCMan.isConvComplete(idxPin[idx])) {
-      matchedFilter(idx);
-    }
-    */
-  }
-}
 
 int PerimeterClass::getMagnitude(byte idx) {
-  return mag[idx];
+  return Perimeter.mag[idx];
 }
 
 int PerimeterClass::getSmoothMagnitude(byte idx) {
-  return smoothMag[idx];
+  return Perimeter.smoothMag[idx];
 }
 
-void PerimeterClass::printADCMinMax(int8_t *samples) {
-  int8_t vmax = SCHAR_MIN;
-  int8_t vmin = SCHAR_MAX;
-  /*
-  for (byte i = 0; i < ADCMan.getSampleCount(idxPin[0]); i++) {
-    vmax = max(vmax, samples[i]);
-    vmin = min(vmin, samples[i]);
-  }
-  */
-  Console.print(F("perimter min,max="));
-  Console.print((int)vmin);
-  Console.print(F(","));
-  Console.println((int)vmax);
-}
+
+
+
 
 // perimeter V2 uses a digital matched filter
 void PerimeterClass::matchedFilter(byte idx) {
-  /*
-  int16_t sampleCount = ADCMan.getSampleCount(idxPin[0]);
-  int8_t *samples = ADCMan.getSamples(idxPin[idx]);
-  */
-
-  int16_t sampleCount ;
-  int8_t *samples ;
-
-  
-  if (callCounter == 100) {
-    // statistics only
-    callCounter = 0;
-    signalMin[idx] = 9999;
-    signalMax[idx] = -9999;
-    signalAvg[idx] = 0;
-    for (int i = 0; i < sampleCount; i++) {
-      int8_t v = samples[i];
-      
-      //Console.print(v);
-      //Console.print(",");
-      
-      signalAvg[idx] += v;
-      signalMin[idx] = min(signalMin[idx], v);
-      signalMax[idx] = max(signalMax[idx], v);
-    }
-    //Console.println(" ");
-    signalAvg[idx] = ((double)signalAvg[idx]) / ((double)(sampleCount));
+  if (idx == 0) {
+    samples = buffer_ADC_0 ;//ADCMan.getSamples(idxPin[idx]);      
   }
+  else {
+    samples = buffer_ADC_1 ;//ADCMan.getSamples(idxPin[idx]);
+  }
+  
+ // Serial.println(buffer_adc_0_count);
+  signalMin[idx] = 9999;
+  signalMax[idx] = -9999;
+  signalAvg[idx] = 0;
+  for (int i = 0; i < sampleCount; i++) {
+    int16_t v = samples[i];
+    // Serial.print(v);
+    // Serial.print(",");
+    signalAvg[idx] += v;
+    signalMin[idx] = min(signalMin[idx], v);
+    signalMax[idx] = max(signalMax[idx], v);
+  }
+  //Serial.println(" ");
+   
+  signalAvg[idx] = signalAvg[idx]/sampleCount;
+
   // magnitude for tracking (fast but inaccurate)
 
   //int16_t sigcode_size = sizeof sigcode_norm;
@@ -239,19 +189,31 @@ void PerimeterClass::matchedFilter(byte idx) {
   int8_t *sigcode = sigcode_norm;
   //if (useDifferentialPerimeterSignal) sigcode = sigcode_diff;
   sigcode = sigcode_diff;
-  mag[idx] = corrFilter(sigcode, subSample, sigcode_size, samples, sampleCount - sigcode_size * subSample, filterQuality[idx]);
+  //sampleCount - sigcode_size * subSample= normalement 96  192-24*4
 
-  if ((idx == 0) && swapCoilPolarityLeft) mag[idx] *= -1;
-  if ((idx == 1) && swapCoilPolarityRight) mag[idx] *= -1;
+
+
+
+
+
+  mag[idx] = corrFilter(sigcode, subSample, sigcode_size, samples, sampleCount - sigcode_size * subSample , filterQuality[idx]);
+
+
+
+
+
+  //Serial.println(mag[1]);
+  // if ((idx == 0) && swapCoilPolarityLeft) mag[idx] *= -1;
+  // if ((idx == 1) && swapCoilPolarityRight) mag[idx] *= -1;
   // smoothed magnitude used for signal-off detection change from 1 % to 5 % for faster detection and possible use on center big area to avoid in/out transition
   smoothMag[idx] = 0.95 * smoothMag[idx] + 0.05 * ((float)abs(mag[idx]));
   //smoothMag[idx] = 0.99 * smoothMag[idx] + 0.01 * ((float)abs(mag[idx]));
-  
+
   // perimeter inside/outside detection
   if (mag[idx] > 0) {
-    signalCounter[idx] = min(signalCounter[idx] + 1, 5);
+    signalCounter[idx] = min(signalCounter[idx] + 1, 3);
   } else {
-    signalCounter[idx] = max(signalCounter[idx] - 1, -5);
+    signalCounter[idx] = max(signalCounter[idx] - 1, -3);
   }
   if (mag[idx] < 0) {
     lastInsideTime[idx] = millis();
@@ -267,25 +229,25 @@ void PerimeterClass::resetTimedOut() {
 }
 
 int16_t PerimeterClass::getSignalMin(byte idx) {
-  return signalMin[idx];
+  return Perimeter.signalMin[idx];
 }
 
 int16_t PerimeterClass::getSignalMax(byte idx) {
-  return signalMax[idx];
+  return Perimeter.signalMax[idx];
 }
 
-int16_t PerimeterClass::getSignalAvg(byte idx) {
-  return signalAvg[idx];
+int PerimeterClass::getSignalAvg(byte idx) {
+  return Perimeter.signalAvg[idx];
 }
 
 
 float PerimeterClass::getFilterQuality(byte idx) {
-  return filterQuality[idx];
+  return Perimeter.filterQuality[idx];
 }
 
 boolean PerimeterClass::isInside() {
 
-  return (isInside(IDX_LEFT));
+  return (Perimeter.isInside(IDX_LEFT));
   //return (isInside(IDX_LEFT) && isInside(IDX_RIGHT));
 }
 
@@ -293,10 +255,10 @@ boolean PerimeterClass::isInside(byte idx) {
   if (abs(mag[idx]) > 600) {
     // Large signal, the in/out detection is reliable.
     // Using mag yields very fast in/out transition reporting.
-    return (mag[idx] < 0);
+    return (Perimeter.mag[idx] < 0);
   } else {
     // Low signal, use filtered value for increased reliability
-    return (signalCounter[idx] < 0);
+    return (Perimeter.signalCounter[idx] < 0);
   }
 }
 
@@ -320,18 +282,40 @@ boolean PerimeterClass::signalTimedOut(byte idx) {
 // ip[] holds input data (length > nPts + M )
 // nPts is the length of the required output data
 
-int16_t PerimeterClass::corrFilter(int8_t *H, int8_t subsample, int16_t M, int8_t *ip, int16_t nPts, float & quality) {
+int16_t PerimeterClass::corrFilter(int8_t *H, int subsample, int M, int16_t *ip, int16_t nPts, float &quality) {
+
+  //erase array
+  //memset(myarray, 0, sizeof(myarray));
   /*
-    Console.print("H:");
-    Console.print(*H);
-    Console.print(" M:");
-    Console.print(M);
-    Console.print(" *ip:");
-    Console.print(*ip);
-    Console.print(" nPts:");
-    Console.print(nPts);
-    Console.println();
+    Serial.println();
+    Serial.print("H:");
+    Serial.print(*H);
+    Serial.print(" Subsample:");
+    Serial.print(subsample);
+    Serial.print(" M:");
+    Serial.print(M);
+    Serial.print(" *ip:");
+    Serial.print(*ip);
+    Serial.print(" nPts:");
+    Serial.print(nPts);
+    Serial.print(" Quality:");
+    Serial.print(quality);
+    Serial.println();
   */
+  /*
+    for (byte i = 0; i <= 23; i++) {
+      Serial.print(H[i]);
+      Serial.print(",");
+    }
+    Serial.println();
+
+    for (byte i = 0; i <= 191; i++) {
+      Serial.print(ip[i]);
+      Serial.print(",");
+    }
+    Serial.println();
+  */
+
   int16_t sumMax = 0; // max correlation sum
   int16_t sumMin = 0; // min correlation sum
   int16_t Ms = M * subsample; // number of filter coeffs including subsampling
@@ -348,7 +332,7 @@ int16_t PerimeterClass::corrFilter(int8_t *H, int8_t subsample, int16_t M, int8_
     int16_t sum = 0;
     int8_t *Hi = H;
     int8_t ss = 0;
-    int8_t *ipi = ip;
+    int16_t *ipi = ip;
     // for each filter coeffs
     for (int16_t i = 0; i < Ms; i++)
     {

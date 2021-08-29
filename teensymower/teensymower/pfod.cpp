@@ -344,10 +344,10 @@ void RemoteControl::sendMotorMenu(boolean update) {
   serialPort->print(robot->motorLeftPower);
   serialPort->print(", ");
   serialPort->print(robot->motorRightPower);
-  serialPort->println(F("|a05~motor current in mA l, r "));
-  serialPort->print(robot->motorLeftSenseCurrent);
-  serialPort->print(", ");
-  serialPort->print(robot->motorRightSenseCurrent);
+  //serialPort->println(F("|a05~motor current in mA l, r "));
+  //serialPort->print(robot->motorLeftSenseCurrent);
+  //serialPort->print(", ");
+  //serialPort->print(robot->motorRightSenseCurrent);
   sendSlider("a02", F("Power max"), robot->motorPowerMax, "", 0.1, 100, 0);
   serialPort->println(F("|a03~RPM/PWM Speed L/R "));
   serialPort->print(robot->motorLeftRpmCurr);
@@ -1264,8 +1264,6 @@ void RemoteControl::processInfoMenu(String pfodCmd) {
 
 void RemoteControl::sendCommandMenu(boolean update) {
   if (update) serialPort->print("{:"); else serialPort->print(F("{.Commands`5000"));
-  //serialPort->print(F("|ro~OFF|ra~Start Now in Auto mode|rc~RC mode|"));
-
   serialPort->print(F("|ro~OFF"));
   serialPort->print(F("|ra~Start Now in Auto mode"));
   serialPort->println(F("|rb~Actual Status is "));
@@ -1367,7 +1365,7 @@ void RemoteControl::processCommandMenu(String pfodCmd) {
       robot->setNextState(STATE_STATION_REV, 0);
     }
     else {
-      /*
+      
         if (robot->mowPatternName() == "WIRE") {
         robot->totalDistDrive = 0;
         robot->statusCurr = TRACK_TO_START; //status change later into STATE_PERI_STOP_TOTRACK
@@ -1376,7 +1374,7 @@ void RemoteControl::processCommandMenu(String pfodCmd) {
         else {
         robot->setNextState(STATE_ACCEL_FRWRD, 0);
         }
-      */
+      
     }
     sendCommandMenu(true);
   } else if (pfodCmd == "rc") {

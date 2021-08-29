@@ -1,8 +1,7 @@
 #include "perimeter.h"
 #include <Arduino.h>
 #include <limits.h>
-//#include "adcman.h"
-//#include "config.h"
+
 
 #include <ADC.h>
 #include <ADC_util.h>
@@ -35,8 +34,7 @@ int sigcode_size = 24;
 
 PerimeterClass::PerimeterClass() {
   //useDifferentialPerimeterSignal = true;
-  swapCoilPolarityLeft = false;
-  swapCoilPolarityRight = false;
+  
   //read2Coil=true;
   timedOutIfBelowSmag = 50;
   timeOutSecIfNotInside = 15;
@@ -185,14 +183,8 @@ void PerimeterClass::matchedFilter(byte idx) {
   //int16_t sigcode_size = sizeof sigcode_norm;
 
   int8_t *sigcode = sigcode_norm;
-  //if (useDifferentialPerimeterSignal) sigcode = sigcode_diff;
   sigcode = sigcode_diff;
   //sampleCount - sigcode_size * subSample= normalement 96  192-24*4
-
-
-
-
-
 
   mag[idx] = corrFilter(sigcode, subSample, sigcode_size, samples, sampleCount - sigcode_size * subSample , filterQuality[idx]);
 

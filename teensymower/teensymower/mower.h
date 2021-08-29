@@ -114,7 +114,7 @@
 #define Console Serial
 #define CONSOLE_BAUDRATE    115200       // baudrate used for Raspberry PI console
 
-#define Enable_DueWatchdog true
+#define Enable_DueWatchdog false
 //#define Enable_DueWatchdog false
 
 #define autoBylaneToRandom true

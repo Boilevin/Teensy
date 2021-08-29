@@ -1,11 +1,4 @@
 /*
-  Ardumower (www.ardumower.de)
-  Copyright (c) 2013-2015 by Alexander Grau
-  Copyright (c) 2013-2015 by Sven Gennat
-  Copyright (c) 2014 by Maxime Carpentieri
-  Copyright (c) 2014-2015 by Stefan Manteuffel
-  Copyright (c) 2015 by Uwe Zimprich
-
   Private-use only! (you need to ask for a commercial-use)
 
   This program is free software: you can redistribute it and/or modify
@@ -25,16 +18,8 @@
 
 */
 
-/* Ardumower Chassis Kit 1.0 - robot configuration (Ardumower electronics, Arduino Mega)
-   http://wiki.ardumower.de/index.php?title=Ardumower_chassis
 
-   Requires: Ardumower PCB v0.5  ( https://www.marotronics.de/Ardumower-Board-Prototyp )
 
-*/
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-// NOTE: Verify in config.h that you have enabled 'USE_MOWER' !
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 #include "mower.h"
 #include <Arduino.h>
 #include "drivers.h"

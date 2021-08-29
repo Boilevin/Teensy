@@ -1243,19 +1243,14 @@ void Robot::setMotorPWM(int pwmLeft, int pwmRight, boolean useAccel) {
 
   }
   // ---------------------------------
-  /*
-    if (motorLeftSwapDir)  // swap pin polarity?
-    //setActuator(ACT_MOTOR_LEFT, -motorLeftPWMCurr);
-
-    else
-      //setActuator(ACT_MOTOR_LEFT, motorLeftPWMCurr);
-      if (motorRightSwapDir)   // swap pin polarity?
-        //setActuator(ACT_MOTOR_RIGHT, -motorRightPWMCurr);
-        else
-          //setActuator(ACT_MOTOR_RIGHT, motorRightPWMCurr);
-        }
-
-  */
+  if (motorLeftSwapDir)  // swap pin polarity?
+    setActuator(ACT_MOTOR_LEFT, -motorLeftPWMCurr);
+  else
+    setActuator(ACT_MOTOR_LEFT, motorLeftPWMCurr);
+  if (motorRightSwapDir)   // swap pin polarity?
+    setActuator(ACT_MOTOR_RIGHT, -motorRightPWMCurr);
+  else
+    setActuator(ACT_MOTOR_RIGHT, motorRightPWMCurr);
 }
 
 void Robot::OdoRampCompute() { //execute only one time when a new state execution
@@ -2118,10 +2113,10 @@ void Robot::setUserSwitches() {
   */
 }
 
-static void Robot::OdoRightCountInt(){
+static void Robot::OdoRightCountInt() {
   if (robot.motorRightPWMCurr >= 0) robot.odometryRight++; else robot.odometryRight--;
 }
-static void Robot::OdoLeftCountInt(){
+static void Robot::OdoLeftCountInt() {
   if (robot.motorLeftPWMCurr >= 0) robot.odometryLeft++; else robot.odometryLeft--;
 }
 
@@ -2137,9 +2132,9 @@ void Robot::setup()  {
   attachInterrupt(digitalPinToInterrupt(pinOdometryRight), OdoRightCountInt, CHANGE);
 
 #define pinOdometryLeft 12     // left odometry sensor
-//#define pinOdometryLeft2 DAC1    // left odometry sensor (optional two-wire)
+  //#define pinOdometryLeft2 DAC1    // left odometry sensor (optional two-wire)
 #define pinOdometryRight 11   // right odometry sensor  
-//#define pinOdometryRight2 CANTX  // right odometry sensor (optional two-wire)  
+  //#define pinOdometryRight2 CANTX  // right odometry sensor (optional two-wire)
 
 
   //initialise PFOD com

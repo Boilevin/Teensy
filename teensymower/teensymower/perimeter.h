@@ -42,8 +42,7 @@ class PerimeterClass
     void run();
     int timedOutIfBelowSmag;
     unsigned long timeOutSecIfNotInside;
-    // use differential perimeter signal as input for the matched filter?
-    //boolean useDifferentialPerimeterSignal;
+    
     // swap coil polarity?
     boolean swapCoilPolarityLeft;
     boolean swapCoilPolarityRight;
