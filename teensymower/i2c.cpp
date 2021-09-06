@@ -1,7 +1,6 @@
 #include "i2c.h"
 #include <Wire.h>
-//Wire.setclock(500000L);
-#include "config.h"
+#include "mower.h"
 
 #if defined(__AVR_ATmega328P__)  
   // Nano pins  

@@ -110,10 +110,9 @@ double distancePI(double x, double w);
 // motor drivers
 void setPwmFrequency(int pin, int divisor);
 void setL298N(int pinDir, int pinPWM, int pinEnable, int speed);
-void setL9958(int pinDir, int pinPWM, int speed);
 void setRomeoMotor(int pinDir, int pinPWM, int speed);
 void setMC33926(int pinDir, int pinPWM, int speed);
-
+void setBTS7960(int pinDir ,int pinPWM ,int pinEnable , int speed);
 // Returns the day of week (0=Sunday, 6=Saturday) for a given date
 int getDayOfWeek(int month, int day, int year, int CalendarSystem);
 

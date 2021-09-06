@@ -1,7 +1,8 @@
 #include "perimeter.h"
 #include <Arduino.h>
 #include <limits.h>
-
+//#include "adcman.h"
+//#include "config.h"
 
 #include <ADC.h>
 #include <ADC_util.h>
@@ -34,13 +35,14 @@ int sigcode_size = 24;
 
 PerimeterClass::PerimeterClass() {
   //useDifferentialPerimeterSignal = true;
-  
+  swapCoilPolarityLeft = false;
+  swapCoilPolarityRight = false;
   //read2Coil=true;
   timedOutIfBelowSmag = 50;
   timeOutSecIfNotInside = 15;
   callCounter = 0;
   mag[0] = mag[1] = 0;
-  smoothMag[0] = smoothMag[1] = 100;
+  smoothMag[0] = smoothMag[1] = 0;
   filterQuality[0] = filterQuality[1] = 0;
   signalCounter[0] = signalCounter[1] = 0;
   lastInsideTime[0] = lastInsideTime[1] = 0;
@@ -78,8 +80,8 @@ static void PerimeterClass::adc0_isr() { //this is the main adc0 loop executed e
               Serial.print(" ");
               Serial.println(buffer_ADC_0[i]);
             }
-      */
-
+*/
+      
       delta_time_adc_0 = timed_read_elapsed;
       Perimeter.matchedFilter(0);
       //buffer_adc_0_count = 0;
@@ -115,6 +117,8 @@ void PerimeterClass::begin(byte idx0Pin, byte idx1Pin) {
   adc->adc0->stopTimer();
   adc->adc0->startSingleRead(idx0Pin); // call this to setup everything before the Timer starts
   adc->adc0->enableInterrupts(adc0_isr);
+  //adc->adc0->startTimer(384); //frequency Hz
+
   adc->adc0->startTimer(38462); //frequency in Hz
   buffer_adc_0_count = 0;
   Serial.println("adc0 Timer Interrupt Started");
@@ -123,7 +127,7 @@ void PerimeterClass::begin(byte idx0Pin, byte idx1Pin) {
 
   Serial.println("Begin setup adc1");
   ////// ADC1 /////
-  adc->adc1->setAveraging(10); // set number of averages
+  adc->adc1->setAveraging(1); // set number of averages
   adc->adc1->setResolution(10); // set bits of resolution
   adc->adc1->setConversionSpeed(ADC_CONVERSION_SPEED::VERY_HIGH_SPEED); // change the conversion speed
   adc->adc1->setSamplingSpeed(ADC_SAMPLING_SPEED::VERY_HIGH_SPEED); // change the sampling speed
@@ -132,7 +136,7 @@ void PerimeterClass::begin(byte idx0Pin, byte idx1Pin) {
   adc->adc1->stopTimer();
   adc->adc1->startSingleRead(idx1Pin); // call this to setup everything before the Timer starts
   adc->adc1->enableInterrupts(adc1_isr);
-  //adc->adc1->startTimer(38462); //frequency in Hz
+  adc->adc1->startTimer(38462); //frequency in Hz
   timed_read_elapsed = 0;
   buffer_adc_1_count = 0;
   Serial.println("adc1 Timer Interrupt Started");
@@ -155,15 +159,14 @@ int PerimeterClass::getSmoothMagnitude(byte idx) {
 
 // perimeter V2 uses a digital matched filter
 void PerimeterClass::matchedFilter(byte idx) {
-  
   if (idx == 0) {
-    samples = buffer_ADC_0 ;//ADCMan.getSamples(idxPin[idx]);
+    samples = buffer_ADC_0 ;//ADCMan.getSamples(idxPin[idx]);      
   }
   else {
     samples = buffer_ADC_1 ;//ADCMan.getSamples(idxPin[idx]);
   }
-
-  // Serial.println(buffer_adc_0_count);
+  
+ // Serial.println(buffer_adc_0_count);
   signalMin[idx] = 9999;
   signalMax[idx] = -9999;
   signalAvg[idx] = 0;
@@ -176,21 +179,32 @@ void PerimeterClass::matchedFilter(byte idx) {
     signalMax[idx] = max(signalMax[idx], v);
   }
   //Serial.println(" ");
-
-  signalAvg[idx] = signalAvg[idx] / sampleCount;
+   
+  signalAvg[idx] = signalAvg[idx]/sampleCount;
 
   // magnitude for tracking (fast but inaccurate)
 
   //int16_t sigcode_size = sizeof sigcode_norm;
 
   int8_t *sigcode = sigcode_norm;
+  //if (useDifferentialPerimeterSignal) sigcode = sigcode_diff;
   sigcode = sigcode_diff;
   //sampleCount - sigcode_size * subSample= normalement 96  192-24*4
 
+
+
+
+
+
   mag[idx] = corrFilter(sigcode, subSample, sigcode_size, samples, sampleCount - sigcode_size * subSample , filterQuality[idx]);
 
-  if ((idx == 0) && swapCoilPolarityLeft) mag[idx] *= -1;
-  if ((idx == 1) && swapCoilPolarityRight) mag[idx] *= -1;
+
+
+
+
+  //Serial.println(mag[1]);
+  // if ((idx == 0) && swapCoilPolarityLeft) mag[idx] *= -1;
+  // if ((idx == 1) && swapCoilPolarityRight) mag[idx] *= -1;
   // smoothed magnitude used for signal-off detection change from 1 % to 5 % for faster detection and possible use on center big area to avoid in/out transition
   smoothMag[idx] = 0.95 * smoothMag[idx] + 0.05 * ((float)abs(mag[idx]));
   //smoothMag[idx] = 0.99 * smoothMag[idx] + 0.01 * ((float)abs(mag[idx]));
@@ -248,16 +262,13 @@ boolean PerimeterClass::isInside(byte idx) {
   }
 }
 
+boolean PerimeterClass::signalTimedOut() {
+
+  return (signalTimedOut(IDX_LEFT) && signalTimedOut(IDX_RIGHT));
+}
+
 
 boolean PerimeterClass::signalTimedOut(byte idx) {
-  /*
-  Serial.print("peri  ");
-  Serial.print(idx);
-  Serial.print(lastInsideTime[idx]);
-  
-  Serial.println("  ");
-  */
-  
   if (getSmoothMagnitude(idx) < timedOutIfBelowSmag) return true;
   if (millis() - lastInsideTime[idx] > timeOutSecIfNotInside * 1000) return true;
   return false;

@@ -23,16 +23,6 @@
 */
 #include "drivers.h"
 
-
-
-
-//#include "config.h"
-//#include "pinman.h"
-//#include "i2c.h"
-//#include "ardumower.h"
-//#include <Wire.h>
-
-
 const char *dayOfWeek[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 
 
@@ -128,17 +118,37 @@ void setRomeoMotor(int pinDir, int pinPWM, int speed) {
   }
 }
 
-// L9958 motor driver
-// PinPWM             PinDir
-// H                  H     Forward
-// H                  L     Reverse
-void setL9958(int pinDir, int pinPWM, int speed) {
-  if (speed > 0) {
-    //digitalWrite(pinDir, HIGH) ;
-    //PinMan.analogWrite(pinPWM, abs(speed));
-  } else {
-    //digitalWrite(pinDir, LOW) ;
-    //PinMan.analogWrite(pinPWM, abs(speed));
+
+
+//bber1
+// BTS7960 motor driver
+// Dir pin is used for reverse PWM signal
+// Pwm pin is used for forward PWM signal
+// 2 EN_R an L are shunt to only one enable possibility ,so never send PWM on both pinDIR and PinPWM at same time
+//VCC --> 3.3V
+//GND --> GND
+//R_IS --> NC
+//L_IS --> NC
+//R_EN --> pinMotorRightEnable
+//L_EN --> pinMotorRightEnable
+//RPWM --> pinMotorRightPWM 
+//LPWM --> pinMotorRightDir
+//setBTS7960(pinMotorLeftDir, pinMotorLeftPWM, pinMotorLeftEnable, value); break;//
+void setBTS7960(int pinDir ,int pinPWM ,int pinEnable , int speed){
+  if (speed > 0){
+    digitalWrite(pinEnable, HIGH) ;
+    analogWrite(pinPWM, 0);
+    analogWrite(pinDir, abs(speed));
+  } 
+  if (speed < 0){
+    digitalWrite(pinEnable, HIGH) ;
+    analogWrite(pinDir, 0);
+    analogWrite(pinPWM, abs(speed));
+  }
+  if (speed == 0){
+    digitalWrite(pinEnable, LOW) ;
+    analogWrite(pinPWM, 0);
+    analogWrite(pinDir, 0);
   }
 }
 

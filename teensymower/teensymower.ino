@@ -1,10 +1,7 @@
-
 #include "robot.h"
 #include "mower.h"
 
-
-
-void setup()  {     
+void setup()  { 
   robot.setup();
 } 
 

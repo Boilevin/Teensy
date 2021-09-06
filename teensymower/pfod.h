@@ -98,7 +98,7 @@ class RemoteControl
     void processSlider(String result, int &value, double scale);
     void processSlider(String result, byte &value, double scale);
     void processSlider(String result, short &value, double scale);
-
+    void processSlider(String result, unsigned long &value, double scale);
 
     // send timer menu details
     void sendTimer(ttimer_t timer);

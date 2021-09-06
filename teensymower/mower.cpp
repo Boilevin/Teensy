@@ -1,11 +1,4 @@
 /*
-  Ardumower (www.ardumower.de)
-  Copyright (c) 2013-2015 by Alexander Grau
-  Copyright (c) 2013-2015 by Sven Gennat
-  Copyright (c) 2014 by Maxime Carpentieri
-  Copyright (c) 2014-2015 by Stefan Manteuffel
-  Copyright (c) 2015 by Uwe Zimprich
-
   Private-use only! (you need to ask for a commercial-use)
 
   This program is free software: you can redistribute it and/or modify
@@ -25,16 +18,8 @@
 
 */
 
-/* Ardumower Chassis Kit 1.0 - robot configuration (Ardumower electronics, Arduino Mega)
-   http://wiki.ardumower.de/index.php?title=Ardumower_chassis
 
-   Requires: Ardumower PCB v0.5  ( https://www.marotronics.de/Ardumower-Board-Prototyp )
 
-*/
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-// NOTE: Verify in config.h that you have enabled 'USE_MOWER' !
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 #include "mower.h"
 #include <Arduino.h>
 #include "drivers.h"
@@ -45,6 +30,8 @@ Mower robot;
 
 
 Mower::Mower() {
+  
+
   name = "Ardumower";
   // ------- wheel motors -----------------------------
   motorAccel       = 1500;  // motor wheel acceleration - only functional when odometry is not in use (warning: do not set too low)
@@ -263,12 +250,9 @@ Mower::Mower() {
 
 void Mower::setup() {
 
-  /*
-    PinMan.begin();
-    // keep battery switched ON (keep this at system start!)
-    pinMode(pinBatterySwitch, OUTPUT);
-    digitalWrite(pinBatterySwitch, HIGH);
-  */
+  pinMode(pinBatterySwitch, OUTPUT);
+  digitalWrite(pinBatterySwitch, HIGH);
+
   // Buzzer.begin();
   Console.begin(CONSOLE_BAUDRATE);
   // I2Creset();
@@ -277,63 +261,63 @@ void Mower::setup() {
 
   Console.println("SETUP");
 
-  
-    // LED, buzzer, battery
-   // pinMode(pinLED, OUTPUT);
-    pinMode(pinBuzzer, OUTPUT);
-    digitalWrite(pinBuzzer, 0);
-    
-    pinMode(pinChargeEnable, OUTPUT);
-    setActuator(ACT_CHGRELAY, 0);
 
-    // left wheel motor
-    pinMode(pinMotorLeftEnable, OUTPUT);
-    digitalWrite(pinMotorLeftEnable, LOW);
-    pinMode(pinMotorLeftPWM, OUTPUT);
-    pinMode(pinMotorLeftDir, OUTPUT);
-    
+  // LED, buzzer, battery
+  // pinMode(pinLED, OUTPUT);
+  pinMode(pinBuzzer, OUTPUT);
+  digitalWrite(pinBuzzer, 0);
 
-    // right wheel motor
-    pinMode(pinMotorRightEnable, OUTPUT);
-    digitalWrite(pinMotorRightEnable, LOW);
-    pinMode(pinMotorRightPWM, OUTPUT);
-    pinMode(pinMotorRightDir, OUTPUT);
-    
+  pinMode(pinChargeEnable, OUTPUT);
+  setActuator(ACT_CHGRELAY, 0);
 
-    // mower motor
-    pinMode(pinMotorMowDir, OUTPUT);
-    pinMode(pinMotorMowPWM, OUTPUT);
-    pinMode(pinMotorMowEnable, OUTPUT);
-    digitalWrite(pinMotorMowEnable, LOW);
-    
+  // left wheel motor
+  pinMode(pinMotorLeftEnable, OUTPUT);
+  digitalWrite(pinMotorLeftEnable, LOW);
+  pinMode(pinMotorLeftPWM, OUTPUT);
+  pinMode(pinMotorLeftDir, OUTPUT);
 
-    
 
-    // perimeter
-    pinMode(pinPerimeterRight, INPUT);
-    pinMode(pinPerimeterLeft, INPUT);
-   
+  // right wheel motor
+  pinMode(pinMotorRightEnable, OUTPUT);
+  digitalWrite(pinMotorRightEnable, LOW);
+  pinMode(pinMotorRightPWM, OUTPUT);
+  pinMode(pinMotorRightDir, OUTPUT);
 
-    // button
-    pinMode(pinButton, INPUT_PULLUP);
 
-    // bumpers
-    pinMode(pinBumperLeft, INPUT_PULLUP); //it's contact
-    pinMode(pinBumperRight, INPUT_PULLUP);
+  // mower motor
+  pinMode(pinMotorMowDir, OUTPUT);
+  pinMode(pinMotorMowPWM, OUTPUT);
+  pinMode(pinMotorMowEnable, OUTPUT);
+  digitalWrite(pinMotorMowEnable, LOW);
 
-    // rain
-    pinMode(pinRain, INPUT);
 
-   
-    // odometry
-    //not sure the pullupis necessary with PCB1.3
-    pinMode(pinOdometryLeft, INPUT);
-    pinMode(pinOdometryRight, INPUT);
-      
-   
-    // user switches
-    pinMode(pinUserSwitch1, OUTPUT);
-    pinMode(pinUserSwitch2, OUTPUT);
+
+
+  // perimeter
+  pinMode(pinPerimeterRight, INPUT);
+  pinMode(pinPerimeterLeft, INPUT);
+
+
+  // button
+  pinMode(pinButton, INPUT_PULLUP);
+
+  // bumpers
+  pinMode(pinBumperLeft, INPUT_PULLUP); //it's contact
+  pinMode(pinBumperRight, INPUT_PULLUP);
+
+  // rain
+  pinMode(pinRain, INPUT);
+
+
+  // odometry
+  //not sure the pullupis necessary with PCB1.3
+  pinMode(pinOdometryLeft, INPUT_PULLUP);
+  pinMode(pinOdometryRight, INPUT_PULLUP);
+
+
+  // user switches
+  pinMode(pinUserSwitch1, OUTPUT);
+  pinMode(pinUserSwitch2, OUTPUT);
   
   
   // PWM frequency setup
@@ -343,14 +327,7 @@ void Mower::setup() {
   // http://sobisource.com/arduino-mega-pwm-pin-and-frequency-timer-control/
   // http://www.atmel.com/images/doc2549.pdf
 
-
-
-
   Robot::setup();
-
-
-  // enable interrupts
-
 
 }
 
@@ -358,10 +335,10 @@ void checkMotorFault() {
   //bb to test without motor board uncomment return
   //return;
   if ((robot.stateCurr == STATE_OFF) || (robot.stateCurr == STATE_ERROR)  ) return;  //do not generate error if the state if OFF to avoid Buzzer when PI power the DUE via the USB native port
- 
+
 }
 /*
-int Mower::readSensor(char type) {
+  int Mower::readSensor(char type) {
 
   // the azurit readsensor send an integer to robot.cpp so can't use getVoltage from adcman as it's float
   switch (type) {
@@ -422,25 +399,29 @@ int Mower::readSensor(char type) {
 
   }
   return 0;
-  
-}
+
+  }
 */
+
 
 
 void Mower::setActuator(char type, int value) {
 
 
   switch (type) {
-    
+
     case ACT_MOTOR_MOW: setL298N(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, value); break;// Motortreiber einstellung - bei Bedarf Ã¤ndern z.B setL298N auf setMC33926
 
-    case ACT_MOTOR_LEFT: setL298N(pinMotorLeftDir, pinMotorLeftPWM, pinMotorLeftEnable, value); break;//   Motortreiber einstellung - bei Bedarf Ã¤ndern z.B setL298N auf setMC33926
+    case ACT_MOTOR_LEFT: setBTS7960(pinMotorLeftDir, pinMotorLeftPWM, pinMotorLeftEnable, value); break;//   Motortreiber einstellung - bei Bedarf Ã¤ndern z.B setL298N auf setMC33926
 
-    case ACT_MOTOR_RIGHT:
-      if (value >= 0) setL298N(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value * (1 + (double)motorRightOffsetFwd / 100));
-      else setL298N(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value * (1 - (double)motorRightOffsetRev / 100));
-      break; 
+    case ACT_MOTOR_RIGHT: setBTS7960(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value); break;
 
+
+    /*
+      if (value >= 0) setBTS7960(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value * (1 + (double)motorRightOffsetFwd / 100));
+      else setBTS7960(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value * (1 - (double)motorRightOffsetRev / 100));
+      break;
+    */
     //case ACT_BUZZER: if (value == 0) Buzzer.noTone(); else Buzzer.tone(value); break;
     //case ACT_LED: digitalWrite(pinLED, value); break;
     //case ACT_USER_SW1: digitalWrite(pinUserSwitch1, value); break;

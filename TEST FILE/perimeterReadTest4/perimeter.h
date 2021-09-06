@@ -29,6 +29,8 @@ class PerimeterClass
     // inside perimeter (true) or outside (false)?
     boolean isInside();
     boolean isInside(byte idx);
+    // perimeter signal timed out? (e.g. due to broken wire)
+    boolean signalTimedOut();
     void resetTimedOut();
     boolean signalTimedOut(byte idx);
     int16_t getSignalMin(byte idx);
@@ -40,7 +42,8 @@ class PerimeterClass
     void run();
     int timedOutIfBelowSmag;
     unsigned long timeOutSecIfNotInside;
-    
+    // use differential perimeter signal as input for the matched filter?
+    //boolean useDifferentialPerimeterSignal;
     // swap coil polarity?
     boolean swapCoilPolarityLeft;
     boolean swapCoilPolarityRight;

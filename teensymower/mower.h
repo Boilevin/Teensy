@@ -28,7 +28,7 @@
 //#define pinMotorLeftSense A1       // M1_FB  left motor current sense
 //#define pinMotorLeftFault 25       // M1_SF  left motor fault
 
-#define pinMotorRightEnable  2         // EN motors enable
+#define pinMotorRightEnable  2        // EN motors enable
 #define pinMotorRightPWM  4        // M2_IN1 right motor PWM pin
 #define pinMotorRightDir 3        // M2_IN2 right motor Dir pin
 //#define pinMotorRightSense A0      // M2_FB  right motor current sense
@@ -114,7 +114,7 @@
 #define Console Serial
 #define CONSOLE_BAUDRATE    115200       // baudrate used for Raspberry PI console
 
-#define Enable_DueWatchdog true
+#define Enable_DueWatchdog false
 //#define Enable_DueWatchdog false
 
 #define autoBylaneToRandom true
@@ -151,6 +151,7 @@ class Mower : public Robot
     // virtual void resetMotorFault();
     
     virtual void setActuator(char type, int value);
+   
    
 };
 

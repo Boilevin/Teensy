@@ -176,6 +176,17 @@ void RemoteControl::processSlider(String result, long &value, double scale) {
   }
 }
 
+void RemoteControl::processSlider(String result, unsigned long &value, double scale) {
+  if (dataFromPi) {
+    value = value1;
+  }
+  else {
+    float v;
+    processSlider(result, v, scale);
+    value = v;
+  }
+}
+
 void RemoteControl::processSlider(String result, int &value, double scale) {
   if (dataFromPi) {
     value = value1;
@@ -327,16 +338,16 @@ void RemoteControl::processErrorMenu(String pfodCmd) {
 
 
 void RemoteControl::sendMotorMenu(boolean update) {
-  if (update) serialPort->print("{:"); else serialPort->print(F("{.Motor`1000"));
+  if (update) serialPort->print("{:"); else serialPort->print(F("{.Motor`200"));
 
   serialPort->println(F("|a01~Power in Watt l, r "));
   serialPort->print(robot->motorLeftPower);
   serialPort->print(", ");
   serialPort->print(robot->motorRightPower);
-  serialPort->println(F("|a05~motor current in mA l, r "));
-  serialPort->print(robot->motorLeftSenseCurrent);
-  serialPort->print(", ");
-  serialPort->print(robot->motorRightSenseCurrent);
+  //serialPort->println(F("|a05~motor current in mA l, r "));
+  //serialPort->print(robot->motorLeftSenseCurrent);
+  //serialPort->print(", ");
+  //serialPort->print(robot->motorRightSenseCurrent);
   sendSlider("a02", F("Power max"), robot->motorPowerMax, "", 0.1, 100, 0);
   serialPort->println(F("|a03~RPM/PWM Speed L/R "));
   serialPort->print(robot->motorLeftRpmCurr);
@@ -356,13 +367,16 @@ void RemoteControl::sendMotorMenu(boolean update) {
   serialPort->print(robot->motorRpmCoeff);
 
   sendSlider("a06", F("Speed max in rpm"), robot->motorSpeedMaxRpm, "", 1, 50, 20);
-  sendSlider("a15", F("Speed max in pwm"), robot->motorSpeedMaxPwm, "", 1, 255, 150);
+  sendSlider("a15", F("Speed max in pwm"), robot->motorSpeedMaxPwm, "", 1, 255, 50);
+  
   sendSlider("a11", F("Accel"), robot->motorAccel, "", 1, 2000, 500);
   sendSlider("a18", F("Power ignore time"), robot->motorPowerIgnoreTime, "", 1, 8000, 1);
   sendSlider("a07", F("Roll Degrees max"), robot->motorRollDegMax, "", 1, 360, 1);
   sendSlider("a19", F("Roll Degrees min"), robot->motorRollDegMin, "", 1, 180, 1);
   sendSlider("a08", F("Rev Distance / Perimeter"), robot->DistPeriOutRev, "", 1, 100, 1);
+  
   sendSlider("a09", F("Stop Distance / Perimeter"), robot->DistPeriOutStop, "", 1, 30, 1);
+  /*
   sendPIDSlider("a14", "RPM", robot->motorLeftPID, 0.01, 3.0);
 
   //bb add
@@ -371,11 +385,13 @@ void RemoteControl::sendMotorMenu(boolean update) {
     sendSlider("a21", F("MotorSenseRightScale"), robot->motorSenseRightScale, "", 0.01, 0.10, 3.00);
   }
   //end add
+  
   serialPort->print(F("|a14~for config file:"));
   serialPort->print(F("motorSenseScale l, r"));
   serialPort->print(robot->motorSenseLeftScale);
   serialPort->print(", ");
   serialPort->print(robot->motorSenseRightScale);
+  */
   //bb
   sendSlider("a22", F("PWM Right Forward offset in %"), robot->motorRightOffsetFwd, "", 1, 50, -50);
   sendSlider("a23", F("PWM Right Reverse offset in %"), robot->motorRightOffsetRev, "", 1, 50, -50);
@@ -383,6 +399,7 @@ void RemoteControl::sendMotorMenu(boolean update) {
   sendSlider("a31", F("Speed Odo Maximum"), robot->SpeedOdoMax, "", 1, 254, 100);
   serialPort->print(F("|a32~Calib Motor"));  //to compute the ticks per second motor speed and the RPM speed according to PWM
   serialPort->println("}");
+  
 }
 
 void RemoteControl::processMotorMenu(String pfodCmd) {
@@ -443,6 +460,7 @@ void RemoteControl::processMotorMenu(String pfodCmd) {
 
   sendMotorMenu(true);
 }
+
 
 void RemoteControl::sendMowMenu(boolean update) {
   if (update) serialPort->print("{:"); else serialPort->print(F("{.Mow`1000"));
@@ -588,37 +606,35 @@ void RemoteControl::sendPerimeterMenu(boolean update) {
   serialPort->print(F("|e09~Actual Mowing Area"));
   serialPort->print(robot->areaInMowing);
   serialPort->println(F("|e02~Mag / Smag"));
-  //serialPort->print(robot->perimeterMag);
-  //serialPort->print(F("/"));
-  //serialPort->print(robot->perimeter.getSmoothMagnitude(0));
+  serialPort->print(robot->perimeterMag);
+  serialPort->print(F("/"));
+  serialPort->print(robot->perimeter.getSmoothMagnitude(0));
   //serialPort->print(robot->perimeterMagRight);
-  //if (robot->perimeterMag < 0) serialPort->print(" (inside)");
-  //else serialPort->print(" (outside)");
-  /*
-    sendSlider("e08", F("Mini Smag"), robot->perimeter.timedOutIfBelowSmag, "", 1, 200, 1);
-    sendSlider("e14", F("Timeout (s) if Outside"), robot->perimeter.timeOutSecIfNotInside, "", 1, 20, 1);
-    sendSlider("e04", F("Big AREA Smag Center"), robot->perimeterTriggerMinSmag, "", 1, 600, 100);
-    sendSlider("e18", F("Tracking Max Speed PWM"), robot->MaxSpeedperiPwm, "", 1, 255, 80);
-    sendSlider("e20", F("Circle Arc disance (cm) Obstacle while tracking"), robot->DistPeriObstacleAvoid, "", 1 , 250, 1);
-    sendSlider("e21", F("Perimeter MAG MAX VALUE"), robot->perimeterMagMaxValue, "", 1 , 2500, 500);
-    sendSlider("e11", F("Transition timeout"), robot->trackingPerimeterTransitionTimeOut, "", 1, 5000, 1);
-    sendSlider("e12", F("Track error timeout"), robot->trackingErrorTimeOut, "", 1, 10000, 1);
-    sendPIDSlider("e07", F("Track"), robot->perimeterPID, 0.1, 52);
-    serialPort->print(F("|e10~Swap Left coil polarity "));
-    sendYesNo(robot->perimeter.swapCoilPolarityLeft);
-    serialPort->print(F("|e22~Swap Right coil polarity "));
-    sendYesNo(robot->perimeter.swapCoilPolarityRight);
-    serialPort->print(F("|e23~Read The 2 Coils "));
-    sendYesNo(robot->perimeter.read2Coil);
-    serialPort->print(F("|e13~Block inner wheel  "));
-    sendYesNo(robot->trakBlockInnerWheel);
-    serialPort->print(F("|e15~Reduce Speed near Wire "));
-    sendYesNo(robot->reduceSpeedNearPerimeter);
-    serialPort->print(F("|e24~Actual Speed coeff "));
-    serialPort->print(robot->perimeterSpeedCoeff);
-  */
+  //  serialPort->println(robot->perimeterInside);
+  sendSlider("e08", F("Mini Smag"), robot->perimeter.timedOutIfBelowSmag, "", 1, 200, 1);
+  sendSlider("e14", F("Timeout (s) if Outside"), robot->perimeter.timeOutSecIfNotInside, "", 1, 20, 1);
+  sendSlider("e04", F("Big AREA Smag Center"), robot->perimeterTriggerMinSmag, "", 1, 600, 100);
+  sendSlider("e18", F("Tracking Max Speed PWM"), robot->MaxSpeedperiPwm, "", 1, 255, 80);
+  sendSlider("e20", F("Circle Arc disance (cm) Obstacle while tracking"), robot->DistPeriObstacleAvoid, "", 1 , 250, 1);
+  sendSlider("e21", F("Perimeter MAG MAX VALUE"), robot->perimeterMagMaxValue, "", 1 , 2500, 500);
+  sendSlider("e11", F("Transition timeout"), robot->trackingPerimeterTransitionTimeOut, "", 1, 5000, 1);
+  sendSlider("e12", F("Track error timeout"), robot->trackingErrorTimeOut, "", 1, 10000, 1);
+  sendPIDSlider("e07", F("Track"), robot->perimeterPID, 0.1, 52);
+  serialPort->print(F("|e10~Swap Left coil polarity "));
+  sendYesNo(robot->perimeter.swapCoilPolarityLeft);
+  serialPort->print(F("|e22~Swap Right coil polarity "));
+  sendYesNo(robot->perimeter.swapCoilPolarityRight);
+  serialPort->print(F("|e23~Read The 2 Coils "));
+  sendYesNo(robot->perimeter.read2Coil);
+  serialPort->print(F("|e13~Block inner wheel  "));
+  sendYesNo(robot->trakBlockInnerWheel);
+  serialPort->print(F("|e15~Reduce Speed near Wire "));
+  sendYesNo(robot->reduceSpeedNearPerimeter);
+  serialPort->print(F("|e24~Actual Speed coeff "));
+  serialPort->print(robot->perimeterSpeedCoeff);
   serialPort->println("}");
 }
+
 
 void RemoteControl::processPerimeterMenu(String pfodCmd) {
   if (pfodCmd == "e00") robot->perimeterUse = !robot->perimeterUse;
@@ -630,28 +646,29 @@ void RemoteControl::processPerimeterMenu(String pfodCmd) {
   else if (pfodCmd.startsWith("e20")) processSlider(pfodCmd, robot->DistPeriObstacleAvoid, 1);
   else if (pfodCmd.startsWith("e21")) processSlider(pfodCmd, robot->perimeterMagMaxValue, 1);
   else if (pfodCmd.startsWith("e07")) processPIDSlider(pfodCmd, "e07", robot->perimeterPID, 0.1, 100);
-  //else if (pfodCmd.startsWith("e08")) processSlider(pfodCmd, robot->perimeter.timedOutIfBelowSmag, 1);
+  else if (pfodCmd.startsWith("e08")) processSlider(pfodCmd, robot->perimeter.timedOutIfBelowSmag, 1);
   else if ((robot->developerActive) && (pfodCmd.startsWith("e09"))) {
     robot->areaInMowing = robot->areaInMowing + 1;
     if (robot->areaInMowing > 3) robot->areaInMowing = 1;
-    //robot->perimeter.changeArea(robot->areaInMowing);
+    robot->perimeter.changeArea(robot->areaInMowing);
     //robot->perimeter.begin(pinPerimeterLeft, pinPerimeterRight);
   }
-  /*
-    else if (pfodCmd.startsWith("e10")) robot->perimeter.swapCoilPolarityLeft = !robot->perimeter.swapCoilPolarityLeft;
-    else if (pfodCmd.startsWith("e22")) robot->perimeter.swapCoilPolarityRight = !robot->perimeter.swapCoilPolarityRight;
-    else if (pfodCmd.startsWith("e23")) robot->perimeter.read2Coil = !robot->perimeter.read2Coil;
 
-    else if (pfodCmd.startsWith("e11")) processSlider(pfodCmd, robot->trackingPerimeterTransitionTimeOut, 1);
-    else if (pfodCmd.startsWith("e12")) processSlider(pfodCmd, robot->trackingErrorTimeOut, 1);
-    else if (pfodCmd.startsWith("e13")) robot->trakBlockInnerWheel = !robot->trakBlockInnerWheel;
-    else if (pfodCmd.startsWith("e15")) robot->reduceSpeedNearPerimeter = !robot->reduceSpeedNearPerimeter;
+  else if (pfodCmd.startsWith("e10")) robot->perimeter.swapCoilPolarityLeft = !robot->perimeter.swapCoilPolarityLeft;
+  else if (pfodCmd.startsWith("e22")) robot->perimeter.swapCoilPolarityRight = !robot->perimeter.swapCoilPolarityRight;
+  else if (pfodCmd.startsWith("e23")) robot->perimeter.read2Coil = !robot->perimeter.read2Coil;
+
+  else if (pfodCmd.startsWith("e11")) processSlider(pfodCmd, robot->trackingPerimeterTransitionTimeOut, 1);
+  else if (pfodCmd.startsWith("e12")) processSlider(pfodCmd, robot->trackingErrorTimeOut, 1);
+  else if (pfodCmd.startsWith("e13")) robot->trakBlockInnerWheel = !robot->trakBlockInnerWheel;
+  else if (pfodCmd.startsWith("e15")) robot->reduceSpeedNearPerimeter = !robot->reduceSpeedNearPerimeter;
 
 
-    else if (pfodCmd.startsWith("e14")) processSlider(pfodCmd, robot->perimeter.timeOutSecIfNotInside, 1);
-  */
+  else if (pfodCmd.startsWith("e14")) processSlider(pfodCmd, robot->perimeter.timeOutSecIfNotInside, 1);
+
   sendPerimeterMenu(true);
 }
+
 /*
   void RemoteControl::sendLawnSensorMenu(boolean update) {
   if (update) serialPort->print("{:"); else serialPort->print(F("{.Lawn sensor`1000"));
@@ -1248,8 +1265,6 @@ void RemoteControl::processInfoMenu(String pfodCmd) {
 
 void RemoteControl::sendCommandMenu(boolean update) {
   if (update) serialPort->print("{:"); else serialPort->print(F("{.Commands`5000"));
-  //serialPort->print(F("|ro~OFF|ra~Start Now in Auto mode|rc~RC mode|"));
-
   serialPort->print(F("|ro~OFF"));
   serialPort->print(F("|ra~Start Now in Auto mode"));
   serialPort->println(F("|rb~Actual Status is "));
@@ -1351,7 +1366,7 @@ void RemoteControl::processCommandMenu(String pfodCmd) {
       robot->setNextState(STATE_STATION_REV, 0);
     }
     else {
-      /*
+      
         if (robot->mowPatternName() == "WIRE") {
         robot->totalDistDrive = 0;
         robot->statusCurr = TRACK_TO_START; //status change later into STATE_PERI_STOP_TOTRACK
@@ -1360,7 +1375,7 @@ void RemoteControl::processCommandMenu(String pfodCmd) {
         else {
         robot->setNextState(STATE_ACCEL_FRWRD, 0);
         }
-      */
+      
     }
     sendCommandMenu(true);
   } else if (pfodCmd == "rc") {
@@ -1558,9 +1573,9 @@ void RemoteControl::processTestOdoMenu(String pfodCmd) {
 
 void RemoteControl::sendCompassMenu(boolean update) {
   if (update) serialPort->print("{:"); else serialPort->println(F("{^Compass`1000"));
-  //serialPort->print(F("|cw~West|ce~East|cn~North "));
-  //serialPort->print(robot->imu.ypr.yaw / PI * 180);
-  //serialPort->println(F("|cs~South|cm~Mow"));
+  serialPort->print(F("|cw~West|ce~East|cn~North "));
+  serialPort->print(robot->imu.ypr.yaw / PI * 180);
+  serialPort->println(F("|cs~South|cm~Mow"));
   serialPort->println("}");
 }
 
