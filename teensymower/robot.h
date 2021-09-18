@@ -396,7 +396,7 @@ class Robot
     boolean UseBrakeLeft;
     boolean moveRightFinish;
     boolean moveLeftFinish;
-    
+
     boolean odoLeftRightCorrection;
     boolean autoAdjustSlopeSpeed;
     int AngleRotate;
@@ -416,7 +416,7 @@ class Robot
     float Mow1_Power = 0;  //Use for mower with 3 mow motor and Ina226 sensor
     float Mow2_Power = 0;
     float Mow3_Power = 0;
-    
+
     int motorMowRpmCounter ;  // mower motor speed state
     boolean motorMowRpmLastState ;
     boolean motorMowEnable ;  // motor can be temporary disabled if stucked etc. with this
@@ -752,8 +752,8 @@ class Robot
     virtual void loop();
     virtual void resetIdleTime();
 
-    
-   
+
+
     // state machine
     virtual void setNextState(byte stateNew, byte dir);
 
@@ -805,6 +805,7 @@ class Robot
   protected:
     static void OdoRightCountInt(); //odometry interrupt loop
     static void OdoLeftCountInt();
+    static void myCallback();
 
     // convert ppm time to RC slider value
     virtual int rcValue(int ppmTime);
@@ -861,7 +862,7 @@ class Robot
     virtual void reverseOrBidir(byte aRollDir);
 
     // other
-
+    
     virtual void printOdometry();
     virtual void printMenu();
     virtual void delayInfo(int ms);

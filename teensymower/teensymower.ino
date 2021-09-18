@@ -1,10 +1,10 @@
 #include "robot.h"
 #include "mower.h"
 
-void setup()  { 
+void setup()  {
   robot.setup();
-} 
+}
 
-void loop()  {     
-  robot.loop();    
+void loop()  {
+  robot.loop();
 }

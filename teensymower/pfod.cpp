@@ -846,7 +846,7 @@ void RemoteControl::sendImuMenu(boolean update) {
 
 void RemoteControl::processImuMenu(String pfodCmd) {
   if (pfodCmd == "g00" ) {
-    robot->nextTimeImuLoop = millis() + 120000; //don't read the Imu immediatly need time to save the setting and reset
+    robot->nextTimeImuLoop = millis() + 1000; //don't read the Imu immediatly need time to save the setting and reset
     robot->imuUse = !robot->imuUse;
   }
   else if (pfodCmd == "g11" ) robot->CompassUse = !robot->CompassUse;
@@ -1228,6 +1228,7 @@ void RemoteControl::processFactorySettingsMenu(String pfodCmd) {
 
 void RemoteControl::sendInfoMenu(boolean update) {
   if (update) serialPort->print("{:"); else serialPort->print(F("{.Info`1000"));
+  delay(15000);
   serialPort->print(F("|v00~Ardumower "));
   serialPort->print(VER);
   serialPort->print(F("|v01~Developer "));
@@ -1701,18 +1702,19 @@ void RemoteControl::run() {
     }
   } else if (pfodState == PFOD_PLOT_PERIMETER) {
     if (millis() >= nextPlotTime) {
-      /*
+      
             if (perimeterCaptureIdx >= RAW_SIGNAL_SAMPLE_SIZE * 3)
               perimeterCaptureIdx = 0;
-      */
+      
       if (perimeterCaptureIdx == 0) {
         // Get new Perimeter sample to plot
-        //memcpy(perimeterCapture, robot->perimeter.getRawSignalSample(0), RAW_SIGNAL_SAMPLE_SIZE);
+       // memcpy(perimeterCapture, robot->perimeter.getRawSignalSample(0), RAW_SIGNAL_SAMPLE_SIZE);
       }
 
       nextPlotTime = millis() + 200;
-      /*
-        serialPort->print(perimeterCapture[perimeterCaptureIdx / 3]);
+      
+        //serialPort->print(perimeterCapture[perimeterCaptureIdx / 3]);
+        serialPort->print(0);
         serialPort->print(",");
         serialPort->print(robot->perimeterMag);
         serialPort->print(",");
@@ -1726,7 +1728,7 @@ void RemoteControl::run() {
         serialPort->print(",");
         serialPort->println(robot->perimeter.getFilterQuality(0));
         perimeterCaptureIdx++;
-      */
+      
     }
   } else if (pfodState == PFOD_PLOT_GPS) {
     if (millis() >= nextPlotTime) {
@@ -1927,7 +1929,7 @@ void RemoteControl::processPI(String RpiCmd, float v1, float v2, float v3) {
   else if (pfodCmd.startsWith("c")) processCompassMenu(pfodCmd);
   else if (pfodCmd.startsWith("d")) processSonarMenu(pfodCmd);
   else if (pfodCmd.startsWith("e")) processPerimeterMenu(pfodCmd);
-  else if (pfodCmd.startsWith("f")) processLawnSensorMenu(pfodCmd);
+  //else if (pfodCmd.startsWith("f")) processLawnSensorMenu(pfodCmd);
   else if (pfodCmd.startsWith("g")) processImuMenu(pfodCmd);
   else if (pfodCmd.startsWith("h")) processRemoteMenu(pfodCmd);
   else if (pfodCmd.startsWith("i")) processTimerMenu(pfodCmd);

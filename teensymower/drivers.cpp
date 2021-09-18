@@ -24,7 +24,24 @@
 #include "drivers.h"
 
 const char *dayOfWeek[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-
+void StreamPrint_progmem(Print &out,PGM_P format,...)
+{
+  // program memory version of printf - copy of format string and result share a buffer
+  // so as to avoid too much memory use
+  char formatString[128], *ptr;
+ 
+    strncpy( formatString, format, sizeof(formatString) ); // copy in from program mem  
+  
+  // null terminate - leave char since we might need it in worst case for result's \0
+  formatString[ sizeof(formatString)-2 ]='\0';
+  ptr=&formatString[ strlen(formatString)+1 ]; // our result buffer...
+  va_list args;
+  va_start (args,format);
+  vsnprintf(ptr, sizeof(formatString)-1-strlen(formatString), formatString, args );
+  va_end (args);
+  formatString[ sizeof(formatString)-1 ]='\0';
+  out.print(ptr);
+}
 
 // rescale to -PI..+PI
 double scalePI(double v)

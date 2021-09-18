@@ -22,7 +22,7 @@
 
 #include "imu.h"
 #include "helper_3dmath.h"
-#include "MPU6050_6Axis_MotionApps20.h"
+#include "MPU6050_6Axis_MotionApps_v6_12.h"
 #include "mower.h"
 #include "i2c.h"
 #include "robot.h"
@@ -35,6 +35,7 @@ int acel_deadzone = 8;   //Acelerometer error allowed, make it lower to get more
 int giro_deadzone = 1;   //Giro error allowed, make it lower to get more precision, but sketch may not converge  (default:1)
 
 MPU6050 mpu(0x68);
+//MPU6050 mpu(0x69); //if ad0 is shunt
 
 boolean blinkState = false;
 float nextTimeLoop;
@@ -133,7 +134,7 @@ void IMUClass::begin() {
   else  Console.println(F("DMP Initialization failed "));
   nextTimeAdjustYaw = millis();
   Console.println(F("Wait 3 secondes to stabilize the Drift"));
-  delay(3000); // wait 3 sec to help DMP stop drift
+  //delay(3000); // wait 3 sec to help DMP stop drift
   // read the AccelGyro and the CompassHMC5883 to find the initial CompassYaw
 
   run();
@@ -317,8 +318,14 @@ void IMUClass::run() {
   //-------------------read the mpu6050 DMP into yprtest array--------------------------------
   
   mpu.resetFIFO();
+  double start_fill_fifo=millis();
   while (fifoCount < packetSize) {  //leave time to the DMP to fill the FIFO
     fifoCount = mpu.getFIFOCount();
+    if (millis()>start_fill_fifo+100){
+      Console.println("fifo read take more than 100 ms");
+      fifoCount=100;
+    }
+    
   }
 
   while (fifoCount >= packetSize) {  //Immediatly read the fifo and verify that it's not filling during reading

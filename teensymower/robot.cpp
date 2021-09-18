@@ -11,6 +11,9 @@
 #include "perimeter.h"
 #include "RpiRemote.h"
 
+//the watchdog part
+#include "Watchdog_t4.h"
+WDT_T4<WDT1> wdt;
 
 //Setting for Raspberry -----------------------------------
 RpiRemote MyRpi;
@@ -25,7 +28,6 @@ INA226 MotRightIna226;
 
 INA226 Mow1Ina226;
 /*
-  INA226_1 Mow1Ina226;
   INA226_1 Mow2Ina226;
   INA226_1 Mow3Ina226;
 */
@@ -2170,17 +2172,29 @@ static void Robot::OdoLeftCountInt() {
   asm("dsb");
 
 }
+
+static void Robot::myCallback() {
+
+  robot.ShowMessageln("warning loops take more than 1 second ");
+  robot.ShowMessageln("At 4 second teensy reset by watchdog ");
+
+}
+
 // initialise odometry interrupt
 
 void Robot::setup()  {
   setDefaultTime();
   //  mower.h start before the robot setup
-
-  attachInterrupt(digitalPinToInterrupt(pinOdometryRight), OdoRightCountInt, RISING);
-  attachInterrupt(digitalPinToInterrupt(pinOdometryLeft), OdoLeftCountInt, RISING);
   Console.print("++++++++++++++* Start Robot Setup at ");
   Console.print(millis());
   Console.println(" ++++++++++++");
+
+
+
+
+  attachInterrupt(digitalPinToInterrupt(pinOdometryRight), OdoRightCountInt, RISING);
+  attachInterrupt(digitalPinToInterrupt(pinOdometryLeft), OdoLeftCountInt, RISING);
+
 
 
   //initialise PFOD com
@@ -2224,7 +2238,13 @@ void Robot::setup()  {
   setUserSwitches();
 
 
-  if (imuUse) imu.begin();
+  if (imuUse) {
+    imu.begin();
+  }
+  else
+  {
+    Console.println(" IMU is not activate ");
+  }
 
   if (perimeterUse) {
     Console.println(" ------- Initialize Perimeter Setting ------- ");
@@ -2244,9 +2264,7 @@ void Robot::setup()  {
   Console.println(F("START"));
   Console.print(F("Mower "));
   Console.println(VER);
-#ifdef USE_DEVELOPER_TEST
-  Console.println("Warning: DEVELOPER_TEST activated");
-#endif
+
   Console.print(F("Config: "));
   Console.println(name);
   Console.println(F("press..."));
@@ -2278,7 +2296,7 @@ void Robot::setup()  {
 
   Console.println ("Ina226 Configure OK ");
   // Calibrate INA226. Rshunt = 0.01 ohm, Max excepted current = 4A
-  ChargeIna226.calibrate(0.01, 4);
+  ChargeIna226.calibrate(0.1, 4);
   MotLeftIna226.calibrate(0.1, 4);
   MotRightIna226.calibrate(0.1, 4);
   //I2C1 bus
@@ -2288,7 +2306,19 @@ void Robot::setup()  {
 
   Console.println ("Ina226 Calibrate OK ");
 
+
+  // watchdog part
+  Console.println("Watchdog configuration start ");
+  WDT_timings_t config;
+  config.trigger = 10; /* in seconds, 0->128 */
+  config.timeout = 40; /* in seconds, 0->128 */
+  config.callback = myCallback;
+  wdt.begin(config);
+  Console.println("Watchdog configuration Finish ");
+
+
   nextTimeInfo = millis();
+  Console.println("Setup finish");
 
 
 }
@@ -2307,7 +2337,7 @@ void Robot::printOdometry() {
 
 
 void Robot::receivePiPfodCommand (String RpiCmd, float v1, float v2, float v3) {
-  //rc.processPI(RpiCmd, v1, v2, v3);
+  rc.processPI(RpiCmd, v1, v2, v3);
 }
 
 
@@ -2322,22 +2352,22 @@ void Robot::printInfo(Stream & s) {
   }
   else
   {
-    /*
-      Streamprint(s, "t%6u ", (millis() - stateStartTime) / 1000);
-      Streamprint(s, "Loops%7u ", loopsPerSec);
 
-      Streamprint(s, "v%1d ", consoleMode);
+    Streamprint(s, "t%6u ", (millis() - stateStartTime) / 1000);
+    Streamprint(s, "Loops%7u ", loopsPerSec);
 
-      Streamprint(s, "%4s ", stateNames[stateCurr]);
+    Streamprint(s, "v%1d ", consoleMode);
 
-      if (consoleMode == CONSOLE_PERIMETER) {
+    Streamprint(s, "%4s ", stateNames[stateCurr]);
+
+    if (consoleMode == CONSOLE_PERIMETER) {
 
       Streamprint(s, "sig min %4d max %4d avg %4d mag %5d qty %3d",
                   (int)perimeter.getSignalMin(0), (int)perimeter.getSignalMax(0), (int)perimeter.getSignalAvg(0),
                   perimeterMag, (int)(perimeter.getFilterQuality(0) * 100.0));
       Streamprint(s, "  in %2d  cnt %4d  on %1d\r\n",
                   (int)perimeterInside, perimeterCounter, (int)(!perimeter.signalTimedOut(0)) );
-      } else {
+    } else {
 
       Streamprint(s, "odo %4d %4d ", (int)odometryLeft, (int)odometryRight);
       Streamprint(s, "spd %4d %4d %4d ", (int)motorLeftSpeedRpmSet, (int)motorRightSpeedRpmSet, (int)motorMowPwmCoeff);
@@ -2374,9 +2404,9 @@ void Robot::printInfo(Stream & s) {
       //Streamprint(s, "imu%3d ", imu.getCallCounter());
       //   Streamprint(s, "adc%3d ", ADCMan.getCapturedChannels());
       Streamprint(s, "%s\r\n", name.c_str());
-    */
-  }
 
+    }
+  }
 
 }
 
@@ -2853,9 +2883,15 @@ void Robot::readSensors() {
     }
 
     double chgvolt = ChargeIna226.readBusVoltage() ;
-    //bber300 
+    //bber300
     double curramp = ChargeIna226.readBusPower(); //  ?? sense don't work
-    
+    if (chgvolt != 0) {
+      curramp = curramp / chgvolt;
+    }
+    else
+    {
+      curramp = 0;
+    }
     double batvolt = MotRightIna226.readBusVoltage() ;
     //double batvolt = Mow1Ina226.readBusVoltage_I2C1() ;
 
@@ -4943,7 +4979,7 @@ void Robot::readDHT22() {
 }
 void Robot::checkTimeout() {
   if (stateTime > motorForwTimeMax) {
-    ShowMessageln("Timeout on state the mower run for a too long duration ???????????????????????");
+    ShowMessageln("Timeout on state mower run for a too long duration ???????????????????????");
     setNextState(STATE_PERI_OUT_STOP, !rollDir); // toggle roll dir
   }
 }
@@ -4988,8 +5024,8 @@ void Robot::loop()  {
   //beeper();
 
   // IMU MANAGEMENT
-  if (stateCurr != STATE_PERI_TRACK) {
-    //if ((stateCurr != STATE_STATION_CHARGING) || (stateCurr != STATE_STATION) || (stateCurr != STATE_PERI_TRACK)) {
+  //if (stateCurr != STATE_PERI_TRACK) {
+  if ((stateCurr != STATE_STATION_CHARGING) & (stateCurr != STATE_STATION) & (stateCurr != STATE_PERI_TRACK)) {
     if ((imuUse) && (millis() >= nextTimeImuLoop)) {
       nextTimeImuLoop = millis() + 50;
       StartReadAt = millis();
@@ -4997,7 +5033,7 @@ void Robot::loop()  {
       EndReadAt = millis();
       ReadDuration = EndReadAt - StartReadAt;
       if ( ReadDuration > 30) {
-        ShowMessage("Error reading imu too long duration : ");
+        ShowMessage("Error IMU read duration >30 ms : ");
         ShowMessageln(ReadDuration);
         ShowMessageln ("IMU and RFID are DEACTIVATE Mow in safe mode");
         imuUse = false;
@@ -5822,7 +5858,8 @@ void Robot::loop()  {
 
     case STATE_PERI_OUT_STOP:
       motorControlOdo();
-
+      checkCurrent();
+      checkBumpers();
       if ((moveRightFinish) && (moveLeftFinish) ) {
 
         if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)  { //wait until the 2 motors completly stop because rotation is inverted
@@ -6520,7 +6557,7 @@ void Robot::loop()  {
 
     case STATE_STATION_ROLL:
       motorControlOdo();
-      
+
       if ((moveRightFinish) && (moveLeftFinish) )
       {
         if ((motorLeftPWMCurr == 0 ) && (motorRightPWMCurr == 0 )) { //wait until the 2 motor completly stop
@@ -6602,6 +6639,7 @@ void Robot::loop()  {
   dropLeft = false;                                                                                                                              // Dropsensor - Absturzsensor
 
   loopsPerSecCounter++;
+  wdt.feed();
   //watchdogReset();
   //perimeter.speedTest();
   /*

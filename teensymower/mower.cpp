@@ -270,6 +270,12 @@ void Mower::setup() {
   pinMode(pinChargeEnable, OUTPUT);
   setActuator(ACT_CHGRELAY, 0);
 
+  analogWriteFrequency(pinMotorLeftPWM, 10000);
+  analogWriteFrequency(pinMotorLeftDir, 10000);
+  analogWriteFrequency(pinMotorRightPWM, 10000);
+  analogWriteFrequency(pinMotorRightDir, 10000);
+
+ 
   // left wheel motor
   pinMode(pinMotorLeftEnable, OUTPUT);
   digitalWrite(pinMotorLeftEnable, LOW);
@@ -285,12 +291,16 @@ void Mower::setup() {
 
 
   // mower motor
+  // datashett 8 bit resolution ideal freq 585937.5
+  
+  analogWriteFrequency(pinMotorMowPWM, 20000);
+ 
+
   pinMode(pinMotorMowDir, OUTPUT);
   pinMode(pinMotorMowPWM, OUTPUT);
   pinMode(pinMotorMowEnable, OUTPUT);
   digitalWrite(pinMotorMowEnable, LOW);
-
-
+  
 
 
   // perimeter

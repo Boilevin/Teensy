@@ -88,9 +88,9 @@ template <typename T> int sign(T val) {
 //int freeRam();
   
 // print helpers
-//void StreamPrint_progmem(Print &out,PGM_P format,...);
+void StreamPrint_progmem(Print &out,PGM_P format,...);
 //#define Serialprint(format, ...) StreamPrint_progmem(Serial,PSTR(format),##__VA_ARGS__)
-//#define Streamprint(stream,format, ...) StreamPrint_progmem(stream,PSTR(format),##__VA_ARGS__)
+#define Streamprint(stream,format, ...) StreamPrint_progmem(stream,PSTR(format),##__VA_ARGS__)
 //String verToString(int v);
 
 // time helpers
