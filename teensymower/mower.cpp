@@ -420,7 +420,9 @@ void Mower::setActuator(char type, int value) {
 
   switch (type) {
 
-    case ACT_MOTOR_MOW: setL298N(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, value); break;// Motortreiber einstellung - bei Bedarf Ã¤ndern z.B setL298N auf setMC33926
+   //case ACT_MOTOR_MOW: setL298N(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, value); break;// Motortreiber einstellung - bei Bedarf Ã¤ndern z.B setL298N auf setMC33926
+
+    case ACT_MOTOR_MOW: setBTS7960(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, abs(value)); break; //limit the rotation to only one direction
 
     case ACT_MOTOR_LEFT: setBTS7960(pinMotorLeftDir, pinMotorLeftPWM, pinMotorLeftEnable, value); break;//   Motortreiber einstellung - bei Bedarf Ã¤ndern z.B setL298N auf setMC33926
 

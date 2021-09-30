@@ -27,10 +27,9 @@ INA226 MotLeftIna226;
 INA226 MotRightIna226;
 
 INA226 Mow1Ina226;
-/*
-  INA226_1 Mow2Ina226;
-  INA226_1 Mow3Ina226;
-*/
+INA226 Mow2Ina226;
+INA226 Mow3Ina226;
+
 float shuntvoltagec = 0;
 float shuntvoltagel = 0;
 float shuntvoltager = 0;
@@ -2153,27 +2152,27 @@ volatile float Pulse01;
 volatile float Pulse02;
 
 
-static void Robot::OdoRightCountInt() {
+void Robot::OdoRightCountInt() {
   Pulse1 = micros() - Pulse2;
-  if (Pulse1 > 10  ) { // debounce for 10uS
+  if (Pulse1 > 10  ) { // debounce for 120uS
     Pulse2 = micros();
-    if (robot.motorRightPWMCurr >= 0 ) robot.odometryRight++; else robot.odometryRight--;
+    if (robot.motorRightPWMCurr > 0 ) robot.odometryRight++; else robot.odometryRight--;
   }
   asm("dsb");
 
 
 }
-static void Robot::OdoLeftCountInt() {
+void Robot::OdoLeftCountInt() {
   Pulse01 = micros() - Pulse02;
-  if (Pulse01 > 10  ) { // debounce for 10uS
+  if (Pulse01 > 10  ) { // debounce for 120uS
     Pulse02 = micros();
-    if (robot.motorLeftPWMCurr >= 0 ) robot.odometryLeft++; else robot.odometryLeft--;
+    if (robot.motorLeftPWMCurr > 0 ) robot.odometryLeft++; else robot.odometryLeft--;
   }
   asm("dsb");
 
 }
 
-static void Robot::myCallback() {
+void Robot::myCallback() {
 
   robot.ShowMessageln("warning loops take more than 1 second ");
   robot.ShowMessageln("At 4 second teensy reset by watchdog ");
@@ -2279,8 +2278,8 @@ void Robot::setup()  {
   ChargeIna226.begin(0x40);
   MotRightIna226.begin(0x44);
   Mow1Ina226.begin_I2C1(0x40);  //MOW1 is connect on I2C1
-  //Mow2Ina226.begin_I2C1(0x41);  //MOW2 is connect on I2C1
-  //Mow3Ina226.begin_I2C1(0x44);  //MOW3 is connect on I2C1
+  Mow2Ina226.begin_I2C1(0x41);  //MOW2 is connect on I2C1
+  Mow3Ina226.begin_I2C1(0x44);  //MOW3 is connect on I2C1
 
   Console.println ("Ina226 Begin OK ");
   // Configure INA226
@@ -2291,8 +2290,8 @@ void Robot::setup()  {
   MotRightIna226.configure(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
   //I2C1 bus
   Mow1Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
-  //Mow2Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
-  //Mow3Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
+  Mow2Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
+  Mow3Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
 
   Console.println ("Ina226 Configure OK ");
   // Calibrate INA226. Rshunt = 0.01 ohm, Max excepted current = 4A
@@ -2301,8 +2300,8 @@ void Robot::setup()  {
   MotRightIna226.calibrate(0.1, 4);
   //I2C1 bus
   Mow1Ina226.calibrate_I2C1(0.1, 4);
-  //Mow2Ina226.calibrate_I2C1(0.1, 4);
-  //Mow3Ina226.calibrate_I2C1(0.1, 4);
+  Mow2Ina226.calibrate_I2C1(0.1, 4);
+  Mow3Ina226.calibrate_I2C1(0.1, 4);
 
   Console.println ("Ina226 Calibrate OK ");
 
@@ -2764,10 +2763,11 @@ void Robot::readSensors() {
 
     motorLeftPower  = MotLeftIna226.readBusPower() ;
     Mow1_Power = Mow1Ina226.readBusPower_I2C1() ;
-    //Mow2_Power = Mow2Ina226.readBusPower_I2C1() ;
-    //Mow3_Power = Mow3Ina226.readBusPower_I2C1() ;
-    Mow2_Power = 0 ;
-    Mow3_Power = 0 ;
+    Mow2_Power = Mow2Ina226.readBusPower_I2C1() ;
+    Mow3_Power = Mow3Ina226.readBusPower_I2C1() ;
+   
+    //Mow2_Power = 0 ;
+    //Mow3_Power = 0 ;
 
     motorMowPower   = max(Mow1_Power, Mow2_Power);
     motorMowPower   = max(motorMowPower, Mow3_Power);
