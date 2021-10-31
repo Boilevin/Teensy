@@ -49,9 +49,9 @@
 
 //#define pinSonarCenterTrigger 24   // ultrasonic sensor pins
 //#define pinSonarCenterEcho 22
-#define pinSonarRightTrigger D29  //BBER10
+#define pinSonarRightTrigger 29  //BBER10
 #define pinSonarRightEcho A13
-#define pinSonarLeftTrigger D28   //BBER10
+#define pinSonarLeftTrigger 28   //BBER10
 #define pinSonarLeftEcho A12
 
 
@@ -62,7 +62,7 @@
 
 //#define pinGreenLED 6              // DuoLED green
 //#define pinRedLED 7                // DuoLED red
-//#define pinLED 13                  // LED
+
 #define pinBuzzer 37               // Buzzer
 //#define pinTilt 35                 // Tilt sensor (required for TC-G158 board)
 #define pinButton 38             // digital ON/OFF button
@@ -86,11 +86,15 @@
 //#define pinLawnFrontSend 41        // lawn sensor front sender 
 //#define pinLawnBackRecv 42         // lawn sensor back receive
 //#define pinLawnBackSend 43         // lawn sensor back sender 
-#define pinUserSwitch1 13          // user-defined switch 1
-#define pinUserSwitch2 32          // user-defined switch 2
-#define pinUserSwitch3 48          // user-defined switch 3
+//#define pinUserSwitch1 13          // user-defined switch 1
+//#define pinUserSwitch2 32          // user-defined switch 2
+//#define pinUserSwitch3 A16          // user-defined switch 3
 #define pinRain 39                 // rain sensor
 
+#define pinUserOut1 13          // remote control mower motor
+#define pinUserOut2 32          // remote control steering 
+#define pinUserOut3 A16        // remote control speed
+//#define pinUserOut4 52    
 // IMU (compass/gyro/accel): I2C  (SCL, SDA)
 
 
@@ -113,6 +117,8 @@
  
 #define Console Serial
 #define CONSOLE_BAUDRATE    115200       // baudrate used for Raspberry PI console
+
+#define track_ClockWise false
 
 #define Enable_DueWatchdog false
 //#define Enable_DueWatchdog false

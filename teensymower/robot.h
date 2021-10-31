@@ -30,6 +30,7 @@
 #include <Wire.h>
 
 #include "pid.h"
+#include "gps.h"
 #include "pfod.h"
 #include "drivers.h"
 #include "RunningMedian.h"
@@ -87,6 +88,14 @@ enum {
   ACT_RTC,
   ACT_CHGRELAY,
   ACT_BATTERY_SW,
+  //bber80
+  ACT_GREEN_LED,
+  ACT_RED_LED,
+  //bber60
+  ACT_USER_OUT1,
+  ACT_USER_OUT2,
+  ACT_USER_OUT3,
+  ACT_USER_OUT4,
 };
 
 // error types
@@ -242,7 +251,17 @@ class Robot
     byte mowPatternCurr;
     const char *mowPatternName();
     // -------- gps state -------------------------------
-
+    GPS gps;
+    boolean gpsUse            ;       // use GPS?
+    boolean gpsReady; 
+    float gpsLat;
+    float gpsLon;
+    float gpsX ;   // X position (m)
+    float gpsY ;   // Y position (m)
+    unsigned long nextTimeGPS ;
+    unsigned long nextTimeCheckIfStuck ;
+    float stuckIfGpsSpeedBelow ;
+    int robotIsStuckCounter ;
 
     // -------- odometry state --------------------------
     boolean odometryUse       ;       // use odometry?
@@ -501,6 +520,8 @@ class Robot
     RunningMedian accelGyroYawMedian = RunningMedian(60);
     RunningMedian motorMowPowerMedian = RunningMedian(30);
     RunningMedian motorSpeedRpmMedian = RunningMedian(35);
+    RunningMedian perimeterMedian = RunningMedian(67); //perimeter is read each 15 ms so 1 second
+    
 
 
     //bb 5
@@ -561,7 +582,7 @@ class Robot
     unsigned long trackingPerimeterTransitionTimeOut;
     unsigned long trackingErrorTimeOut;
     boolean trakBlockInnerWheel;
-
+    float perimeterNoise; //compute each 2 seconde the diff between max and min Mag value help on position of motor wire and ferrite in the chassis 
     //add BB
     int leftSpeedperi;
     int rightSpeedperi;
@@ -616,9 +637,9 @@ class Robot
     boolean sonarCenterUse;
     int sonarTriggerBelow ;    // start to reverse
     int sonarSlowBelow ;      // start to slow not use but stay here to keep the compatibily with 1.08
-    unsigned int sonarDistCenter ;
-    unsigned int sonarDistRight ;
-    unsigned int sonarDistLeft ;
+    int sonarDistCenter ;
+    int sonarDistRight ;
+    int sonarDistLeft ;
     //unsigned int sonarDistCounter ;
     //unsigned int tempSonarDistCounter ;
     unsigned long sonarObstacleTimeout ;
@@ -656,6 +677,17 @@ class Robot
     boolean userSwitch2       ;       // user-defined switch 2 (default value)
     boolean userSwitch3       ;       // user-defined switch 3 (default value)
 
+
+    boolean userLed           ;       // Main Led (default value)
+    boolean userGreenLed      ;       // Green Led (default value)
+    boolean userRedLed        ;       // Red Led (default value)
+
+    boolean userOut1        ;       // output on remote connector Mow (default value)
+    boolean userOut2        ;       // output on remote connector steering
+    boolean userOut3        ;       // output on remote connector speed
+    boolean userOut4        ;       // output on remote connector switch
+
+    boolean invert_userOut  ;       //switch use in case the userOut use a relay board
 
 
 
@@ -724,10 +756,10 @@ class Robot
     unsigned long nextTimeErrorBeep ;
 
     unsigned long endBeepTime; //time in millis when the beep need to stop
-    int beepOnDuration; // div by 10 duration ON
-    int  beepOffDuration; // div by 10 duration OFF
-    int beepfrequenceOn;  // div by 10 frequence ON
-    int beepfrequenceOff;  // div by 10 frequence OFF normaly 0 but can be use to make other tone
+    int beepOnDuration; //  duration ON
+    int  beepOffDuration; //  duration OFF
+    int beepfrequenceOn;  // frequence ON
+    int beepfrequenceOff;  //  frequence OFF normaly 0 but can be use to make other tone
 
 
 
@@ -782,11 +814,14 @@ class Robot
     // virtual void beep(int numberOfBeeps, boolean shortbeep);
     virtual void printInfo(Stream &s);
     virtual void setUserSwitches();
+//bber60
+    virtual void setUserOut();
+    
     virtual void addErrorCounter(byte errType);
     virtual void resetErrorCounters();
     virtual void resetMotorFault();// {}
     //bb
-    virtual void setBeeper(int totalDuration, byte OnDuration, byte OffDuration, byte frequenceOn, byte frequenceOff ); // Set the variable for the beeper
+    virtual void setBeeper(int totalDuration, int OnDuration, int OffDuration, int frequenceOn, int frequenceOff ); // Set the variable for the beeper
     //virtual void RaspberryPISendStat ();
 
     virtual void receivePiPfodCommand (String RpiCmd, float v1, float v2, float v3);

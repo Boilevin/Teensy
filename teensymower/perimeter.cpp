@@ -34,7 +34,7 @@ int sigcode_size = 24;
 
 PerimeterClass::PerimeterClass() {
   //useDifferentialPerimeterSignal = true;
-  
+
   //read2Coil=true;
   timedOutIfBelowSmag = 50;
   timeOutSecIfNotInside = 15;
@@ -61,9 +61,9 @@ static void PerimeterClass::adc1_isr() {//this is the main adc1 loop executed ea
       buffer_adc_1_count = 0;
     }
   }
-#if defined(__IMXRT1062__)  // Teensy 4.0
+
   asm("DSB");
-#endif
+
 }
 
 static void PerimeterClass::adc0_isr() { //this is the main adc0 loop executed each 24 microseconds
@@ -82,14 +82,13 @@ static void PerimeterClass::adc0_isr() { //this is the main adc0 loop executed e
 
       delta_time_adc_0 = timed_read_elapsed;
       Perimeter.matchedFilter(0);
-      //buffer_adc_0_count = 0;
       buffer_adc_0_count = 0;
 
     }
   }
-#if defined(__IMXRT1062__)  // Teensy 4.0
+
   asm("DSB");
-#endif
+
 }
 
 
@@ -106,10 +105,10 @@ void PerimeterClass::begin(byte idx0Pin, byte idx1Pin) {
   ///// ADC0 ////
   adc->adc0->setAveraging(1); // set number of averages
   adc->adc0->setResolution(10); // set bits of resolution
-  adc->adc0->setConversionSpeed(ADC_CONVERSION_SPEED::MED_SPEED); // change the conversion speed
-  adc->adc0->setSamplingSpeed(ADC_SAMPLING_SPEED::MED_SPEED); // change the sampling speed
-  //adc->adc0->setConversionSpeed(ADC_CONVERSION_SPEED::VERY_HIGH_SPEED); // change the conversion speed
-  //adc->adc0->setSamplingSpeed(ADC_SAMPLING_SPEED::VERY_HIGH_SPEED); // change the sampling speed
+  //adc->adc0->setConversionSpeed(ADC_CONVERSION_SPEED::MED_SPEED); // change the conversion speed
+  //adc->adc0->setSamplingSpeed(ADC_SAMPLING_SPEED::MED_SPEED); // change the sampling speed
+  adc->adc0->setConversionSpeed(ADC_CONVERSION_SPEED::VERY_HIGH_SPEED); // change the conversion speed
+  adc->adc0->setSamplingSpeed(ADC_SAMPLING_SPEED::VERY_HIGH_SPEED); // change the sampling speed
   Serial.println("End setup adc0");
   Serial.println("Try to Start adc0 Timer Interrupt ");
   adc->adc0->stopTimer();
@@ -119,23 +118,25 @@ void PerimeterClass::begin(byte idx0Pin, byte idx1Pin) {
   buffer_adc_0_count = 0;
   Serial.println("adc0 Timer Interrupt Started");
 
+  if (read2Coil) {
+    Serial.println("Begin setup adc1");
+    ////// ADC1 /////
+    adc->adc1->setAveraging(1); // set number of averages
+    adc->adc1->setResolution(10); // set bits of resolution
+    adc->adc1->setConversionSpeed(ADC_CONVERSION_SPEED::VERY_HIGH_SPEED); // change the conversion speed
+    adc->adc1->setSamplingSpeed(ADC_SAMPLING_SPEED::VERY_HIGH_SPEED); // change the sampling speed
+    Serial.println("End setup adc1");
+    Serial.println("Try to Start adc1 Timer Interrupt ");
+    adc->adc1->stopTimer();
+    adc->adc1->startSingleRead(idx1Pin); // call this to setup everything before the Timer starts
+    adc->adc1->enableInterrupts(adc1_isr);
+    //adc->adc1->startTimer(38462); //frequency in Hz
+    timed_read_elapsed = 0;
+    buffer_adc_1_count = 0;
+    Serial.println("adc1 Timer Interrupt Started");
+  }
 
 
-  Serial.println("Begin setup adc1");
-  ////// ADC1 /////
-  adc->adc1->setAveraging(10); // set number of averages
-  adc->adc1->setResolution(10); // set bits of resolution
-  adc->adc1->setConversionSpeed(ADC_CONVERSION_SPEED::VERY_HIGH_SPEED); // change the conversion speed
-  adc->adc1->setSamplingSpeed(ADC_SAMPLING_SPEED::VERY_HIGH_SPEED); // change the sampling speed
-  Serial.println("End setup adc1");
-  Serial.println("Try to Start adc1 Timer Interrupt ");
-  adc->adc1->stopTimer();
-  adc->adc1->startSingleRead(idx1Pin); // call this to setup everything before the Timer starts
-  adc->adc1->enableInterrupts(adc1_isr);
-  //adc->adc1->startTimer(38462); //frequency in Hz
-  timed_read_elapsed = 0;
-  buffer_adc_1_count = 0;
-  Serial.println("adc1 Timer Interrupt Started");
 
 }
 
@@ -155,7 +156,7 @@ int PerimeterClass::getSmoothMagnitude(byte idx) {
 
 // perimeter V2 uses a digital matched filter
 void PerimeterClass::matchedFilter(byte idx) {
-  
+
   if (idx == 0) {
     samples = buffer_ADC_0 ;//ADCMan.getSamples(idxPin[idx]);
   }
@@ -251,13 +252,13 @@ boolean PerimeterClass::isInside(byte idx) {
 
 boolean PerimeterClass::signalTimedOut(byte idx) {
   /*
-  Serial.print("peri  ");
-  Serial.print(idx);
-  Serial.print(lastInsideTime[idx]);
-  
-  Serial.println("  ");
+    Serial.print("peri  ");
+    Serial.print(idx);
+    Serial.print(lastInsideTime[idx]);
+
+    Serial.println("  ");
   */
-  
+
   if (getSmoothMagnitude(idx) < timedOutIfBelowSmag) return true;
   if (millis() - lastInsideTime[idx] > timeOutSecIfNotInside * 1000) return true;
   return false;

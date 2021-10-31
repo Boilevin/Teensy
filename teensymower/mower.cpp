@@ -21,6 +21,7 @@
 
 
 #include "mower.h"
+
 #include <Arduino.h>
 #include "drivers.h"
 
@@ -30,7 +31,7 @@ Mower robot;
 
 
 Mower::Mower() {
-  
+
 
   name = "Ardumower";
   // ------- wheel motors -----------------------------
@@ -233,18 +234,15 @@ Mower::Mower() {
   statsBatteryChargingCounterTotal = 10;  //11
   statsBatteryChargingCapacityTotal = 10000;  //30000
   // -----------configuration end-------------------------------------
+
+
+
 }
 
 
 
 
 
-
-/*
-  NewPing NewSonarLeft(pinSonarLeftTrigger, pinSonarLeftEcho, 110);
-  NewPing NewSonarRight(pinSonarRightTrigger, pinSonarRightEcho, 110);
-  NewPing NewSonarCenter(pinSonarCenterTrigger, pinSonarCenterEcho, 110);
-*/
 
 
 
@@ -263,7 +261,7 @@ void Mower::setup() {
 
 
   // LED, buzzer, battery
-  // pinMode(pinLED, OUTPUT);
+ 
   pinMode(pinBuzzer, OUTPUT);
   digitalWrite(pinBuzzer, 0);
 
@@ -275,7 +273,7 @@ void Mower::setup() {
   analogWriteFrequency(pinMotorRightPWM, 10000);
   analogWriteFrequency(pinMotorRightDir, 10000);
 
- 
+
   // left wheel motor
   pinMode(pinMotorLeftEnable, OUTPUT);
   digitalWrite(pinMotorLeftEnable, LOW);
@@ -292,15 +290,15 @@ void Mower::setup() {
 
   // mower motor
   // datashett 8 bit resolution ideal freq 585937.5
-  
+
   analogWriteFrequency(pinMotorMowPWM, 20000);
- 
+
 
   pinMode(pinMotorMowDir, OUTPUT);
   pinMode(pinMotorMowPWM, OUTPUT);
   pinMode(pinMotorMowEnable, OUTPUT);
   digitalWrite(pinMotorMowEnable, LOW);
-  
+
 
 
   // perimeter
@@ -324,18 +322,21 @@ void Mower::setup() {
   pinMode(pinOdometryLeft, INPUT_PULLUP);
   pinMode(pinOdometryRight, INPUT_PULLUP);
 
-
+  pinMode(pinUserOut1, OUTPUT);
+  pinMode(pinUserOut2, OUTPUT);
+  pinMode(pinUserOut3, OUTPUT);
+  //pinMode(pinUserOut4, OUTPUT);
+  
+  /*
   // user switches
   pinMode(pinUserSwitch1, OUTPUT);
+  digitalWrite(pinUserSwitch1, LOW);
   pinMode(pinUserSwitch2, OUTPUT);
+  digitalWrite(pinUserSwitch2, LOW);
+  pinMode(pinUserSwitch3, OUTPUT);
+  digitalWrite(pinUserSwitch3, LOW);
+*/
   
-  
-  // PWM frequency setup
-  // For obstacle detection, motor torque should be detectable - torque can be computed by motor current.
-  // To get consistent current values, PWM frequency should be 3.9 Khz
-  // http://wiki.ardumower.de/index.php?title=Motor_driver
-  // http://sobisource.com/arduino-mega-pwm-pin-and-frequency-timer-control/
-  // http://www.atmel.com/images/doc2549.pdf
 
   Robot::setup();
 
@@ -420,7 +421,7 @@ void Mower::setActuator(char type, int value) {
 
   switch (type) {
 
-   //case ACT_MOTOR_MOW: setL298N(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, value); break;// Motortreiber einstellung - bei Bedarf Ã¤ndern z.B setL298N auf setMC33926
+    //case ACT_MOTOR_MOW: setL298N(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, value); break;// Motortreiber einstellung - bei Bedarf Ã¤ndern z.B setL298N auf setMC33926
 
     case ACT_MOTOR_MOW: setBTS7960(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, abs(value)); break; //limit the rotation to only one direction
 
@@ -429,17 +430,16 @@ void Mower::setActuator(char type, int value) {
     case ACT_MOTOR_RIGHT: setBTS7960(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value); break;
 
 
-    /*
-      if (value >= 0) setBTS7960(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value * (1 + (double)motorRightOffsetFwd / 100));
-      else setBTS7960(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value * (1 - (double)motorRightOffsetRev / 100));
-      break;
-    */
-    //case ACT_BUZZER: if (value == 0) Buzzer.noTone(); else Buzzer.tone(value); break;
-    //case ACT_LED: digitalWrite(pinLED, value); break;
-    //case ACT_USER_SW1: digitalWrite(pinUserSwitch1, value); break;
-    //case ACT_USER_SW2: digitalWrite(pinUserSwitch2, value); break;
-    //case ACT_USER_SW3: digitalWrite(pinUserSwitch3, value); break;
-
+  
+    case ACT_USER_OUT1: digitalWrite(pinUserOut1, value); break;  
+    case ACT_USER_OUT2: digitalWrite(pinUserOut2, value); break;
+    case ACT_USER_OUT3: digitalWrite(pinUserOut3, value); break;
+   // case ACT_USER_OUT4: digitalWrite(pinUserOut4, value); break;
+  /* 
+    case ACT_USER_SW1: digitalWrite(pinUserSwitch1, value); break;
+    case ACT_USER_SW2: digitalWrite(pinUserSwitch2, value); break;
+    case ACT_USER_SW3: digitalWrite(pinUserSwitch3, value); break;
+*/
     case ACT_CHGRELAY: digitalWrite(pinChargeEnable, value); break;
     //case ACT_CHGRELAY: digitalWrite(pinChargeEnable, !value); break;
     case ACT_BATTERY_SW: digitalWrite(pinBatterySwitch, value); break;
