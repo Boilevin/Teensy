@@ -2352,13 +2352,13 @@ void Robot::setup()  {
 
   Console.println ("Ina226 Configure OK ");
   // Calibrate INA226. Rshunt = 0.01 ohm, Max excepted current = 4A
-  ChargeIna226.calibrate(0.01, 4);
-  MotLeftIna226.calibrate(0.01, 4);
-  MotRightIna226.calibrate(0.01, 4);
+  ChargeIna226.calibrate(0.02, 4);
+  MotLeftIna226.calibrate(0.02, 4);
+  MotRightIna226.calibrate(0.02, 4);
   //I2C1 bus
-  Mow1Ina226.calibrate_I2C1(0.01, 4);
-  Mow2Ina226.calibrate_I2C1(0.01, 4);
-  Mow3Ina226.calibrate_I2C1(0.01, 4);
+  Mow1Ina226.calibrate_I2C1(0.02, 4);
+  Mow2Ina226.calibrate_I2C1(0.02, 4);
+  Mow3Ina226.calibrate_I2C1(0.02, 4);
 
   Console.println ("Ina226 Calibration OK ");
 
@@ -2949,8 +2949,8 @@ void Robot::readSensors() {
     }
 
     double chgvolt = ChargeIna226.readBusVoltage() ;
-    //bber300
     double curramp = ChargeIna226.readBusPower(); //  ?? sense don't work
+
     if (chgvolt != 0) {
       curramp = curramp / chgvolt;
     }
@@ -2959,7 +2959,7 @@ void Robot::readSensors() {
       curramp = 0;
     }
     double batvolt = MotRightIna226.readBusVoltage() ;
-    //double batvolt = Mow1Ina226.readBusVoltage_I2C1() ;
+
 
     // low-pass filter
     //double accel = 0.01;
@@ -2969,16 +2969,16 @@ void Robot::readSensors() {
     if (abs(chgVoltage - chgvolt) > 8)   chgVoltage = chgvolt; else chgVoltage = (1.0 - accel) * chgVoltage + accel * chgvolt;
     if (abs(chgCurrent - curramp) > 0.4) chgCurrent = curramp; else chgCurrent = (1.0 - accel) * chgCurrent + accel * curramp; //Deaktiviert fÃ¼r Ladestromsensor berechnung
     //bber30 tracking not ok because reduce the speed loop  with this but can check the chgvoltage
+
     /*
-        ShowMessage(millis());
-        ShowMessage("/batVoltage ");
-        ShowMessage(batVoltage);
-        ShowMessage("/chgVoltage ");
-        ShowMessage(chgVoltage);
-        ShowMessage("/chgCurrent ");
-        ShowMessage(chgCurrent);
-        ShowMessage("/curramp ");
-        ShowMessageln(curramp);
+       ShowMessage("batVoltage ");
+       ShowMessage(batVoltage);
+       ShowMessage("/chgVoltage ");
+       ShowMessage(chgVoltage);
+       ShowMessage("/chgCurrent ");
+       ShowMessage(chgCurrent);
+       ShowMessage("/curramp ");
+       ShowMessageln(curramp);
     */
   }
 
@@ -4829,27 +4829,27 @@ void Robot::checkRain() {
 void Robot::checkSonarPeriTrack() {
   if (!sonarUse) return;
   /*
-  if (millis() < nextTimeCheckSonar) return;
-  nextTimeCheckSonar = millis() + 200;
-  sonarDistRight = NO_ECHO;
-  sonarDistLeft = NO_ECHO;
-  if (track_ClockWise) { //Track CW
+    if (millis() < nextTimeCheckSonar) return;
+    nextTimeCheckSonar = millis() + 200;
+    sonarDistRight = NO_ECHO;
+    sonarDistLeft = NO_ECHO;
+    if (track_ClockWise) { //Track CW
     if (sonarRightUse) {
       sonarDistRight = readSensor(SEN_SONAR_RIGHT);
       if (sonarDistRight < 20 || sonarDistRight > 110) sonarDistRight = NO_ECHO; // Object is too close to the sensor JSN SR04T can't read <20 CM . Sensor value is useless
     }
 
     else sonarDistRight = NO_ECHO;
-  }
-  else {//track CCW
+    }
+    else {//track CCW
     if (sonarLeftUse) { //use the left sonar
       sonarDistLeft = readSensor(SEN_SONAR_LEFT);
       if (sonarDistLeft < 20 || sonarDistLeft  > 110) sonarDistLeft = NO_ECHO;
     }
     else sonarDistLeft = NO_ECHO;
-  }
+    }
 
-  if (((sonarDistRight != NO_ECHO) && (sonarDistRight < sonarTriggerBelow)) ||  ((sonarDistLeft != NO_ECHO) && (sonarDistLeft < sonarTriggerBelow))  ) {
+    if (((sonarDistRight != NO_ECHO) && (sonarDistRight < sonarTriggerBelow)) ||  ((sonarDistLeft != NO_ECHO) && (sonarDistLeft < sonarTriggerBelow))  ) {
     //setBeeper(1000, 50, 50, 60, 60);
     Console.println("Sonar reduce speed on tracking for 2 meters");
     whereToResetSpeed =  totalDistDrive + 200; // when a speed tag is read it's where the speed is back to maxpwm value
@@ -4859,7 +4859,7 @@ void Robot::checkSonarPeriTrack() {
     trakBlockInnerWheel = 1; //don't want that a wheel reverse just before station check   /bber30
 
 
-  }
+    }
   */
 }
 

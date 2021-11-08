@@ -109,7 +109,17 @@ void IMUClass::begin() {
   //initialisation of MPU6050
   Console.println(F("--------------------------------- GYRO ACCEL INITIALISATION ---------------"));
   mpu.initialize();
-  Console.println(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));
+  //Console.println(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));
+  if (mpu.testConnection()) {
+    Console.println("MPU6050 connection successful");
+  }
+  else
+  {
+    Console.println("MPU6050 connection failed");
+    robot.imuUse = false;
+    return;
+
+  }
   Console.println(mpu.getDeviceID());
   Console.println(F("Initializing DMP..."));
   devStatus = mpu.dmpInitialize();
@@ -120,7 +130,7 @@ void IMUClass::begin() {
   mpu.setXGyroOffset(gx_offset);//-1
   mpu.setYGyroOffset(gy_offset);//-3
   mpu.setZGyroOffset(gz_offset);//-2
-  
+
   CompassGyroOffset = 0;
 
   // make sure it worked (returns 0 if so)
@@ -131,7 +141,11 @@ void IMUClass::begin() {
     Console.print(F("Packet size "));
     Console.println(packetSize);
   }
-  else  Console.println(F("DMP Initialization failed "));
+  else {
+    Console.println(F("DMP Initialization failed "));
+    robot.imuUse = false;
+    return;
+  }
   nextTimeAdjustYaw = millis();
   Console.println(F("Wait 3 secondes to stabilize the Drift"));
   //delay(3000); // wait 3 sec to help DMP stop drift
@@ -302,7 +316,7 @@ void IMUClass::meansensors() {
 }
 
 void IMUClass::run() {
-  
+
   if (!robot.imuUse)  return;
   if (devStatus != 0) return;
   if (state == IMU_CAL_COM) { //don't read the MPU6050 if compass calibration
@@ -316,16 +330,16 @@ void IMUClass::run() {
     return;
   }
   //-------------------read the mpu6050 DMP into yprtest array--------------------------------
-  
+
   mpu.resetFIFO();
-  double start_fill_fifo=millis();
+  double start_fill_fifo = millis();
   while (fifoCount < packetSize) {  //leave time to the DMP to fill the FIFO
     fifoCount = mpu.getFIFOCount();
-    if (millis()>start_fill_fifo+100){
+    if (millis() > start_fill_fifo + 100) {
       Console.println("fifo read take more than 100 ms");
-      fifoCount=100;
+      fifoCount = 100;
     }
-    
+
   }
 
   while (fifoCount >= packetSize) {  //Immediatly read the fifo and verify that it's not filling during reading
@@ -399,9 +413,9 @@ void IMUClass::run() {
 }
 
 void IMUClass::readQMC5883L() {
-  
+
   uint8_t buf[6];
- 
+
   if (I2CreadFrom(QMC5883L, 0x00, 6, (uint8_t*)buf) != 6) {
     Console.println("error when read compass");
     robot.addErrorCounter(ERR_IMU_COMM);
@@ -702,7 +716,7 @@ void IMUClass::calibComUpdate() {
   comLast = com;
   delay(20);
   readHMC5883L();
- 
+
   //watchdogReset();
   boolean newfound = false;
   if ( (abs(com.x - comLast.x) < 10) &&  (abs(com.y - comLast.y) < 10) &&  (abs(com.z - comLast.z) < 10) ) {
