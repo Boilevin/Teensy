@@ -216,3 +216,11 @@ int getDayOfWeek(int month, int day, int year, int CalendarSystem)
            + CalendarSystem
          ) % 7;
 }
+
+
+
+unsigned long hstol(String recv){
+  char c[recv.length() + 1];
+  recv.toCharArray(c, recv.length() + 1);
+  return strtol(c, NULL, 16); 
+}

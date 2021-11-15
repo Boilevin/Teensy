@@ -115,5 +115,5 @@ void setMC33926(int pinDir, int pinPWM, int speed);
 void setBTS7960(int pinDir ,int pinPWM ,int pinEnable , int speed);
 // Returns the day of week (0=Sunday, 6=Saturday) for a given date
 int getDayOfWeek(int month, int day, int year, int CalendarSystem);
-
+unsigned long hstol(String recv);
 #endif 

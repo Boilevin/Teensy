@@ -200,6 +200,9 @@ enum { WAIT, NORMAL_MOWING, SPIRALE_MOWING, BACK_TO_STATION, TRACK_TO_START, MAN
 // roll types
 enum { LEFT, RIGHT };
 
+// rfid todo list
+enum { NOTHING, RTS, FAST_START, NEW_AREA, SPEED, AREA1, AREA2, AREA3 };
+
 // mow patterns
 enum { MOW_RANDOM, MOW_LANES, MOW_WIRE, MOW_ZIGZAG };
 
@@ -225,12 +228,14 @@ class Robot
     byte stateNext;
 
     byte statusCurr;
+    byte rfidToDoCurr;
     //byte statusLast;
     //byte statusNext;
 
     unsigned long stateTime;
     const char* stateName();
     const char* statusName();
+    char* rfidToDoName();
 
     unsigned long stateStartTime;
     unsigned long stateEndTime;
@@ -253,7 +258,7 @@ class Robot
     // -------- gps state -------------------------------
     GPS gps;
     boolean gpsUse            ;       // use GPS?
-    boolean gpsReady; 
+    boolean gpsReady;
     float gpsLat;
     float gpsLon;
     float gpsX ;   // X position (m)
@@ -315,6 +320,25 @@ class Robot
     //bber35
     String rfidTagFind;
     boolean rfidUse;
+    byte rfidListElementCount = 0;
+    struct rfid_list {
+      unsigned long TagNr;
+      byte TagMowerStatus;
+      byte TagToDo;
+      int TagSpeed;
+      float TagAngle1;
+      int TagDist1;
+      float TagAngle2;
+      int TagDist2;
+      struct rfid_list *next;
+    };
+
+    typedef struct rfid_list;
+
+    struct rfid_list *head = NULL;
+
+    struct rfid_list *ptr = NULL;
+
 
     // --------- wheel motor state ----------------------------
     // wheel motor speed ( <0 backward, >0 forward); range -motorSpeedMaxRpm..motorSpeedMaxRpm
@@ -521,7 +545,7 @@ class Robot
     RunningMedian motorMowPowerMedian = RunningMedian(30);
     RunningMedian motorSpeedRpmMedian = RunningMedian(35);
     RunningMedian perimeterMedian = RunningMedian(67); //perimeter is read each 15 ms so 1 second
-    
+
 
 
     //bb 5
@@ -582,7 +606,7 @@ class Robot
     unsigned long trackingPerimeterTransitionTimeOut;
     unsigned long trackingErrorTimeOut;
     boolean trakBlockInnerWheel;
-    float perimeterNoise; //compute each 2 seconde the diff between max and min Mag value help on position of motor wire and ferrite in the chassis 
+    float perimeterNoise; //compute each 2 seconde the diff between max and min Mag value help on position of motor wire and ferrite in the chassis
     //add BB
     int leftSpeedperi;
     int rightSpeedperi;
@@ -805,6 +829,8 @@ class Robot
     virtual void setActuator(char type, int value) {}
 
     // settings
+    virtual void loadRfidList();
+    virtual void saveRfidList();
     virtual void deleteUserSettings();
     virtual void saveUserSettings();
     virtual void deleteRobotStats();
@@ -814,9 +840,9 @@ class Robot
     // virtual void beep(int numberOfBeeps, boolean shortbeep);
     virtual void printInfo(Stream &s);
     virtual void setUserSwitches();
-//bber60
+    //bber60
     virtual void setUserOut();
-    
+
     virtual void addErrorCounter(byte errType);
     virtual void resetErrorCounters();
     virtual void resetMotorFault();// {}
@@ -833,6 +859,13 @@ class Robot
 
     virtual void printSettingSerial();
     const char* mowPatternNameList(byte mowPatternIndex);
+    char* rfidToDoNameList(byte rfidToDoIndex);
+    char* statusNameList(byte statusIndex);
+
+    virtual void insert_rfid_list(unsigned long TagNr, byte TagMowerStatus, byte TagToDo, int TagSpeed, float TagAngle1, int TagDist1, float TagAngle2, int TagDist2);
+    virtual void print_rfid_list();
+    virtual void sort_rfid_list();
+    virtual void delete_rfid_list(unsigned long TagNr, byte TagMowerStatus, int pos_into_list);
 
     virtual void pfodSetDateTime(byte hr1, byte min1, byte sec1, byte day1, byte month1, short year1);
 
@@ -897,7 +930,7 @@ class Robot
     virtual void reverseOrBidir(byte aRollDir);
 
     // other
-    
+
     virtual void printOdometry();
     virtual void printMenu();
     virtual void delayInfo(int ms);
@@ -913,8 +946,8 @@ class Robot
 
     virtual void beeper();
 
-
-
+    boolean search_rfid_list(unsigned long TagNr);
+    void rfidTagTraitement(unsigned long TagNr,byte statusCurr);
 
 
 

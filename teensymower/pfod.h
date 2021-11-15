@@ -80,6 +80,7 @@ class RemoteControl
    // int8_t perimeterCapture[RAW_SIGNAL_SAMPLE_SIZE];
     int perimeterCaptureIdx;
     float stringToFloat(String &s);
+    byte rfid_pos_into_list;
     
     // generic
     void sendYesNo(int value);
@@ -136,7 +137,8 @@ class RemoteControl
     void sendOdometryMenu(boolean update);
     void sendRainMenu(boolean update);
     void sendGPSMenu(boolean update);
-    void sendRfidMenu(boolean update);
+    void sendRFIDMenu(boolean update);
+    void sendRfidDetailMenu(int rfidDetailIdx,boolean update);
 
     void sendDateTimeMenu(boolean update);
     void sendFactorySettingsMenu(boolean update);
@@ -154,7 +156,9 @@ class RemoteControl
     void processRainMenu(String pfodCmd);
     void processDropMenu(String pfodCmd);
     void processGPSMenu(String pfodCmd);
-    void processRfidMenu(String pfodCmd);
+    void processRFIDMenu(String pfodCmd);
+    void processRfidDetailMenu(int rfidDetailIdx,String pfodCmd);
+   
     void processImuMenu(String pfodCmd);
     void processRemoteMenu(String pfodCmd);
     void processBatteryMenu(String pfodCmd);
