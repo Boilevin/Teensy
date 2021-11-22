@@ -65,7 +65,7 @@ void setup() {
 
 #ifdef BLUETOOTH
   if (debug) Serial.println("Start Bluetooth Server");
-  SerialBT.begin("Ardumower"); //Bluetooth device name
+  SerialBT.begin("Teensy2"); //Bluetooth device name
 #endif
 
 
