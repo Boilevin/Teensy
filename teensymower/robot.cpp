@@ -489,7 +489,11 @@ void Robot::rfidTagTraitement(unsigned long TagNr, byte statusCurr) {
         }
         break;
       case AREA2:
+        Serial1.println("#SENDER,10.0.0.20,A1");
+        Serial1.println("#SENDER,10.0.0.10,A0");
         if (areaToGo == 2) {
+
+
           ShowMessageln("Go to AREA2");
           motorSpeedMaxPwm = ptr->TagSpeed;
           newtagRotAngle1 = ptr->TagAngle1;
@@ -2668,29 +2672,66 @@ void Robot::setup()  {
   Mow2Ina226.begin_I2C1(0x41);  //MOW2 is connect on I2C1
   Mow3Ina226.begin_I2C1(0x44);  //MOW3 is connect on I2C1
 
-  Console.println ("Ina226 Begin OK ");
-  // Configure INA226
+  Console.println ("Checking  ina226 current sensor connection");
+  //check sense powerboard i2c connection
+  powerboard_I2c_line_Ok = true;
+  if (!ChargeIna226.isConnected(0x40)) {
+    Console.println("INA226 Battery Charge is not OK");
+    powerboard_I2c_line_Ok = false;
+  }
+  if (!MotRightIna226.isConnected(0x44)) {
+    Console.println("INA226 Motor Right is not OK");
+    powerboard_I2c_line_Ok = false;
+  }
+  if (!MotLeftIna226.isConnected(0x41)) {
+    Console.println("INA226 Motor Left is not OK");
+    powerboard_I2c_line_Ok = false;
+  }
+  if (!Mow1Ina226.isConnected_I2C1(0x40)) {
+    Console.println("INA226 MOW1 is not OK");
+    powerboard_I2c_line_Ok = false;
+  }
+  if (!Mow2Ina226.isConnected_I2C1(0x41)) {
+    Console.println("INA226 MOW2 is not OK");
+    powerboard_I2c_line_Ok = false;
+  }
+  if (!Mow3Ina226.isConnected_I2C1(0x44)) {
+    Console.println("INA226 MOW3 is not OK");
+    powerboard_I2c_line_Ok = false;
+  }
 
 
-  ChargeIna226.configure(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
-  MotLeftIna226.configure(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
-  MotRightIna226.configure(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
-  //I2C1 bus
-  Mow1Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
-  Mow2Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
-  Mow3Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
+  if (powerboard_I2c_line_Ok)
+  {
+    Console.println ("Ina226 Begin OK ");
+    // Configure INA226
 
-  Console.println ("Ina226 Configure OK ");
-  // Calibrate INA226. Rshunt = 0.01 ohm, Max excepted current = 4A
-  ChargeIna226.calibrate(0.02, 4);
-  MotLeftIna226.calibrate(0.02, 4);
-  MotRightIna226.calibrate(0.02, 4);
-  //I2C1 bus
-  Mow1Ina226.calibrate_I2C1(0.02, 4);
-  Mow2Ina226.calibrate_I2C1(0.02, 4);
-  Mow3Ina226.calibrate_I2C1(0.02, 4);
 
-  Console.println ("Ina226 Calibration OK ");
+    ChargeIna226.configure(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
+    MotLeftIna226.configure(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
+    MotRightIna226.configure(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
+    //I2C1 bus
+    Mow1Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
+    Mow2Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
+    Mow3Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
+
+    Console.println ("Ina226 Configure OK ");
+    // Calibrate INA226. Rshunt = 0.01 ohm, Max excepted current = 4A
+    ChargeIna226.calibrate(0.02, 4);
+    MotLeftIna226.calibrate(0.02, 4);
+    MotRightIna226.calibrate(0.02, 4);
+    //I2C1 bus
+    Mow1Ina226.calibrate_I2C1(0.02, 4);
+    Mow2Ina226.calibrate_I2C1(0.02, 4);
+    Mow3Ina226.calibrate_I2C1(0.02, 4);
+
+    Console.println ("Ina226 Calibration OK ");
+  }
+  else
+  {
+    Console.println ("************** WARNING **************");
+    Console.println ("INA226 powerboard connection is not OK");
+  }
 
 
   // watchdog part
@@ -3103,26 +3144,25 @@ void Robot::newTagFind() {
     ShowMessage("Find a tag : ");
     ShowMessageln(rfidTagFind);
     unsigned long rfidTagFind_long = hstol(rfidTagFind);
+    
+    //bber200
+
     if (rfidUse) {
-      if (RaspberryPIUse) {
-        MyRpi.SendRfidToPi();
+
+      if (search_rfid_list(rfidTagFind_long)) {
+        rfidTagTraitement(rfidTagFind_long, statusCurr);
       }
       else
       {
-        if (search_rfid_list(rfidTagFind_long)) {
-          rfidTagTraitement(rfidTagFind_long, statusCurr);
-        }
-        else
-        {
-          ShowMessage("Auto insert Wait tag : ");
-          ShowMessageln(rfidTagFind);
-          insert_rfid_list(rfidTagFind_long , 0, 0, 100, 1, 1, 1, 1);
-          sort_rfid_list();
-
-        }
-
+        ShowMessage("Auto insert Wait tag : ");
+        ShowMessageln(rfidTagFind);
+        insert_rfid_list(rfidTagFind_long , 0, 0, 100, 1, 1, 1, 1);
+        sort_rfid_list();
 
       }
+
+
+
     }
   }
 }
@@ -3170,13 +3210,14 @@ void Robot::readSensors() {
   if (millis() >= nextTimeMotorSense) {
     nextTimeMotorSense = millis() +  50;
     double accel = 0.10;  //filter percent
-    motorRightPower = MotRightIna226.readBusPower() ;
 
-    motorLeftPower  = MotLeftIna226.readBusPower() ;
-    Mow1_Power = Mow1Ina226.readBusPower_I2C1() ;
-    Mow2_Power = Mow2Ina226.readBusPower_I2C1() ;
-    Mow3_Power = Mow3Ina226.readBusPower_I2C1() ;
-
+    if (powerboard_I2c_line_Ok) {
+      motorRightPower = MotRightIna226.readBusPower() ;
+      motorLeftPower  = MotLeftIna226.readBusPower() ;
+      Mow1_Power = Mow1Ina226.readBusPower_I2C1() ;
+      Mow2_Power = Mow2Ina226.readBusPower_I2C1() ;
+      Mow3_Power = Mow3Ina226.readBusPower_I2C1() ;
+    }
     //Mow2_Power = 0 ;
     //Mow3_Power = 0 ;
 
@@ -3293,15 +3334,23 @@ void Robot::readSensors() {
 
   if (millis() >= nextTimeBattery) {
     // read battery
+    double chgvolt = 0.1 ;
+    double curramp = 0.1; //  0.1 instead 0 to avoid div/0
+    double batvolt = 0.1 ;
     nextTimeBattery = millis() + 500;
+    if ((millis() > 30000) and (millis() < 30550) and (!powerboard_I2c_line_Ok)) {
+      ShowMessageln("POWERBOARD I2C LINE is not OK");
+    }
+
     if ((abs(chgCurrent) > 0.04) && (chgVoltage > 5)) {
       // charging
       batCapacity += (chgCurrent / 36.0);
     }
-
-    double chgvolt = ChargeIna226.readBusVoltage() ;
-    double curramp = ChargeIna226.readBusPower(); //  ?? sense don't work
-
+    if (powerboard_I2c_line_Ok) {
+      chgvolt = ChargeIna226.readBusVoltage() ;
+      curramp = ChargeIna226.readBusPower(); //  ?? sense don't work
+      batvolt = MotRightIna226.readBusVoltage() ;
+    }
     if (chgvolt != 0) {
       curramp = curramp / chgvolt;
     }
@@ -3309,17 +3358,15 @@ void Robot::readSensors() {
     {
       curramp = 0;
     }
-    double batvolt = MotRightIna226.readBusVoltage() ;
 
 
-    // low-pass filter
-    //double accel = 0.01;
-    double accel = 0.05;
+
+    double accel = 0.05;  //filter percent
 
     if (abs(batVoltage - batvolt) > 8)   batVoltage = batvolt; else batVoltage = (1.0 - accel) * batVoltage + accel * batvolt;
     if (abs(chgVoltage - chgvolt) > 8)   chgVoltage = chgvolt; else chgVoltage = (1.0 - accel) * chgVoltage + accel * chgvolt;
     if (abs(chgCurrent - curramp) > 0.4) chgCurrent = curramp; else chgCurrent = (1.0 - accel) * chgCurrent + accel * curramp; //Deaktiviert fÃ¼r Ladestromsensor berechnung
-    //bber30 tracking not ok because reduce the speed loop  with this but can check the chgvoltage
+    //bber30 tracking not ok because reduce the speed loop with this but can check the chgvoltage
 
     /*
        ShowMessage("batVoltage ");

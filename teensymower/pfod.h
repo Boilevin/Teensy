@@ -38,7 +38,6 @@
 #define PFOD_H
 
 //#include <Arduino.h>
-
 #include "pid.h"
 #include "drivers.h"
 //#include "perimeter.h"
@@ -49,9 +48,7 @@ enum { PFOD_OFF, PFOD_MENU, PFOD_CONSOLE,
        PFOD_PLOT_SENSORS, PFOD_PLOT_PERIMETER, PFOD_PLOT_GPS, PFOD_PLOT_GPS2D,
        PFOD_PLOT_MOTOR
      };
-
 class Robot;
-
 class RemoteControl
 {
   public:
@@ -69,7 +66,7 @@ class RemoteControl
     Robot *robot;
     boolean pfodCmdComplete;
     String pfodCmd;
-    
+    int rfidDetailIdx;
     int testmode;
     unsigned long nextPlotTime;
     //bb
@@ -158,7 +155,6 @@ class RemoteControl
     void processGPSMenu(String pfodCmd);
     void processRFIDMenu(String pfodCmd);
     void processRfidDetailMenu(int rfidDetailIdx,String pfodCmd);
-   
     void processImuMenu(String pfodCmd);
     void processRemoteMenu(String pfodCmd);
     void processBatteryMenu(String pfodCmd);

@@ -41,6 +41,18 @@ bool INA226::begin_I2C1(uint8_t address)
     return true;
 }
 
+bool INA226::isConnected(uint8_t address)
+{
+  Wire.beginTransmission(address);
+  return ( Wire.endTransmission() == 0);
+}
+
+bool INA226::isConnected_I2C1(uint8_t address)
+{
+  Wire1.beginTransmission(address);
+  return ( Wire1.endTransmission() == 0);
+}
+
 bool INA226::configure(ina226_averages_t avg, ina226_busConvTime_t busConvTime, ina226_shuntConvTime_t shuntConvTime, ina226_mode_t mode)
 {
     uint16_t config = 0;

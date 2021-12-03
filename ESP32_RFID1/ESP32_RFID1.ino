@@ -1,15 +1,24 @@
-//new passerelle for ESP32
-//Possible use of ESP32 to pfod communication 
+//passerelle for ESP32
+//Possible use of ESP32 to pfod communication
+
 //WIFI:
-//you don't have wifi in all the garden pfod setting :  IP 192.168.1.4 port 8881 -> mower is the Access point pfod and perimeter sender connect to the mower
-//you have wifi in all the garden pfod setting : IP 10.0.0.122 port 8881 -> mower and sender are connected to your home wifi router
+//you don't have wifi in all the garden:
+//into config.h uncomment #define MODE_AP and comment #define MODE_STA
+//pfod setting :  IP 192.168.1.4 port 8881 -> mower is the Access point pfod and perimeter sender connect to the mower
+
+//you have wifi in all the garden:
+//into config.h comment #define MODE_AP and uncomment #define MODE_STA
+//set your ssid and password acoording to your WIFI router
+//pfod setting : IP 10.0.0.122 (or change to correct IPgroup of your router) port 8881 -> mower and sender are connected to your home wifi router
+
+
 //Bluetooth:
-//no multiple distinct area are manage
+//limitation no automatic start and stop sender on multiple mowing area
 
-// See config.h for parameter
+//See config.h for more parameter
 
+//FOR RFID BOARD
 // ESP-32    <--> PN5180 pin mapping:
-
 // Vin       <--> 5V  if esp32 powered using USB YOU NEED TO SEND THE 5V TO PN5180
 // 3.3V      <--> 3.3V
 // GND       <--> GND
@@ -21,6 +30,7 @@
 // Reset, GPIO14  --> RST
 //
 
+//FOR PCB1.3
 // ESP-32    <--> pcb1.3 pin mapping:
 // Vin       <--> 5v ON BT CONNECTOR
 // GND       <--> GND ON BT CONNECTOR
@@ -53,7 +63,9 @@ uint16_t iBT = 0;
 uint8_t WIFIbuf[bufferSize];
 uint16_t inWiFI = 0;
 
-
+char line_receive[256];
+byte mon_index = 0;
+String entete="";
 
 
 /*
@@ -63,6 +75,26 @@ uint16_t inWiFI = 0;
 
 PN5180ISO15693 nfc(12, 13, 14);
 uint8_t lastUid[8];
+
+
+
+void esp32_Action () {
+  //inData is a char array separate by ,
+  //example to stop sender on ip 15  "#SENDER,10.0.0.15,A0
+  //example to start sender on ip 15  "#SENDER,10.0.0.15,A1
+
+  for (uint8_t posit = 0; posit < mon_index; posit++) {
+
+    Serial.println("trouvé");
+     
+    
+  }
+ 
+}
+
+
+
+
 
 void setup() {
   delay(500);
@@ -103,7 +135,7 @@ void setup() {
 
 #ifdef BLUETOOTH
   if (debug) Serial.println("Start Bluetooth Server");
-  SerialBT.begin("Teensy2000"); //Bluetooth device name
+  SerialBT.begin("Teensy2"); //Bluetooth device name
 #endif
 
 
@@ -196,7 +228,7 @@ void loop() {
         Serial2.print(thisUid[8-j], HEX);
         }
       */
-      for (int j = 0; j <= 3; j++) {
+      for (int j = 0; j <= 2; j++) {
         Serial2.print(lastUid[j], HEX);
       }
       Serial2.println("}"); //pfod stop message with }
@@ -268,7 +300,44 @@ void loop() {
       while (Serial2.available())
       {
         WIFIbuf[inWiFI] = Serial2.read(); // read char from UART(2)
+        char aChar = WIFIbuf[inWiFI];
         if (inWiFI < bufferSize - 1) inWiFI++;
+        
+        if (aChar == '\n')
+        {
+          // End of record detected. Time to parse and check for non pfod sentence
+          Serial.println(line_receive);
+          if (strncmp(line_receive, "#SENDER", 7) == 0) {
+
+            esp32_Action();
+
+
+            
+
+
+
+
+
+          }
+
+          mon_index = 0;
+          line_receive[mon_index] = NULL;
+        }
+        else
+        {
+          line_receive[mon_index] = aChar;
+          mon_index++;
+          line_receive[mon_index] = '\0'; // Keep the string NULL terminated
+        }
+
+
+
+
+
+
+
+
+
       }
       if (TheClient)
         TheClient.write(WIFIbuf, inWiFI);

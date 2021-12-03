@@ -220,7 +220,13 @@ int getDayOfWeek(int month, int day, int year, int CalendarSystem)
 
 
 unsigned long hstol(String recv){
+  Serial.println(recv);
   char c[recv.length() + 1];
+  unsigned long resultat;
   recv.toCharArray(c, recv.length() + 1);
-  return strtol(c, NULL, 16); 
+  resultat=strtol(c, NULL, 16); 
+  Serial.println(resultat);
+  Serial.println(String(resultat, HEX));
+  return resultat; 
+  
 }
