@@ -43,14 +43,14 @@ bool INA226::begin_I2C1(uint8_t address)
 
 bool INA226::isConnected(uint8_t address)
 {
-  Wire.beginTransmission(address);
-  return ( Wire.endTransmission() == 0);
+    Wire.beginTransmission(address);
+    return (Wire.endTransmission() == 0);
 }
 
 bool INA226::isConnected_I2C1(uint8_t address)
 {
-  Wire1.beginTransmission(address);
-  return ( Wire1.endTransmission() == 0);
+    Wire1.beginTransmission(address);
+    return (Wire1.endTransmission() == 0);
 }
 
 bool INA226::configure(ina226_averages_t avg, ina226_busConvTime_t busConvTime, ina226_shuntConvTime_t shuntConvTime, ina226_mode_t mode)
@@ -133,7 +133,6 @@ bool INA226::calibrate_I2C1(float rShuntValue, float iMaxExpected)
     return true;
 }
 
-
 float INA226::getMaxPossibleCurrent(void)
 {
     return (vShuntMax / rShunt);
@@ -147,7 +146,8 @@ float INA226::getMaxCurrent(void)
     if (maxCurrent > maxPossible)
     {
         return maxPossible;
-    } else
+    }
+    else
     {
         return maxCurrent;
     }
@@ -160,7 +160,8 @@ float INA226::getMaxShuntVoltage(void)
     if (maxVoltage >= vShuntMax)
     {
         return vShuntMax;
-    } else
+    }
+    else
     {
         return maxVoltage;
     }
@@ -180,8 +181,6 @@ float INA226::readBusPower_I2C1(void)
 {
     return (readRegister16_I2C1(INA226_REG_POWER) * powerLSB);
 }
-
-
 
 float INA226::readShuntCurrent(void)
 {
@@ -323,7 +322,8 @@ void INA226::setAlertInvertedPolarity(bool inverted)
     if (inverted)
     {
         temp |= INA226_BIT_APOL;
-    } else
+    }
+    else
     {
         temp &= ~INA226_BIT_APOL;
     }
@@ -338,7 +338,8 @@ void INA226::setAlertLatch(bool latch)
     if (latch)
     {
         temp |= INA226_BIT_LEN;
-    } else
+    }
+    else
     {
         temp &= ~INA226_BIT_LEN;
     }
@@ -361,30 +362,32 @@ int16_t INA226::readRegister16(uint8_t reg)
     int16_t value;
 
     Wire.beginTransmission(inaAddress);
-    #if ARDUINO >= 100
-        Wire.write(reg);
-    #else
-        Wire.send(reg);
-    #endif
+#if ARDUINO >= 100
+    Wire.write(reg);
+#else
+    Wire.send(reg);
+#endif
     Wire.endTransmission();
 
     delay(1);
 
     Wire.beginTransmission(inaAddress);
     Wire.requestFrom(inaAddress, 2);
-    //bber300
-    while(!Wire.available()) {};
-    #if ARDUINO >= 100
-        uint8_t vha = Wire.read();
-        uint8_t vla = Wire.read();
-    #else
-        uint8_t vha = Wire.receive();
-        uint8_t vla = Wire.receive();
-    #endif;
+    // bber300
+    while (!Wire.available())
+    {
+    };
+#if ARDUINO >= 100
+    uint8_t vha = Wire.read();
+    uint8_t vla = Wire.read();
+#else
+    uint8_t vha = Wire.receive();
+    uint8_t vla = Wire.receive();
+#endif;
     Wire.endTransmission();
 
     value = vha << 8 | vla;
-    
+
     return value;
 }
 int16_t INA226::readRegister16_I2C1(uint8_t reg)
@@ -392,29 +395,31 @@ int16_t INA226::readRegister16_I2C1(uint8_t reg)
     int16_t value;
 
     Wire1.beginTransmission(inaAddress);
-    #if ARDUINO >= 100
-        Wire1.write(reg);
-    #else
-        Wire1.send(reg);
-    #endif
+#if ARDUINO >= 100
+    Wire1.write(reg);
+#else
+    Wire1.send(reg);
+#endif
     Wire1.endTransmission();
 
     delay(1);
 
     Wire1.beginTransmission(inaAddress);
     Wire1.requestFrom(inaAddress, 2);
-    while(!Wire1.available()) {};
-    #if ARDUINO >= 100
-        uint8_t vha = Wire1.read();
-        uint8_t vla = Wire1.read();
-    #else
-        uint8_t vha = Wire1.receive();
-        uint8_t vla = Wire1.receive();
-    #endif;
+    while (!Wire1.available())
+    {
+    };
+#if ARDUINO >= 100
+    uint8_t vha = Wire1.read();
+    uint8_t vla = Wire1.read();
+#else
+    uint8_t vha = Wire1.receive();
+    uint8_t vla = Wire1.receive();
+#endif;
     Wire1.endTransmission();
 
     value = vha << 8 | vla;
-   
+
     return value;
 }
 void INA226::writeRegister16(uint8_t reg, uint16_t val)
@@ -424,15 +429,15 @@ void INA226::writeRegister16(uint8_t reg, uint16_t val)
     val >>= 8;
 
     Wire.beginTransmission(inaAddress);
-    #if ARDUINO >= 100
-        Wire.write(reg);
-        Wire.write((uint8_t)val);
-        Wire.write(vla);
-    #else
-        Wire.send(reg);
-        Wire.send((uint8_t)val);
-        Wire.send(vla);
-    #endif
+#if ARDUINO >= 100
+    Wire.write(reg);
+    Wire.write((uint8_t)val);
+    Wire.write(vla);
+#else
+    Wire.send(reg);
+    Wire.send((uint8_t)val);
+    Wire.send(vla);
+#endif
     Wire.endTransmission();
 }
 void INA226::writeRegister16_I2C1(uint8_t reg, uint16_t val)
@@ -442,14 +447,14 @@ void INA226::writeRegister16_I2C1(uint8_t reg, uint16_t val)
     val >>= 8;
 
     Wire1.beginTransmission(inaAddress);
-    #if ARDUINO >= 100
-        Wire1.write(reg);
-        Wire1.write((uint8_t)val);
-        Wire1.write(vla);
-    #else
-        Wire1.send(reg);
-        Wire1.send((uint8_t)val);
-        Wire1.send(vla);
-    #endif
+#if ARDUINO >= 100
+    Wire1.write(reg);
+    Wire1.write((uint8_t)val);
+    Wire1.write(vla);
+#else
+    Wire1.send(reg);
+    Wire1.send((uint8_t)val);
+    Wire1.send(vla);
+#endif
     Wire1.endTransmission();
 }

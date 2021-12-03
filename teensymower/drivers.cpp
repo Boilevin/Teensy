@@ -24,22 +24,22 @@
 #include "drivers.h"
 
 const char *dayOfWeek[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-void StreamPrint_progmem(Print &out,PGM_P format,...)
+void StreamPrint_progmem(Print &out, PGM_P format, ...)
 {
   // program memory version of printf - copy of format string and result share a buffer
   // so as to avoid too much memory use
   char formatString[128], *ptr;
- 
-    strncpy( formatString, format, sizeof(formatString) ); // copy in from program mem  
-  
+
+  strncpy(formatString, format, sizeof(formatString)); // copy in from program mem
+
   // null terminate - leave char since we might need it in worst case for result's \0
-  formatString[ sizeof(formatString)-2 ]='\0';
-  ptr=&formatString[ strlen(formatString)+1 ]; // our result buffer...
+  formatString[sizeof(formatString) - 2] = '\0';
+  ptr = &formatString[strlen(formatString) + 1]; // our result buffer...
   va_list args;
-  va_start (args,format);
-  vsnprintf(ptr, sizeof(formatString)-1-strlen(formatString), formatString, args );
-  va_end (args);
-  formatString[ sizeof(formatString)-1 ]='\0';
+  va_start(args, format);
+  vsnprintf(ptr, sizeof(formatString) - 1 - strlen(formatString), formatString, args);
+  va_end(args);
+  formatString[sizeof(formatString) - 1] = '\0';
   out.print(ptr);
 }
 
@@ -47,11 +47,16 @@ void StreamPrint_progmem(Print &out,PGM_P format,...)
 double scalePI(double v)
 {
   double d = v;
-  while (d < 0) d += 2 * PI;
-  while (d >= 2 * PI) d -= 2 * PI;
-  if (d >= PI) return (-2 * PI + d);
-  else if (d < -PI) return (2 * PI + d);
-  else return d;
+  while (d < 0)
+    d += 2 * PI;
+  while (d >= 2 * PI)
+    d -= 2 * PI;
+  if (d >= PI)
+    return (-2 * PI + d);
+  else if (d < -PI)
+    return (2 * PI + d);
+  else
+    return d;
 }
 
 // computes minimum distance between x radiant (current-value) and w radiant (set-value)
@@ -64,21 +69,26 @@ double distancePI(double x, double w)
   // w=0   degree, x=190 degree => 170 degree
   // w=190 degree, x=0   degree => -170 degree
   double d = scalePI(w - x);
-  if (d < -PI) d = d + 2 * PI;
-  else if (d > PI) d = d - 2 * PI;
+  if (d < -PI)
+    d = d + 2 * PI;
+  else if (d > PI)
+    d = d - 2 * PI;
   return d;
 }
 
-int time2minutes(timehm_t time) {
+int time2minutes(timehm_t time)
+{
   return (time.hour * 60 + time.minute);
 }
 
-void minutes2time(int minutes, timehm_t &time) {
-  time.hour   = minutes / 60;
+void minutes2time(int minutes, timehm_t &time)
+{
+  time.hour = minutes / 60;
   time.minute = minutes % 60;
 }
 
-String time2str(timehm_t time) {
+String time2str(timehm_t time)
+{
   String s = String(time.hour / 10);
   s += (time.hour % 10);
   s += ":";
@@ -87,7 +97,8 @@ String time2str(timehm_t time) {
   return s;
 }
 
-String date2str(date_t date) {
+String date2str(date_t date)
+{
   String s = dayOfWeek[date.dayOfWeek];
   s += " ";
   s += date.day / 10;
@@ -100,7 +111,6 @@ String date2str(date_t date) {
   return s;
 }
 
-
 // L298N motor driver
 // IN2/C(10)/PinPWM   IN1/D(12)/PinDir
 // H                  L     Forward
@@ -109,14 +119,18 @@ String date2str(date_t date) {
 // pinEnable  connected to IN2
 // pinPWM  connected to ENA
 
-void setL298N(int pinDir, int pinPWM ,int pinEnable, int speed) {
-  if (speed < 0) {
-    digitalWrite(pinDir, HIGH) ;
-    digitalWrite(pinEnable, LOW) ;
+void setL298N(int pinDir, int pinPWM, int pinEnable, int speed)
+{
+  if (speed < 0)
+  {
+    digitalWrite(pinDir, HIGH);
+    digitalWrite(pinEnable, LOW);
     analogWrite(pinPWM, speed);
-  } else {
-    digitalWrite(pinDir, LOW) ;
-    digitalWrite(pinEnable, HIGH) ;
+  }
+  else
+  {
+    digitalWrite(pinDir, LOW);
+    digitalWrite(pinEnable, HIGH);
     analogWrite(pinPWM, speed);
   }
 }
@@ -125,45 +139,51 @@ void setL298N(int pinDir, int pinPWM ,int pinEnable, int speed) {
 // D5/D6 PinPWM       D4/D7 PinDir
 // H                  L     Forward
 // H                  H     Reverse
-void setRomeoMotor(int pinDir, int pinPWM, int speed) {
-  if (speed < 0) {
-    //digitalWrite(pinDir, HIGH) ;
-    //PinMan.analogWrite(pinPWM, abs(speed));
-  } else {
-    //digitalWrite(pinDir, LOW) ;
-    //PinMan.analogWrite(pinPWM, abs(speed));
+void setRomeoMotor(int pinDir, int pinPWM, int speed)
+{
+  if (speed < 0)
+  {
+    // digitalWrite(pinDir, HIGH) ;
+    // PinMan.analogWrite(pinPWM, abs(speed));
+  }
+  else
+  {
+    // digitalWrite(pinDir, LOW) ;
+    // PinMan.analogWrite(pinPWM, abs(speed));
   }
 }
 
-
-
-//bber1
-// BTS7960 motor driver
-// Dir pin is used for reverse PWM signal
-// Pwm pin is used for forward PWM signal
-// 2 EN_R an L are shunt to only one enable possibility ,so never send PWM on both pinDIR and PinPWM at same time
-//VCC --> 3.3V
-//GND --> GND
-//R_IS --> NC
-//L_IS --> NC
-//R_EN --> pinMotorRightEnable
-//L_EN --> pinMotorRightEnable
-//RPWM --> pinMotorRightPWM 
-//LPWM --> pinMotorRightDir
-//setBTS7960(pinMotorLeftDir, pinMotorLeftPWM, pinMotorLeftEnable, value); break;//
-void setBTS7960(int pinDir ,int pinPWM ,int pinEnable , int speed){
-  if (speed > 0){
-    digitalWrite(pinEnable, HIGH) ;
+// bber1
+//  BTS7960 motor driver
+//  Dir pin is used for reverse PWM signal
+//  Pwm pin is used for forward PWM signal
+//  2 EN_R an L are shunt to only one enable possibility ,so never send PWM on both pinDIR and PinPWM at same time
+// VCC --> 3.3V
+// GND --> GND
+// R_IS --> NC
+// L_IS --> NC
+// R_EN --> pinMotorRightEnable
+// L_EN --> pinMotorRightEnable
+// RPWM --> pinMotorRightPWM
+// LPWM --> pinMotorRightDir
+// setBTS7960(pinMotorLeftDir, pinMotorLeftPWM, pinMotorLeftEnable, value); break;//
+void setBTS7960(int pinDir, int pinPWM, int pinEnable, int speed)
+{
+  if (speed > 0)
+  {
+    digitalWrite(pinEnable, HIGH);
     analogWrite(pinPWM, 0);
     analogWrite(pinDir, abs(speed));
-  } 
-  if (speed < 0){
-    digitalWrite(pinEnable, HIGH) ;
+  }
+  if (speed < 0)
+  {
+    digitalWrite(pinEnable, HIGH);
     analogWrite(pinDir, 0);
     analogWrite(pinPWM, abs(speed));
   }
-  if (speed == 0){
-    digitalWrite(pinEnable, LOW) ;
+  if (speed == 0)
+  {
+    digitalWrite(pinEnable, LOW);
     analogWrite(pinPWM, 0);
     analogWrite(pinDir, 0);
   }
@@ -175,26 +195,21 @@ void setBTS7960(int pinDir ,int pinPWM ,int pinEnable , int speed){
 // IN1 PinPWM         IN2 PinDir
 // PWM                L     Forward
 // nPWM               H     Reverse
-void setMC33926(int pinDir, int pinPWM, int speed) {
-  if (speed < 0) {
-    //digitalWrite(pinDir, HIGH) ;
-    //PinMan.analogWrite(pinPWM, 255-((byte)abs(speed)));
-  } else {
-    //digitalWrite(pinDir, LOW) ;
-    //PinMan.analogWrite(pinPWM, ((byte)speed));
+void setMC33926(int pinDir, int pinPWM, int speed)
+{
+  if (speed < 0)
+  {
+    // digitalWrite(pinDir, HIGH) ;
+    // PinMan.analogWrite(pinPWM, 255-((byte)abs(speed)));
+  }
+  else
+  {
+    // digitalWrite(pinDir, LOW) ;
+    // PinMan.analogWrite(pinPWM, ((byte)speed));
   }
 }
 
 // ---- sensor drivers --------------------------------------------------------------
-
-
-
-
-
-
-
-
-
 
 // Returns the day of week (0=Sunday, 6=Saturday) for a given date
 int getDayOfWeek(int month, int day, int year, int CalendarSystem)
@@ -206,27 +221,18 @@ int getDayOfWeek(int month, int day, int year, int CalendarSystem)
     year = year - 1;
   }
   return (
-           day
-           + (2 * month)
-           + int(6 * (month + 1) / 10)
-           + year
-           + int(year / 4)
-           - int(year / 100)
-           + int(year / 400)
-           + CalendarSystem
-         ) % 7;
+             day + (2 * month) + int(6 * (month + 1) / 10) + year + int(year / 4) - int(year / 100) + int(year / 400) + CalendarSystem) %
+         7;
 }
 
-
-
-unsigned long hstol(String recv){
+unsigned long hstol(String recv)
+{
   Serial.println(recv);
   char c[recv.length() + 1];
   unsigned long resultat;
   recv.toCharArray(c, recv.length() + 1);
-  resultat=strtol(c, NULL, 16); 
+  resultat = strtol(c, NULL, 16);
   Serial.println(resultat);
   Serial.println(String(resultat, HEX));
-  return resultat; 
-  
+  return resultat;
 }

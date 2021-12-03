@@ -33,7 +33,6 @@
 //     remote.run();
 //  }
 
-
 #ifndef PFOD_H
 #define PFOD_H
 
@@ -43,135 +42,141 @@
 //#include "perimeter.h"
 
 // pfodApp state
-enum { PFOD_OFF, PFOD_MENU, PFOD_CONSOLE,
-       PFOD_PLOT_BAT, PFOD_PLOT_ODO2D, PFOD_PLOT_IMU, PFOD_PLOT_SENSOR_COUNTERS,
-       PFOD_PLOT_SENSORS, PFOD_PLOT_PERIMETER, PFOD_PLOT_GPS, PFOD_PLOT_GPS2D,
-       PFOD_PLOT_MOTOR
-     };
+enum
+{
+  PFOD_OFF,
+  PFOD_MENU,
+  PFOD_CONSOLE,
+  PFOD_PLOT_BAT,
+  PFOD_PLOT_ODO2D,
+  PFOD_PLOT_IMU,
+  PFOD_PLOT_SENSOR_COUNTERS,
+  PFOD_PLOT_SENSORS,
+  PFOD_PLOT_PERIMETER,
+  PFOD_PLOT_GPS,
+  PFOD_PLOT_GPS2D,
+  PFOD_PLOT_MOTOR
+};
 class Robot;
 class RemoteControl
 {
-  public:
-    RemoteControl();
-    void setRobot(Robot *aRobot);
-    void initSerial(HardwareSerial* serialPort, uint32_t baudrate);
-    boolean readSerial();
-    //bb10
-    void processPI(String RpiCmd, float v1, float v2, float v3) ;
-    void run();
-    byte pfodState;
-    
-  private:
-    HardwareSerial* serialPort;
-    Robot *robot;
-    boolean pfodCmdComplete;
-    String pfodCmd;
-    int rfidDetailIdx;
-    int testmode;
-    unsigned long nextPlotTime;
-    //bb
-    float value1;
-    float value2;
-    float value3;
-    boolean dataFromPi;
-   // int8_t perimeterCapture[RAW_SIGNAL_SAMPLE_SIZE];
-    int perimeterCaptureIdx;
-    float stringToFloat(String &s);
-    byte rfid_pos_into_list;
-    
-    // generic
-    void sendYesNo(int value);
-    void sendOnOff(int value);
-    void sendLeftRight(int value);
+public:
+  RemoteControl();
+  void setRobot(Robot *aRobot);
+  void initSerial(HardwareSerial *serialPort, uint32_t baudrate);
+  boolean readSerial();
+  // bb10
+  void processPI(String RpiCmd, float v1, float v2, float v3);
+  void run();
+  byte pfodState;
 
+private:
+  HardwareSerial *serialPort;
+  Robot *robot;
+  boolean pfodCmdComplete;
+  String pfodCmd;
+  int rfidDetailIdx;
+  int testmode;
+  unsigned long nextPlotTime;
+  // bb
+  float value1;
+  float value2;
+  float value3;
+  boolean dataFromPi;
+  // int8_t perimeterCapture[RAW_SIGNAL_SAMPLE_SIZE];
+  int perimeterCaptureIdx;
+  float stringToFloat(String &s);
+  byte rfid_pos_into_list;
 
-    // PID slider
-    void sendPIDSlider(String cmd, String title, PID &pid, double scale, float maxvalue);
-    void processPIDSlider(String result, String cmd, PID &pid, double scale, float maxvalue);
+  // generic
+  void sendYesNo(int value);
+  void sendOnOff(int value);
+  void sendLeftRight(int value);
 
-    // generic slider
-    void sendSlider(String cmd, String title, float value, String unit, double scale, float maxvalue, float minvalue = 0);
-    void processSlider(String result, float &value, double scale);
-    void processSlider(String result, long &value, double scale);
-    void processSlider(String result, int &value, double scale);
-    void processSlider(String result, byte &value, double scale);
-    void processSlider(String result, short &value, double scale);
-    void processSlider(String result, unsigned long &value, double scale);
+  // PID slider
+  void sendPIDSlider(String cmd, String title, PID &pid, double scale, float maxvalue);
+  void processPIDSlider(String result, String cmd, PID &pid, double scale, float maxvalue);
 
-    // send timer menu details
-    void sendTimer(ttimer_t timer);
+  // generic slider
+  void sendSlider(String cmd, String title, float value, String unit, double scale, float maxvalue, float minvalue = 0);
+  void processSlider(String result, float &value, double scale);
+  void processSlider(String result, long &value, double scale);
+  void processSlider(String result, int &value, double scale);
+  void processSlider(String result, byte &value, double scale);
+  void processSlider(String result, short &value, double scale);
+  void processSlider(String result, unsigned long &value, double scale);
 
-    // main menu
-    void sendMainMenu(boolean update);
-    void sendErrorMenu(boolean update);
-    void sendInfoMenu(boolean update);
-    void sendCommandMenu(boolean update);
-    void processCommandMenu(String pfodCmd);
-    void sendManualMenu(boolean update);
-    void sendCompassMenu(boolean update);
-    void sendTestOdoMenu(boolean update);
-    void processCompassMenu(String pfodCmd);
-    void processTestOdoMenu(String pfodCmd);
-    void processManualMenu(String pfodCmd);
-    void processSettingsMenu(String pfodCmd);
+  // send timer menu details
+  void sendTimer(ttimer_t timer);
 
-    // plotting
-    void sendPlotMenu(boolean update);
+  // main menu
+  void sendMainMenu(boolean update);
+  void sendErrorMenu(boolean update);
+  void sendInfoMenu(boolean update);
+  void sendCommandMenu(boolean update);
+  void processCommandMenu(String pfodCmd);
+  void sendManualMenu(boolean update);
+  void sendCompassMenu(boolean update);
+  void sendTestOdoMenu(boolean update);
+  void processCompassMenu(String pfodCmd);
+  void processTestOdoMenu(String pfodCmd);
+  void processManualMenu(String pfodCmd);
+  void processSettingsMenu(String pfodCmd);
 
-    // settings
-    void sendSettingsMenu(boolean update);
-    void sendMotorMenu(boolean update);
-    void sendMowMenu(boolean update);
-    void sendBumperMenu(boolean update);
-    void sendDropMenu(boolean update);
-    void sendSonarMenu(boolean update);
-    void sendPerimeterMenu(boolean update);
-    void sendLawnSensorMenu(boolean update);
-    void sendImuMenu(boolean update);
-    void sendRemoteMenu(boolean update);
-    void sendBatteryMenu(boolean update);
-    void sendStationMenu(boolean update);
-    void sendOdometryMenu(boolean update);
-    void sendRainMenu(boolean update);
-    void sendGPSMenu(boolean update);
-    void sendRFIDMenu(boolean update);
-    void sendRfidDetailMenu(int rfidDetailIdx,boolean update);
+  // plotting
+  void sendPlotMenu(boolean update);
 
-    void sendDateTimeMenu(boolean update);
-    void sendFactorySettingsMenu(boolean update);
+  // settings
+  void sendSettingsMenu(boolean update);
+  void sendMotorMenu(boolean update);
+  void sendMowMenu(boolean update);
+  void sendBumperMenu(boolean update);
+  void sendDropMenu(boolean update);
+  void sendSonarMenu(boolean update);
+  void sendPerimeterMenu(boolean update);
+  void sendLawnSensorMenu(boolean update);
+  void sendImuMenu(boolean update);
+  void sendRemoteMenu(boolean update);
+  void sendBatteryMenu(boolean update);
+  void sendStationMenu(boolean update);
+  void sendOdometryMenu(boolean update);
+  void sendRainMenu(boolean update);
+  void sendGPSMenu(boolean update);
+  void sendRFIDMenu(boolean update);
+  void sendRfidDetailMenu(int rfidDetailIdx, boolean update);
 
-    void sendByLaneMenu(boolean update);
-    void processByLaneMenu(String pfodCmd);
+  void sendDateTimeMenu(boolean update);
+  void sendFactorySettingsMenu(boolean update);
 
-    void processMotorMenu(String pfodCmd);
-    void processErrorMenu(String pfodCmd);
-    void processMowMenu(String pfodCmd);
-    void processBumperMenu(String pfodCmd);
-    void processSonarMenu(String pfodCmd);
-    void processPerimeterMenu(String pfodCmd);
-    void processLawnSensorMenu(String pfodCmd);
-    void processRainMenu(String pfodCmd);
-    void processDropMenu(String pfodCmd);
-    void processGPSMenu(String pfodCmd);
-    void processRFIDMenu(String pfodCmd);
-    void processRfidDetailMenu(int rfidDetailIdx,String pfodCmd);
-    void processImuMenu(String pfodCmd);
-    void processRemoteMenu(String pfodCmd);
-    void processBatteryMenu(String pfodCmd);
-    void processStationMenu(String pfodCmd);
-    void processOdometryMenu(String pfodCmd);
-    void processDateTimeMenu(String pfodCmd);
-    void processFactorySettingsMenu(String pfodCmd);
-    void processInfoMenu(String pfodCmd);
+  void sendByLaneMenu(boolean update);
+  void processByLaneMenu(String pfodCmd);
 
-    // timer
-    void sendTimerDetailMenu(int timerIdx, boolean update);
-    void processTimerDetailMenu(String pfodCmd);
-    void sendTimerMenu(boolean update);
-    void processTimerMenu(String pfodCmd);
+  void processMotorMenu(String pfodCmd);
+  void processErrorMenu(String pfodCmd);
+  void processMowMenu(String pfodCmd);
+  void processBumperMenu(String pfodCmd);
+  void processSonarMenu(String pfodCmd);
+  void processPerimeterMenu(String pfodCmd);
+  void processLawnSensorMenu(String pfodCmd);
+  void processRainMenu(String pfodCmd);
+  void processDropMenu(String pfodCmd);
+  void processGPSMenu(String pfodCmd);
+  void processRFIDMenu(String pfodCmd);
+  void processRfidDetailMenu(int rfidDetailIdx, String pfodCmd);
+  void processImuMenu(String pfodCmd);
+  void processRemoteMenu(String pfodCmd);
+  void processBatteryMenu(String pfodCmd);
+  void processStationMenu(String pfodCmd);
+  void processOdometryMenu(String pfodCmd);
+  void processDateTimeMenu(String pfodCmd);
+  void processFactorySettingsMenu(String pfodCmd);
+  void processInfoMenu(String pfodCmd);
 
+  // timer
+  void sendTimerDetailMenu(int timerIdx, boolean update);
+  void processTimerDetailMenu(String pfodCmd);
+  void sendTimerMenu(boolean update);
+  void processTimerMenu(String pfodCmd);
 };
-
-
 
 #endif
