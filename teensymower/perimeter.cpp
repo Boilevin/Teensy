@@ -49,7 +49,7 @@ void PerimeterClass::changeArea(byte areaInMowing)
 {
 }
 
-static void PerimeterClass::adc1_isr()
+void PerimeterClass::adc1_isr()
 { // this is the main adc1 loop executed each 24 microseconds
   uint16_t adc_val = adc->adc1->readSingle();
   if (buffer_adc_1_count < BUFFER_SIZE)
@@ -66,7 +66,7 @@ static void PerimeterClass::adc1_isr()
   asm("DSB");
 }
 
-static void PerimeterClass::adc0_isr()
+void PerimeterClass::adc0_isr()
 { // this is the main adc0 loop executed each 24 microseconds
   // Serial.println(buffer_adc_0_count);
   uint16_t adc_val = adc->adc0->readSingle();
