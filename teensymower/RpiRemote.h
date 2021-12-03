@@ -1,6 +1,8 @@
-#include "arduino.h"
 #ifndef RpiRemote_h
 #define RpiRemote_h
+
+#include "arduino.h"
+
 //#define RaspberryPIPort SerialUSB
 class Robot;
 
