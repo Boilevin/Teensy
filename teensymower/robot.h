@@ -374,9 +374,9 @@ public:
     float TagAngle2;
     int TagDist2;
     struct rfid_list *next;
-  };
+  } rfid_list;
 
-  typedef struct rfid_list;
+  //typedef struct rfid_list;
 
   struct rfid_list *head = NULL;
 

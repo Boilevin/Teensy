@@ -62,7 +62,7 @@ const char *statusNames[] = {"WAIT", "NORMALMOWING", "SPIRALEMOWING", "BACKTOSTA
 
 const char *mowPatternNames[] = {"RAND", "LANE", "WIRE", "ZIGZAG"};
 const char *consoleModeNames[] = {"sen_counters", "sen_values", "perimeter", "off", "Tracking"};
-char *rfidToDoNames[] = {"NOTHING", "RTS", "FAST_START", "NEW_AREA", "SPEED", "AREA1", "AREA2", "AREA3"};
+const char *rfidToDoNames[] = {"NOTHING", "RTS", "FAST_START", "NEW_AREA", "SPEED", "AREA1", "AREA2", "AREA3"};
 
 // for debug only
 unsigned long StartReadAt;
