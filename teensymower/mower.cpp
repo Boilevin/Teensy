@@ -30,7 +30,7 @@ Mower robot;
 Mower::Mower()
 {
 
-  name = "Teendymower";
+  name = "Teensymower";
   // ------- wheel motors -----------------------------
   motorAccel; 
   // bb

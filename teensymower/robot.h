@@ -42,9 +42,6 @@
 
 */
 
-// code version
-#define VER "1.0-Teensyber GY-521"
-
 // sensors
 enum
 {

@@ -232,9 +232,9 @@ Robot::Robot()
   RollToInsideQty = 0;
   findedYaw = 999; // use the first time set the compass and the Gyro have the same direction with state roll to find yaw
   highGrassDetect = false;
-  motorRightPID.Kp = motorLeftPID_Kp;
-  motorRightPID.Ki = motorLeftPID_Ki;
-  motorRightPID.Kd = motorLeftPID_Kd;
+  motorRightPID_Kp = motorLeftPID_Kp;
+  motorRightPID_Ki = motorLeftPID_Ki;
+  motorRightPID_Kd = motorLeftPID_Kd;
   gpsReady = false;
   MyrpiStatusSync = false;
   ConsoleToPfod = false;
@@ -1963,9 +1963,9 @@ void Robot::motorControlOdo()
   // DRIVE IN STRAIGHT LINE
   if (stateCurr == STATE_FORWARD_ODO || (stateCurr == STATE_PERI_FIND) || (stateCurr == STATE_DRIVE1_TO_NEWAREA) || (stateCurr == STATE_DRIVE2_TO_NEWAREA))
   { // PID compute to accel or brake the wheel to drive straight
-    motorRightPID.Kp = motorLeftPID_Kp;
-    motorRightPID.Ki = motorLeftPID_Ki;
-    motorRightPID.Kd = motorLeftPID_Kd;
+    motorRightPID_Kp = motorLeftPID_Kp;
+    motorRightPID_Ki = motorLeftPID_Ki;
+    motorRightPID_Kd = motorLeftPID_Kd;
     // USE THE IMU
     if ((imuUse) && (mowPatternCurr == MOW_LANES) && (stateCurr == STATE_FORWARD_ODO))
     { // if mow by lane need different cible
@@ -2506,9 +2506,9 @@ void Robot::motorControl()
     leftSpeed = max(-motorSpeedMaxPwm, min(0, leftSpeed));
 
   // Regelbereich entspricht maximaler PWM am Antriebsrad (motorSpeedMaxPwm), um auch an Steigungen hÃ¶chstes Drehmoment fÃ¼r die Solldrehzahl zu gewÃ¤hrleisten
-  motorRightPID.Kp = motorLeftPID_Kp;
-  motorRightPID.Ki = motorLeftPID_Ki;
-  motorRightPID.Kd = motorLeftPID_Kd;
+  motorRightPID_Kp = motorLeftPID_Kp;
+  motorRightPID_Ki = motorLeftPID_Ki;
+  motorRightPID_Kd = motorLeftPID_Kd;
   motorRightPID.x = motorRightRpmCurr; // IST
   // if (millis() < stateStartTime + motorZeroSettleTime) motorRightPID.w = 0; // get zero speed first after state change
   if ((stateCurr == STATE_OFF))
