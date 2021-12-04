@@ -17,7 +17,7 @@
   Private-use only! (you need to ask for a commercial-use)
 
 */
-
+#include "config.h"
 #include "mower.h"
 
 #include <Arduino.h>
@@ -30,199 +30,193 @@ Mower robot;
 Mower::Mower()
 {
 
-  name = "Ardumower";
+  name = "Teendymower";
   // ------- wheel motors -----------------------------
-  motorAccel = 1500; // motor wheel acceleration - only functional when odometry is not in use (warning: do not set too low)
+  motorAccel; 
   // bb
-  motorLeftChange = 500;
-  motorRightChange = 500;
-  motorOdoAccel = 1500;         // Time for accel from 0 to 100% in ms
-  motorSpeedMaxRpm = 24;        // motor wheel max RPM (WARNING: do not set too high, so there's still speed control when battery is low!)
-  motorSpeedMaxPwm = 190;       // motor wheel max Pwm  (8-bit PWM=255, 10-bit PWM=1023)
-  motorPowerMax = 23;           // motor wheel max power (Watt)
-  motorSenseRightScale = 1.870; // normal is 1.536 motor right sense scale (mA=(ADC-zero)/scale)
-  motorSenseLeftScale = 1.650;  // normal is 1.536 motor left sense scale  (mA=(ADC-zero)/scale)
-  motorPowerIgnoreTime = 2000;  // time to ignore motor power when start to avoid read the peack on motor start (ms)
-  motorZeroSettleTime = 2000;   // defaut 3000 how long (ms) to wait for motors to settle at zero speed
-  motorRollDegMax = 100;        // max. roll Deg
-  motorRollDegMin = 20;         // min. roll Deg
+  motorLeftChange; 
+  motorRightChange; 
+  motorOdoAccel;          // Time for accel from 0 to 100% in ms
+  motorSpeedMaxRpm;         // motor wheel max RPM (WARNING: do not set too high, so there's still speed control when battery is low!)
+  motorSpeedMaxPwm;        // motor wheel max Pwm  (8-bit PWM=255, 10-bit PWM=1023)
+  motorPowerMax;           // motor wheel max power (Watt)
+  motorSenseRightScale; // normal is 1.536 motor right sense scale (mA=(ADC-zero)/scale)
+  motorSenseLeftScale;  // normal is 1.536 motor left sense scale  (mA=(ADC-zero)/scale)
+  motorPowerIgnoreTime;  // time to ignore motor power when start to avoid read the peack on motor start (ms)
+  motorZeroSettleTime;   // defaut 3000 how long (ms) to wait for motors to settle at zero speed
+  motorRollDegMax;        // max. roll Deg
+  motorRollDegMin;         // min. roll Deg
 
-  motorForwTimeMax = 80000;     // not use max. forward time (ms) / timeout
-  motorBiDirSpeedRatio1 = 0.3;  // bidir mow pattern speed ratio 1
-  motorBiDirSpeedRatio2 = 0.92; // bidir mow pattern speed ratio 2
-  motorLeftPID.Kp = 1.0;        // motor wheel PID controller
-  motorLeftPID.Ki = 0.4;
-  motorLeftPID.Kd = 0.0;
-  motorRightSwapDir = 0; // inverse right motor direction?
-  motorLeftSwapDir = 0;  // inverse left motor direction?
+  motorForwTimeMax;     // not use max. forward time (ms) / timeout
+  motorBiDirSpeedRatio1;  // bidir mow pattern speed ratio 1
+  motorBiDirSpeedRatio2; // bidir mow pattern speed ratio 2
+  //NEED CHANGES replace . with _
+  motorLeftPID_Kp;        // motor wheel PID controller
+  motorLeftPID_Ki;
+  motorLeftPID_Kd;
+  motorRightSwapDir; // inverse right motor direction?
+  motorLeftSwapDir;  // inverse left motor direction?
 
-  motorRightOffsetFwd = 0;  // percent offset in PWM use for the 2 wheels motor have the same speed a the same PWM
-  motorRightOffsetRev = 0;  // use the 1 ml ODO test to find good value the 2 wheels need to stop at the same time
-  motorTickPerSecond = 200; // use to compute the maxodostate duration and computed on the calibration motor
+  motorRightOffsetFwd;  // percent offset in PWM use for the 2 wheels motor have the same speed a the same PWM
+  motorRightOffsetRev;  // use the 1 ml ODO test to find good value the 2 wheels need to stop at the same time
+  motorTickPerSecond; // use to compute the maxodostate duration and computed on the calibration motor
 
-  UseAccelLeft = 1;
-  UseBrakeLeft = 1;
-  UseAccelRight = 1;
-  UseBrakeRight = 1;
-  AngleRotate = 100;
-  SpeedOdoMin = 50;
-  SpeedOdoMax = 140;
-  odoLeftRightCorrection = true; // left-right correction for straight lines used in manual mode
-  autoAdjustSlopeSpeed = true;   // adjust the speed on slope to have same speed on uphill and downhill
+  UseAccelLeft;
+  UseBrakeLeft;
+  UseAccelRight;
+  UseBrakeRight;
+  AngleRotate;
+  SpeedOdoMin;
+  SpeedOdoMax;
+  odoLeftRightCorrection; // left-right correction for straight lines used in manual mode
+  autoAdjustSlopeSpeed;   // adjust the speed on slope to have same speed on uphill and downhill
 
   // ------ mower motor -------------------------------
-  motorMowAccel = 1000;      // motor mower acceleration (warning: do not set too low) 2000 seems to fit best considerating start time and power consumption
-  motorMowSpeedMaxPwm = 200; // motor mower max PWM
-  motorMowSpeedMinPwm = 100; // motor mower minimum PWM (only for cutter modulation)
-  motorMowPowerMax = 18.0;   // motor mower max power (Watt)
+  motorMowAccel;      // motor mower acceleration (warning: do not set too low) 2000 seems to fit best considerating start time and power consumption
+  motorMowSpeedMaxPwm; // motor mower max PWM
+  motorMowSpeedMinPwm; // motor mower minimum PWM (only for cutter modulation)
+  motorMowPowerMax;   // motor mower max power (Watt)
 
-  motorMowSenseScale = 1.536; // motor mower sense scale (mA=(ADC-zero)/scale)
-  motorMowPID.Kp = 0.005;     // motor mower RPM PID controller
-  motorMowPID.Ki = 0.01;
-  motorMowPID.Kd = 0.01;
+  motorMowSenseScale; // motor mower sense scale (mA=(ADC-zero)/scale)
+  //NEED CHANGES replace . with _
+  motorMowPID_Kp;     // motor mower RPM PID controller
+  motorMowPID_Ki;
+  motorMowPID_Kd;
   //  ------ bumper -----------------------------------
-  bumperUse = 0; // has bumpers?
-  //  ------ drop -----------------------------------
-  dropUse = 0;     // has drops?                                                                                              Dropsensor - Absturzsensor vorhanden ?
-  dropcontact = 0; // contact 0-openers 1-closers                                                                              Dropsensor - Kontakt 0-Ã–ffner - 1-SchlieÃŸer betÃ¤tigt gegen GND
+  bumperUse; // has bumpers?
   // ------ rain ------------------------------------
-  rainUse = 0; // use rain sensor?
+  rainUse; // use rain sensor?
 
   // ------ DHT22Use ------------------------------------
-  DHT22Use = 0;        // use DHT22 sensor?
-  maxTemperature = 55; // max temp before switch off
+  DHT22Use;        // use DHT22 sensor?
+  maxTemperature; // max temp before switch off
   // bber35
   //  ------ RFID ------------------------------------
-  rfidUse = 0; // use rfid
-  newtagRotAngle1 = -90;
-  newtagRotAngle2 = 0;
-  newtagDistance1 = 10;
-  newtagDistance2 = 0;
+  rfidUse; // use rfid
+  newtagRotAngle1;
+  newtagRotAngle2;
+  newtagDistance1;
+  newtagDistance2;
 
   // ------ sonar ------------------------------------
-  sonarUse = 0; // use ultra sonic sensor? (WARNING: robot will slow down, if enabled but not connected!)
-  sonarLeftUse = 1;
-  sonarRightUse = 1;
-  sonarCenterUse = 0;
-  sonarTriggerBelow = 87;  // ultrasonic sensor trigger distance in cm (0=off)
-  sonarToFrontDist = 30;   // ultrasonic sensor distance to front mower in cm
-  sonarLikeBumper = false; // ultrasonic reduce speed vs bumper like
+  sonarUse; // use ultra sonic sensor? (WARNING: robot will slow down, if enabled but not connected!)
+  sonarLeftUse;
+  sonarRightUse;
+  sonarTriggerBelow;  // ultrasonic sensor trigger distance in cm (0=off)
+  sonarToFrontDist;   // ultrasonic sensor distance to front mower in cm
+  sonarLikeBumper; // ultrasonic reduce speed vs bumper like
 
   // ------ perimeter ---------------------------------
-  perimeterUse = 0;              // use perimeter?
-  perimeterTriggerMinSmag = 200; // perimeter minimum smag to use on big area
-  // perimeterOutRollTimeMax  = 2000;   // free
-  // perimeterOutRollTimeMin = 750;    // free
-  perimeterOutRevTime = 2200;    // free
-  perimeterTrackRollTime = 1500; // roll time during perimeter tracking
-  perimeterTrackRevTime = 2200;  // reverse time during perimeter tracking
-  DistPeriOutRev = 40;           // reverse distance when reach the perimeter in cm
-  DistPeriObstacleRev = 30;      // reverse distance when hit obstacle while tracking in cm
-  DistPeriOutForw = 60;          // distance to accell
-  DistPeriOutStop = 15;          // slowing distance after crossover the wire
-  DistPeriObstacleForw = 25;     // distance while arc circle in peri obstacle avoid
-  perimeterPID.Kp = 16.5;        // perimeter PID controller
-  perimeterPID.Ki = 8;
-  perimeterPID.Kd = 0;
-  trackingPerimeterTransitionTimeOut = 1500;
-  trackingErrorTimeOut = 10000;
-  trakBlockInnerWheel = true;
+  perimeterUse;              // use perimeter?
+  perimeterTriggerMinSmag; // perimeter minimum smag to use on big area
+  // perimeterOutRollTimeMax;   // free
+  // perimeterOutRollTimeMin;    // free
+  perimeterOutRevTime;    // free
+  perimeterTrackRollTime; // roll time during perimeter tracking
+  perimeterTrackRevTime;  // reverse time during perimeter tracking
+  DistPeriOutRev;           // reverse distance when reach the perimeter in cm
+  DistPeriObstacleRev;      // reverse distance when hit obstacle while tracking in cm
+  DistPeriOutForw;          // distance to accell
+  DistPeriOutStop;          // slowing distance after crossover the wire
+  DistPeriObstacleForw;     // distance while arc circle in peri obstacle avoid
+  //NEED CHANGES replace . with _
+  perimeterPID_Kp;        // perimeter PID controller
+  perimeterPID_Ki;
+  perimeterPID_Kd;
+  trackingPerimeterTransitionTimeOut;
+  trackingErrorTimeOut;
+  trakBlockInnerWheel;
   // bb
-  MaxSpeedperiPwm = 180;                // speed max in PWM while perimeter tracking
-  ActualSpeedPeriPWM = MaxSpeedperiPwm; // speed in PWM while perimeter tracking
-  // timeToResetSpeedPeri = 0; // if millis() > at this var the speed is set to max value
-  RollTimeFor45Deg = 1000;      // time while roll in peri obstacle avoid if no Odometry
-  circleTimeForObstacle = 4000; // time while arc circle in peri obstacle avoid if no Odometry
-  DistPeriObstacleAvoid = 100;  // distance while arc circle in peri obstacle avoid
-  perimeterMagMaxValue = 2000;  // Maximum value return when near the perimeter wire (use for tracking and slowing when near wire
+  MaxSpeedperiPwm;                // speed max in PWM while perimeter tracking
+  ActualSpeedPeriPWM; // speed in PWM while perimeter tracking
+  // timeToResetSpeedPeri; // if millis() > at this var the speed is set to max value
+  RollTimeFor45Deg;      // time while roll in peri obstacle avoid if no Odometry
+  circleTimeForObstacle; // time while arc circle in peri obstacle avoid if no Odometry
+  DistPeriObstacleAvoid;  // distance while arc circle in peri obstacle avoid
+  perimeterMagMaxValue;  // Maximum value return when near the perimeter wire (use for tracking and slowing when near wire
   // perimeter.read2Coil = false;
-  areaToGo = 1; // initialise the areatogo to the station area
-
-  // ------ lawn sensor --------------------------------
-  lawnSensorUse = 0; // use capacitive Sensor
+  areaToGo; // initialise the areatogo to the station area
   // ------  IMU (compass/accel/gyro) ----------------------
-  imuUse = 1;               // use IMU?
-  CompassUse = 0;           // activate compass?
-  stopMotorDuringCalib = 0; // correct direction by compass?
-  imuDirPID.Kp = 4.4;       // direction PID controller
-  imuDirPID.Ki = 3.3;
-  imuDirPID.Kd = 0.0;
-  imuRollPID.Kp = 0.8; // roll PID controller
-  imuRollPID.Ki = 21;
-  imuRollPID.Kd = 0;
+  imuUse;               // use IMU?
+  CompassUse;           // activate compass?
+  stopMotorDuringCalib; // correct direction by compass?
+  //NEED CHANGES replace . with _
+  imuDirPID_Kp;       // direction PID controller
+  imuDirPID_Ki;
+  imuDirPID_Kd;
+  imuRollPID_Kp; // roll PID controller
+  imuRollPID_Ki;
+  imuRollPID_Kd;
   // bb
-  yawSet1 = 45;
-  yawOppositeLane1RollRight = -125;
-  yawOppositeLane1RollLeft = -135;
-  yawSet2 = 90;
-  yawOppositeLane2RollRight = -92;
-  yawOppositeLane2RollLeft = -88;
-  yawSet3 = 135;
-  yawOppositeLane3RollRight = -47;
-  yawOppositeLane3RollLeft = -42;
-  laneUseNr = 2;
-  maxDriftPerSecond = 0.05;          // limit the stop time if small drift
-  maxDurationDmpAutocalib = 60;      // in sec
-  delayBetweenTwoDmpAutocalib = 360; // in sec
-  yawCiblePos = 90;
-  yawCibleNeg = -90;
-  DistBetweenLane = 38;
-  maxLenghtByLane = 9; // distance to run in bylane before simulate a wire detection
-  justChangeLaneDir = true;
-  mowPatternCurr = MOW_LANES;
-  compassRollSpeedCoeff = 40; // speed used when the mower search the compass yaw it's percent of motorSpeedMaxRpm ,Avoid to roll to fast for a correct detection
-
-  // ------ model R/C ------------------------------------
-  remoteUse = 0; // use model remote control (R/C)?
+  yawSet1;
+  yawOppositeLane1RollRight;
+  yawOppositeLane1RollLeft;
+  yawSet2;
+  yawOppositeLane2RollRight;
+  yawOppositeLane2RollLeft;
+  yawSet3;
+  yawOppositeLane3RollRight;
+  yawOppositeLane3RollLeft;
+  laneUseNr;
+  maxDriftPerSecond;          // limit the stop time if small drift
+  maxDurationDmpAutocalib;      // in sec
+  delayBetweenTwoDmpAutocalib; // in sec
+  yawCiblePos;
+  yawCibleNeg;
+  DistBetweenLane;
+  maxLenghtByLane; // distance to run in bylane before simulate a wire detection
+  justChangeLaneDir;
+  mowPatternCurr;
+  compassRollSpeedCoeff; // speed used when the mower search the compass yaw it's percent of motorSpeedMaxRpm ,Avoid to roll to fast for a correct detection
   // ------ battery -------------------------------------
-  batMonitor = false;          // monitor battery and charge voltage?
-  batGoHomeIfBelow = 24.3;     // drive home voltage (Volt)
-  batSwitchOffIfBelow = 23;    // switch off battery if below voltage (Volt)
-  batSwitchOffIfIdle = 300;    // switch off battery if idle (minutes)
-  batFactor = 10.88;           // depend of the resistor divisor on board R12 and R13
-  batChgFactor = 10.89;        // depend of the resistor divisor on board R9 and R10
-  batFull = 29.4;              // battery reference Voltage (fully charged) PLEASE ADJUST IF USING A DIFFERENT BATTERY VOLTAGE! FOR a 12V SYSTEM TO 14.4V
-  batChargingCurrentMax = 2;   // maximum current your charger can devliver
-  batFullCurrent = 0.1;        // current flowing when battery is fully charged
-  startChargingIfBelow = 25.0; // start charging if battery Voltage is below
-  chargingTimeout = 25200000;  // safety timer for charging (ms)  7 hrs
-  chgSenseZero = 511;          // charge current sense zero point
-  batSenseFactor = 1.11;       // charge current conversion factor   - Empfindlichkeit nimmt mit ca. 39/V Vcc ab
-  chgSense = 185.0;            // mV/A empfindlichkeit des Ladestromsensors in mV/A (FÃ¼r ACS712 5A = 185)
-  chgChange = 0;               // Messwertumkehr von - nach +         1 oder 0
-  chgNull = 2;                 // Nullduchgang abziehen (1 oder 2)
+  batMonitor;          // monitor battery and charge voltage?
+  batGoHomeIfBelow;     // drive home voltage (Volt)
+  batSwitchOffIfBelow;    // switch off battery if below voltage (Volt)
+  batSwitchOffIfIdle;    // switch off battery if idle (minutes)
+  batFactor;           // depend of the resistor divisor on board R12 and R13
+  batChgFactor;        // depend of the resistor divisor on board R9 and R10
+  batFull;              // battery reference Voltage (fully charged) PLEASE ADJUST IF USING A DIFFERENT BATTERY VOLTAGE! FOR a 12V SYSTEM TO 14.4V
+  batChargingCurrentMax;   // maximum current your charger can devliver
+  batFullCurrent;        // current flowing when battery is fully charged
+  startChargingIfBelow; // start charging if battery Voltage is below
+  chargingTimeout;  // safety timer for charging (ms)  7 hrs
+  chgSenseZero;          // charge current sense zero point
+  batSenseFactor;       // charge current conversion factor   - Empfindlichkeit nimmt mit ca. 39/V Vcc ab
+  chgSense;            // mV/A empfindlichkeit des Ladestromsensors in mV/A (FÃ¼r ACS712 5A = 185)
+  chgChange;               // Messwertumkehr von - nach +         1 oder 0
+  chgNull;                 // Nullduchgang abziehen (1 oder 2)
   // ------  charging station ---------------------------
-  stationRevDist = 50;   // charge station reverse 50 cm
-  stationRollAngle = 45; // charge station roll after reverse
-  stationForwDist = 30;  // charge station accel distance cm
-  stationCheckDist = 2;  // charge station  check distance to be sure voltage is OK cm
-  UseBumperDock = true;  // bumper is pressed when docking or not
-  dockingSpeed = 60;     // speed docking is (percent of maxspeed)
-  autoResetActive = 0;   // after charging reboot or not
+  stationRevDist;   // charge station reverse 50 cm
+  stationRollAngle; // charge station roll after reverse
+  stationForwDist;  // charge station accel distance cm
+  stationCheckDist;  // charge station  check distance to be sure voltage is OK cm
+  UseBumperDock;  // bumper is pressed when docking or not
+  dockingSpeed;     // speed docking is (percent of maxspeed)
+  autoResetActive;   // after charging reboot or not
 
   // ------ odometry ------------------------------------
-  odometryUse = 1;                   // use odometry?
-  odometryTicksPerRevolution = 1010; // encoder ticks per one full resolution
-  odometryTicksPerCm = 12.9;         // encoder ticks per cm
-  odometryWheelBaseCm = 43;          // wheel-to-wheel distance (cm)
+  odometryUse;                   // use odometry?
+  odometryTicksPerRevolution; // encoder ticks per one full resolution
+  odometryTicksPerCm;         // encoder ticks per cm
+  odometryWheelBaseCm;          // wheel-to-wheel distance (cm)
 
   // ----- other -----------------------------------------
-  buttonUse = 1;               // has digital ON/OFF button?
-  RaspberryPIUse = false;      // a raspberryPi is connected to USBNative port
-  mowPatternDurationMax = 120; // in minutes
+  buttonUse;               // has digital ON/OFF button?
+  RaspberryPIUse;      // a raspberryPi is connected to USBNative port
+  mowPatternDurationMax; // in minutes
 
   // ----- user-defined switch ---------------------------
-  userSwitch1 = 0; // user-defined switch 1 (default value)
-  userSwitch2 = 0; // user-defined switch 2 (default value)
-  userSwitch3 = 0; // user-defined switch 3 (default value)
+  userSwitch1; // user-defined switch 1 (default value)
+  userSwitch2; // user-defined switch 2 (default value)
+  userSwitch3; // user-defined switch 3 (default value)
   // ----- timer -----------------------------------------
-  timerUse = 0; // use RTC and timer?
+  timerUse; // use RTC and timer?
 
   // ------ mower stats-------------------------------------------
-  statsOverride = false; // if set to true mower stats are overwritten - be careful
-  statsMowTimeMinutesTotal = 300;
-  statsBatteryChargingCounterTotal = 10;     // 11
-  statsBatteryChargingCapacityTotal = 10000; // 30000
+  statsOverride; // if set to true mower stats are overwritten - be careful
+  statsMowTimeMinutesTotal;
+  statsBatteryChargingCounterTotal;     // 11
+  statsBatteryChargingCapacityTotal; // 30000
   // -----------configuration end-------------------------------------
 }
 

@@ -232,9 +232,9 @@ Robot::Robot()
   RollToInsideQty = 0;
   findedYaw = 999; // use the first time set the compass and the Gyro have the same direction with state roll to find yaw
   highGrassDetect = false;
-  motorRightPID.Kp = motorLeftPID.Kp;
-  motorRightPID.Ki = motorLeftPID.Ki;
-  motorRightPID.Kd = motorLeftPID.Kd;
+  motorRightPID.Kp = motorLeftPID_Kp;
+  motorRightPID.Ki = motorLeftPID_Ki;
+  motorRightPID.Kd = motorLeftPID_Kd;
   gpsReady = false;
   MyrpiStatusSync = false;
   ConsoleToPfod = false;
@@ -803,12 +803,12 @@ void Robot::loadSaveUserSettings(boolean readflag)
   eereadwrite(readflag, addr, motorMowPowerMax);
   eereadwrite(readflag, addr, motorMowSpeedMinPwm);
   eereadwrite(readflag, addr, motorMowSenseScale);
-  eereadwrite(readflag, addr, motorLeftPID.Kp);
-  eereadwrite(readflag, addr, motorLeftPID.Ki);
-  eereadwrite(readflag, addr, motorLeftPID.Kd);
-  eereadwrite(readflag, addr, motorMowPID.Kp);
-  eereadwrite(readflag, addr, motorMowPID.Ki);
-  eereadwrite(readflag, addr, motorMowPID.Kd);
+  eereadwrite(readflag, addr, motorLeftPID_Kp);
+  eereadwrite(readflag, addr, motorLeftPID_Ki);
+  eereadwrite(readflag, addr, motorLeftPID_Kd);
+  eereadwrite(readflag, addr, motorMowPID_Kp);
+  eereadwrite(readflag, addr, motorMowPID_Ki);
+  eereadwrite(readflag, addr, motorMowPID_Kd);
   eereadwrite(readflag, addr, motorBiDirSpeedRatio1);
   eereadwrite(readflag, addr, motorBiDirSpeedRatio2);
   eereadwrite(readflag, addr, motorLeftSwapDir);
@@ -827,9 +827,9 @@ void Robot::loadSaveUserSettings(boolean readflag)
   eereadwrite(readflag, addr, perimeterOutRevTime);
   eereadwrite(readflag, addr, perimeterTrackRollTime);
   eereadwrite(readflag, addr, perimeterTrackRevTime);
-  eereadwrite(readflag, addr, perimeterPID.Kp);
-  eereadwrite(readflag, addr, perimeterPID.Ki);
-  eereadwrite(readflag, addr, perimeterPID.Kd);
+  eereadwrite(readflag, addr, perimeterPID_Kp);
+  eereadwrite(readflag, addr, perimeterPID_Ki);
+  eereadwrite(readflag, addr, perimeterPID_Kd);
   // eereadwrite(readflag, addr, perimeter.signalCodeNo);
   // eereadwrite(readflag, addr, perimeter.swapCoilPolarityLeft);
   // eereadwrite(readflag, addr, perimeter.timeOutSecIfNotInside);
@@ -837,12 +837,12 @@ void Robot::loadSaveUserSettings(boolean readflag)
   eereadwrite(readflag, addr, lawnSensorUse);
   eereadwrite(readflag, addr, imuUse);
   eereadwrite(readflag, addr, stopMotorDuringCalib);
-  eereadwrite(readflag, addr, imuDirPID.Kp);
-  eereadwrite(readflag, addr, imuDirPID.Ki);
-  eereadwrite(readflag, addr, imuDirPID.Kd);
-  eereadwrite(readflag, addr, imuRollPID.Kp);
-  eereadwrite(readflag, addr, imuRollPID.Ki);
-  eereadwrite(readflag, addr, imuRollPID.Kd);
+  eereadwrite(readflag, addr, imuDirPID_Kp);
+  eereadwrite(readflag, addr, imuDirPID_Ki);
+  eereadwrite(readflag, addr, imuDirPID_Kd);
+  eereadwrite(readflag, addr, imuRollPID_Kp);
+  eereadwrite(readflag, addr, imuRollPID_Ki);
+  eereadwrite(readflag, addr, imuRollPID_Kd);
   eereadwrite(readflag, addr, remoteUse);
   eereadwrite(readflag, addr, batMonitor);
   eereadwrite(readflag, addr, batGoHomeIfBelow);
@@ -993,12 +993,12 @@ void Robot::printSettingSerial()
   ShowMessage("motorTickPerSecond         : ");
   ShowMessageln(motorTickPerSecond);
 
-  ShowMessage("motorLeftPID.Kp            : ");
-  ShowMessageln(motorLeftPID.Kp);
-  ShowMessage("motorLeftPID.Ki            : ");
-  ShowMessageln(motorLeftPID.Ki);
-  ShowMessage("motorLeftPID.Kd            : ");
-  ShowMessageln(motorLeftPID.Kd);
+  ShowMessage("motorLeftPID_Kp            : ");
+  ShowMessageln(motorLeftPID_Kp);
+  ShowMessage("motorLeftPID_Ki            : ");
+  ShowMessageln(motorLeftPID_Ki);
+  ShowMessage("motorLeftPID_Kd            : ");
+  ShowMessageln(motorLeftPID_Kd);
 
   ShowMessage("motorRightSwapDir          : ");
   ShowMessageln(motorRightSwapDir);
@@ -1086,13 +1086,13 @@ void Robot::printSettingSerial()
   ShowMessageln(perimeterTrackRollTime);
   ShowMessage("perimeterTrackRevTime    : ");
   ShowMessageln(perimeterTrackRevTime);
-  ShowMessage("perimeterPID.Kp          : ");
-  ShowMessageln(perimeterPID.Kp);
-  ShowMessage("perimeterPID.Ki          : ");
-  ShowMessageln(perimeterPID.Ki);
+  ShowMessage("perimeterPID_Kp          : ");
+  ShowMessageln(perimeterPID_Kp);
+  ShowMessage("perimeterPID_Ki          : ");
+  ShowMessageln(perimeterPID_Ki);
   // watchdogReset();
-  ShowMessage("perimeterPID.Kd          : ");
-  ShowMessageln(perimeterPID.Kd);
+  ShowMessage("perimeterPID_Kd          : ");
+  ShowMessageln(perimeterPID_Kd);
   ShowMessage("trackingPerimeterTransitionTimeOut: ");
   ShowMessageln(trackingPerimeterTransitionTimeOut);
   ShowMessage("trackingErrorTimeOut     : ");
@@ -1157,12 +1157,12 @@ void Robot::printSettingSerial()
   ShowMessageln(CompassUse);
   ShowMessage(F("stopMotorDuringCalib  : "));
   ShowMessageln(stopMotorDuringCalib);
-  ShowMessage(F("imuDirPID.Kp          : "));
-  ShowMessageln(imuDirPID.Kp);
-  ShowMessage(F("imuDirPID.Ki          : "));
-  ShowMessageln(imuDirPID.Ki);
-  ShowMessage(F("imuDirPID.Kd          : "));
-  ShowMessageln(imuDirPID.Kd);
+  ShowMessage(F("imuDirPID_Kp          : "));
+  ShowMessageln(imuDirPID_Kp);
+  ShowMessage(F("imuDirPID_Ki          : "));
+  ShowMessageln(imuDirPID_Ki);
+  ShowMessage(F("imuDirPID_Kd          : "));
+  ShowMessageln(imuDirPID_Kd);
   // watchdogReset();
   ShowMessage(F("maxDriftPerSecond     : "));
   ShowMessageln(maxDriftPerSecond);
@@ -1963,9 +1963,9 @@ void Robot::motorControlOdo()
   // DRIVE IN STRAIGHT LINE
   if (stateCurr == STATE_FORWARD_ODO || (stateCurr == STATE_PERI_FIND) || (stateCurr == STATE_DRIVE1_TO_NEWAREA) || (stateCurr == STATE_DRIVE2_TO_NEWAREA))
   { // PID compute to accel or brake the wheel to drive straight
-    motorRightPID.Kp = motorLeftPID.Kp;
-    motorRightPID.Ki = motorLeftPID.Ki;
-    motorRightPID.Kd = motorLeftPID.Kd;
+    motorRightPID.Kp = motorLeftPID_Kp;
+    motorRightPID.Ki = motorLeftPID_Ki;
+    motorRightPID.Kd = motorLeftPID_Kd;
     // USE THE IMU
     if ((imuUse) && (mowPatternCurr == MOW_LANES) && (stateCurr == STATE_FORWARD_ODO))
     { // if mow by lane need different cible
@@ -2506,9 +2506,9 @@ void Robot::motorControl()
     leftSpeed = max(-motorSpeedMaxPwm, min(0, leftSpeed));
 
   // Regelbereich entspricht maximaler PWM am Antriebsrad (motorSpeedMaxPwm), um auch an Steigungen hÃ¶chstes Drehmoment fÃ¼r die Solldrehzahl zu gewÃ¤hrleisten
-  motorRightPID.Kp = motorLeftPID.Kp;
-  motorRightPID.Ki = motorLeftPID.Ki;
-  motorRightPID.Kd = motorLeftPID.Kd;
+  motorRightPID.Kp = motorLeftPID_Kp;
+  motorRightPID.Ki = motorLeftPID_Ki;
+  motorRightPID.Kd = motorLeftPID_Kd;
   motorRightPID.x = motorRightRpmCurr; // IST
   // if (millis() < stateStartTime + motorZeroSettleTime) motorRightPID.w = 0; // get zero speed first after state change
   if ((stateCurr == STATE_OFF))

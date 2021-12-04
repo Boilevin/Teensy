@@ -67,9 +67,9 @@
 #define motorForwTimeMax 80000    // not use max. forward time (ms) / timeout
 #define motorBiDirSpeedRatio1 0.3 // bidir mow pattern speed ratio 1
 #define motorBiDirSpeedRatio 0.92 // bidir mow pattern speed ratio 2
-#define motorLeftPID .Kp 1.0      // motor wheel PID controller
-#define motorLeftPID .Ki 0.4
-#define motorLeftPID .Kd 0.0
+#define motorLeftPID_Kp 1.0      // motor wheel PID controller
+#define motorLeftPID_Ki 0.4
+#define motorLeftPID_Kd 0.0
 #define motorRightSwapDir 0 // inverse right motor direction?
 #define motorLeftSwapDir 0  // inverse left motor direction?
 
@@ -94,9 +94,9 @@
 #define motorMowPowerMax 18.0   // motor mower max power (Watt)
 
 #define motorMowSenseScale 1.536 // motor mower sense scale (mA=(ADC-zero)/scale)
-#define motorMowPID .Kp 0.005    // motor mower RPM PID controller
-#define motorMowPID .Ki 0.01
-#define motorMowPID .Kd 0.01
+#define motorMowPID_Kp 0.005    // motor mower RPM PID controller
+#define motorMowPID_Ki 0.01
+#define motorMowPID_Kd 0.01
 //  ------ bumper -----------------------------------
 #define bumperUse 0 // has bumpers?                                                                         Dropsensor - Kontakt 0-Ã–ffner - 1-SchlieÃŸer betÃ¤tigt gegen GND
                     // ------ rain ------------------------------------
@@ -134,9 +134,9 @@
 #define DistPeriOutForw 60          // distance to accell
 #define DistPeriOutStop 15          // slowing distance after crossover the wire
 #define DistPeriObstacleForw 25     // distance while arc circle in peri obstacle avoid
-#define perimeterPID .Kp 16.5       // perimeter PID controller
-#define perimeterPID .Ki 8
-#define perimeterPID .Kd 0
+#define perimeterPID_Kp 16.5       // perimeter PID controller
+#define perimeterPID_Ki 8
+#define perimeterPID_Kd 0
 #define trackingPerimeterTransitionTimeOut 1500
 #define trackingErrorTimeOut 10000
 #define trakBlockInnerWheel true
@@ -154,12 +154,12 @@
 #define imuUse 1               // use IMU?
 #define CompassUse 0           // activate compass?
 #define stopMotorDuringCalib 0 // correct direction by compass?
-#define imuDirPID .Kp 4.4      // direction PID controller
-#define imuDirPID .Ki 3.3
-#define imuDirPID .Kd 0.0
-#define imuRollPID .Kp 0.8 // roll PID controller
-#define imuRollPID .Ki 21
-#define imuRollPID .Kd 0
+#define imuDirPID_Kp 4.4      // direction PID controller
+#define imuDirPID_Ki 3.3
+#define imuDirPID_Kd 0.0
+#define imuRollPID_Kp 0.8 // roll PID controller
+#define imuRollPID_Ki 21
+#define imuRollPID_Kd 0
 // bb
 #define yawSet1 45
 #define yawOppositeLane1RollRight -125

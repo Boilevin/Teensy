@@ -218,7 +218,7 @@ void RpiRemote::receivePiReqSetting(String Setting_page, int nb_page)
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->DistPeriOutStop;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->motorLeftPID.Kp;
+    lineToSend = lineToSend + robot->motorLeftPID_Kp;
     lineToSend = lineToSend + ",";
     writePi(lineToSend);
 
@@ -227,9 +227,9 @@ void RpiRemote::receivePiReqSetting(String Setting_page, int nb_page)
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + "2";
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->motorLeftPID.Ki;
+    lineToSend = lineToSend + robot->motorLeftPID_Ki;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->motorLeftPID.Kd;
+    lineToSend = lineToSend + robot->motorLeftPID_Kd;
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->motorLeftSwapDir;
     lineToSend = lineToSend + ",";
@@ -299,13 +299,13 @@ void RpiRemote::receivePiReqSetting(String Setting_page, int nb_page)
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->motorMowSenseScale;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->motorLeftPID.Kp;
+    lineToSend = lineToSend + robot->motorLeftPID_Kp;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->motorLeftPID.Ki;
+    lineToSend = lineToSend + robot->motorLeftPID_Ki;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->motorLeftPID.Kd;
+    lineToSend = lineToSend + robot->motorLeftPID_Kd;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->motorMowPID.Kp;
+    lineToSend = lineToSend + robot->motorMowPID_Kp;
     lineToSend = lineToSend + ",";
     writePi(lineToSend);
 
@@ -315,9 +315,9 @@ void RpiRemote::receivePiReqSetting(String Setting_page, int nb_page)
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + "3";
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->motorMowPID.Ki; // 0
+    lineToSend = lineToSend + robot->motorMowPID_Ki; // 0
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->motorMowPID.Kp;
+    lineToSend = lineToSend + robot->motorMowPID_Kp;
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->motorBiDirSpeedRatio1;
     lineToSend = lineToSend + ",";
@@ -370,11 +370,11 @@ void RpiRemote::receivePiReqSetting(String Setting_page, int nb_page)
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + "5";
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->perimeterPID.Kp;
+    lineToSend = lineToSend + robot->perimeterPID_Kp;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->perimeterPID.Ki;
+    lineToSend = lineToSend + robot->perimeterPID_Ki;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->perimeterPID.Kd;
+    lineToSend = lineToSend + robot->perimeterPID_Kd;
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->perimeter.signalCodeNo; // 4
     lineToSend = lineToSend + ",";
@@ -398,17 +398,17 @@ void RpiRemote::receivePiReqSetting(String Setting_page, int nb_page)
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + "6";
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->imuDirPID.Kp;
+    lineToSend = lineToSend + robot->imuDirPID_Kp;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->imuDirPID.Ki;
+    lineToSend = lineToSend + robot->imuDirPID_Ki;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->imuDirPID.Kd;
+    lineToSend = lineToSend + robot->imuDirPID_Kd;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->imuRollPID.Kp; // 4
+    lineToSend = lineToSend + robot->imuRollPID_Kp; // 4
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->imuRollPID.Ki;
+    lineToSend = lineToSend + robot->imuRollPID_Ki;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->imuRollPID.Kd;
+    lineToSend = lineToSend + robot->imuRollPID_Kd;
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->remoteUse;
     lineToSend = lineToSend + ",";
@@ -1428,15 +1428,15 @@ void RpiRemote::readWrite_setting()
         robot->motorMowPowerMax = val[3];
         robot->motorMowSpeedMinPwm = val[4];
         robot->motorMowSenseScale = val[5];
-        robot->motorLeftPID.Kp = val[6];
-        robot->motorLeftPID.Ki = val[7];
-        robot->motorLeftPID.Kd = val[8];
-        robot->motorMowPID.Kp = val[9];
+        robot->motorLeftPID_Kp = val[6];
+        robot->motorLeftPID_Ki = val[7];
+        robot->motorLeftPID_Kd = val[8];
+        robot->motorMowPID_Kp = val[9];
       }
       if (nr_page == 3)
       {
-        robot->motorMowPID.Ki = val[0];
-        robot->motorMowPID.Kd = val[1];
+        robot->motorMowPID_Ki = val[0];
+        robot->motorMowPID_Kd = val[1];
         robot->motorBiDirSpeedRatio1 = val[2];
         robot->motorBiDirSpeedRatio2 = val[3];
         robot->motorLeftSwapDir = val[4];
@@ -1461,9 +1461,9 @@ void RpiRemote::readWrite_setting()
       }
       if (nr_page == 5)
       {
-        robot->perimeterPID.Kp = val[0];
-        robot->perimeterPID.Ki = val[1];
-        robot->perimeterPID.Kd = val[2];
+        robot->perimeterPID_Kp = val[0];
+        robot->perimeterPID_Ki = val[1];
+        robot->perimeterPID_Kd = val[2];
         robot->perimeter.signalCodeNo = val[3];
         robot->perimeter.swapCoilPolarityLeft = val[4];
         robot->perimeter.timeOutSecIfNotInside = val[5];
@@ -1474,12 +1474,12 @@ void RpiRemote::readWrite_setting()
       }
       if (nr_page == 6)
       {
-        robot->imuDirPID.Kp = val[0];
-        robot->imuDirPID.Ki = val[1];
-        robot->imuDirPID.Kd = val[2];
-        robot->imuRollPID.Kp = val[3];
-        robot->imuRollPID.Ki = val[4];
-        robot->imuRollPID.Kd = val[5];
+        robot->imuDirPID_Kp = val[0];
+        robot->imuDirPID_Ki = val[1];
+        robot->imuDirPID_Kd = val[2];
+        robot->imuRollPID_Kp = val[3];
+        robot->imuRollPID_Ki = val[4];
+        robot->imuRollPID_Kd = val[5];
         robot->remoteUse = val[6];
         robot->batMonitor = val[7];
         robot->batGoHomeIfBelow = val[8];
