@@ -1,9 +1,10 @@
 // Configure the Options below and finally compile and upload it to the Teensy 4.1
+// Rename the file 'config_example.h' into 'config.h'
 
 // code version
 #define VER "1.0-Teensyber GY-521"
 
-// ------ Compass
+// ------ Compass/IMU
 //#define COMPASS_IS HMC5883L
 #define COMPASS_IS QMC5883L
 
@@ -12,8 +13,39 @@
 //#define L298N
 //#define BRUSHLESS
 
-// ------ No Changes needed---------------------------------------
-// ------ pins---------------------------------------
+// ------- baudrates---------------------------------
+
+// ------ used serial ports for console, Bluetooth, ESP8266 -----------------------------
+
+// we use 'SerialUSB' for 'Console' so the Raspberry PI receive all data
+// we use 'Serial' for 'Console' so the PC receive all data
+#define Console Serial
+#define CONSOLE_BAUDRATE 115200 // baudrate used for Raspberry PI console
+
+#define track_ClockWise false
+
+#define Enable_DueWatchdog false
+//#define Enable_DueWatchdog false
+
+#define autoBylaneToRandom true
+
+#define RaspberryPIPort Serial // The PI is connected over USB cable
+
+//#define Bluetooth Serial1        // Ardumower default OK for ESP32 or HC05
+//#define BLUETOOTH_BAUDRATE 19200 // baudrate used for communication with Bluetooth module (Ardumower default: 19200)
+
+#define GpsPort Serial3 // GPS do not forget workarround if PCB1.3 use
+
+// ------- ultrasonic
+#define NO_ECHO 0 //??
+
+// ---- choose only one perimeter signal code ----
+#define SIGCODE_1 // Ardumower default perimeter signal
+//#define SIGCODE_2  // Ardumower alternative perimeter signal
+//#define SIGCODE_3  // Ardumower alternative perimeter signal
+
+
+// ------ Pins, no changes needed---------------------------------------
 // ------ Motor Left
 #define pinMotorLeftEnable 5 // EN motors enable
 #define pinMotorLeftPWM 7    // M1_IN1 left motor PWM pin
@@ -55,34 +87,3 @@
 #define pinUserOut2 32 
 #define pinUserOut3 A16 
 // IMU (compass/gyro/accel): I2C  (SCL, SDA)
-
-// ------- baudrates---------------------------------
-
-// ------ used serial ports for console, Bluetooth, ESP8266 -----------------------------
-
-// we use 'SerialUSB' for 'Console' so the Raspberry PI receive all data
-// we use 'Serial' for 'Console' so the PC receive all data
-#define Console Serial
-#define CONSOLE_BAUDRATE 115200 // baudrate used for Raspberry PI console
-
-#define track_ClockWise false
-
-#define Enable_DueWatchdog false
-//#define Enable_DueWatchdog false
-
-#define autoBylaneToRandom true
-
-#define RaspberryPIPort Serial // The PI is connected over USB cable
-
-//#define Bluetooth Serial1        // Ardumower default OK for ESP32 or HC05
-//#define BLUETOOTH_BAUDRATE 19200 // baudrate used for communication with Bluetooth module (Ardumower default: 19200)
-
-#define GpsPort Serial3 // GPS do not forget workarround if PCB1.3 use
-
-// ------- ultrasonic
-#define NO_ECHO 0 //??
-
-// ---- choose only one perimeter signal code ----
-#define SIGCODE_1 // Ardumower default perimeter signal
-//#define SIGCODE_2  // Ardumower alternative perimeter signal
-//#define SIGCODE_3  // Ardumower alternative perimeter signal
