@@ -842,6 +842,7 @@ void RpiRemote::writePi(String stringLine) {
     lineToSend = lineToSend + String(retour, HEX);
   }
   RaspberryPIPort.println(lineToSend);
+  
   //watchdogReset();
   //Console.println(lineToSend);
 }

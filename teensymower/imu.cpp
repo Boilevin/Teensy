@@ -248,8 +248,10 @@ void IMUClass::calibration() {
     mpu.setXGyroOffset(gx_offset);
     mpu.setYGyroOffset(gy_offset);
     mpu.setZGyroOffset(gz_offset);
-    //watchdogReset();
+    //robot.resetWatchdog();
+    
     meansensors();
+    
     //watchdogReset();
     Console.print("Wait until accel 3 val are < 8 : ");
     Console.print(abs(mean_ax));
@@ -289,7 +291,7 @@ void IMUClass::calibration() {
 }
 void IMUClass::meansensors() {
   long i = 0, buff_ax = 0, buff_ay = 0, buff_az = 0, buff_gx = 0, buff_gy = 0, buff_gz = 0;
-
+  
   while (i < (buffersize + 101)) {  //default buffersize=1000
     // read raw accel/gyro measurements from device
     mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
@@ -584,7 +586,9 @@ void IMUClass::calibGyro() {
 
   Console.println("Reading sensors for first time... without any offset");
   //watchdogReset();
+  
   meansensors();
+ 
   //watchdogReset();
   Console.print("Reading ax: ");
   Console.print(mean_ax);
@@ -601,7 +605,9 @@ void IMUClass::calibGyro() {
 
   Console.println("\nCalculating offsets...");
   //watchdogReset();
+  
   calibration();
+
   //watchdogReset();
   meansensors();
   //watchdogReset();

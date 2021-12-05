@@ -993,6 +993,7 @@ void RemoteControl::processImuMenu(String pfodCmd) {
   if (pfodCmd == "g00" ) {
     robot->nextTimeImuLoop = millis() + 1000; //don't read the Imu immediatly need time to save the setting and reset
     robot->imuUse = !robot->imuUse;
+    if (robot->imuUse) robot->imu.begin();
   }
   else if (pfodCmd == "g11" ) robot->CompassUse = !robot->CompassUse;
   else if (pfodCmd == "g04" ) robot->stopMotorDuringCalib = !robot->stopMotorDuringCalib;
@@ -1015,8 +1016,8 @@ void RemoteControl::processImuMenu(String pfodCmd) {
 
 void RemoteControl::sendRemoteMenu(boolean update) {
   if (update) serialPort->print("{:"); else serialPort->print(F("{.Remote R/C or Pi`1000"));
-  //serialPort->print(F("|h00~Use RC "));
-  //sendYesNo(robot->remoteUse);
+  serialPort->print(F("|h00~Use MQTT "));
+  sendYesNo(robot->useMqtt);
   serialPort->print(F("|h01~Use Rasberry(Need Reboot)"));
   sendYesNo(robot->RaspberryPIUse);
 
@@ -1025,7 +1026,7 @@ void RemoteControl::sendRemoteMenu(boolean update) {
 }
 
 void RemoteControl::processRemoteMenu(String pfodCmd) {
-  //if (pfodCmd == "h00" ) robot->remoteUse = !robot->remoteUse;
+  if (pfodCmd == "h00" ) robot->useMqtt = !robot->useMqtt;
   if (pfodCmd == "h01" ) robot->RaspberryPIUse = !robot->RaspberryPIUse;
   if (pfodCmd == "h02" ) robot->printSettingSerial();  //use by pi to show all the variable in the console
   if (pfodCmd == "h03" ) robot->consoleMode = (robot->consoleMode + 1) % 5;  //use by pi to change the console mode
@@ -1111,27 +1112,27 @@ void RemoteControl::processStationMenu(String pfodCmd) {
 
 void RemoteControl::sendOdometryMenu(boolean update) {
   if (update) serialPort->print("{:"); else serialPort->print(F("{.Odometry`1000"));
-  
+
   serialPort->print(F("|l01~Value l, r "));
   serialPort->print(robot->odometryLeft);
   serialPort->print(", ");
   serialPort->println(robot->odometryRight);
- 
+
   sendSlider("l04", F("Ticks per one full revolution"), robot->odometryTicksPerRevolution, "", 1, 2800, 500);
   sendSlider("l03", F("Ticks per cm"), robot->odometryTicksPerCm, "", 0.1, 60, 10);
   sendSlider("l02", F("Wheel base cm"), robot->odometryWheelBaseCm, "", 0.1, 50, 5);
-  
+
   serialPort->println("}");
-  
+
 }
 
 void RemoteControl::processOdometryMenu(String pfodCmd) {
-  
+
   if (pfodCmd.startsWith("l03")) processSlider(pfodCmd, robot->odometryTicksPerCm, 0.1);
   else if (pfodCmd.startsWith("l02")) processSlider(pfodCmd, robot->odometryWheelBaseCm, 0.1);
   else if (pfodCmd.startsWith("l04")) processSlider(pfodCmd, robot->odometryTicksPerRevolution, 1);
   sendOdometryMenu(true);
-  
+
 }
 
 void RemoteControl::sendDateTimeMenu(boolean update) {

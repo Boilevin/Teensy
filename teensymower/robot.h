@@ -237,6 +237,12 @@ class Robot
     const char* statusName();
     char* rfidToDoName();
 
+
+    char* area1_ip = "10.0.0.151";
+    char* area2_ip = "10.0.0.150";
+    char* area3_ip = "10.0.0.158";
+
+
     unsigned long stateStartTime;
     unsigned long stateEndTime;
     int idleTimeSec;
@@ -333,7 +339,7 @@ class Robot
       struct rfid_list *next;
     };
 
-    typedef struct rfid_list;
+    //typedef struct rfid_list;
 
     struct rfid_list *head = NULL;
 
@@ -677,9 +683,11 @@ class Robot
     // --------- pfodApp ----------------------------------
     RemoteControl rc; // pfodApp
     unsigned long nextTimePfodLoop ;
+    unsigned long next_time_refresh_mqtt;
     // ----- other -----------------------------------------
     boolean buttonUse         ;       // has digital ON/OFF button?
     boolean RaspberryPIUse;  //a raspberryPI is connected to USBNativeport
+    boolean useMqtt; // mqtt work to send dat to homeassistant
     boolean MyrpiStatusSync;
     unsigned long beepOnOFFDuration; //variable use for the beeper
     boolean beepState;//for the beeper true when sound
@@ -871,6 +879,7 @@ class Robot
     virtual void pfodSetDateTime(byte hr1, byte min1, byte sec1, byte day1, byte month1, short year1);
 
 
+
   protected:
     static void OdoRightCountInt(); //odometry interrupt loop
     static void OdoLeftCountInt();
@@ -948,7 +957,7 @@ class Robot
     virtual void beeper();
 
     boolean search_rfid_list(unsigned long TagNr);
-    void rfidTagTraitement(unsigned long TagNr,byte statusCurr);
+    void rfidTagTraitement(unsigned long TagNr, byte statusCurr);
 
 
 

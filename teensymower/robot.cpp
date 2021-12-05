@@ -58,7 +58,7 @@ NewPing NewSonarRight(pinSonarRightTrigger, pinSonarRightEcho, 110);
 #define ADDR_RFID_LIST 3000 //start adress to rfid list value
 
 
-const char* stateNames[] = {"OFF ", "RC  ", "FORW", "ROLL", "REV ", "CIRC", "ERR ", "PFND", "PTRK", "PROL", "PREV", "STAT", "CHARG", "STCHK", "STREV",
+const char* stateNames[] = {"OFF", "RC", "FORW", "ROLL", "REV", "CIRC", "ERR", "PFND", "PTRK", "PROL", "PREV", "STAT", "CHARG", "STCHK", "STREV",
                             "STROL", "STFOR", "MANU", "ROLW", "POUTFOR", "POUTREV", "POUTROLL", "POBSREV", "POBSROLL", "POBSFRWD", "POBSCIRC", "NEXTLANE", "POUTSTOP", "LANEROL1", "LANEROL2",
                             "ROLLTOIN", "WAITREPEAT", "FRWODO", "TESTCOMPAS", "ROLLTOTRACK",
                             "STOPTOTRACK", "AUTOCALIB", "ROLLTOFINDYAW", "TESTMOTOR", "FINDYAWSTOP", "STOPONBUMPER",
@@ -422,6 +422,7 @@ boolean Robot::search_rfid_list(unsigned long TagNr) {
 
 void Robot::rfidTagTraitement(unsigned long TagNr, byte statusCurr) {
   boolean tagAndStatus_exist_in_list = false;
+  String line01="";
   //struct rfid_list *temp = (struct rfid_list*) malloc(sizeof(rfid_list));
   ptr = head;
   if (ptr != NULL) {
@@ -472,6 +473,13 @@ void Robot::rfidTagTraitement(unsigned long TagNr, byte statusCurr) {
         //not use
         break;
       case AREA1:
+        line01 = "#SENDER," + String(area1_ip) + ",A1";
+        Serial1.println(line01);
+        line01 = "#SENDER," + String(area2_ip) + ",B0";
+        Serial1.println(line01);
+        line01 = "#SENDER," + String(area3_ip) + ",B0";
+        Serial1.println(line01);
+        
         areaToGo = 1;
         ShowMessageln("Return to Station area ");
         motorSpeedMaxPwm = ptr->TagSpeed;
@@ -489,11 +497,12 @@ void Robot::rfidTagTraitement(unsigned long TagNr, byte statusCurr) {
         }
         break;
       case AREA2:
-        Serial1.println("#SENDER,10.0.0.20,A1");
-        Serial1.println("#SENDER,10.0.0.10,A0");
+      //send data to ESP32 to start AREA2 sender and stop AREA1 one
+        line01 = "#SENDER," + String(area1_ip) + ",A0";
+        Serial1.println(line01);
+        line01 = "#SENDER," + String(area2_ip) + ",B1";
+        Serial1.println(line01);
         if (areaToGo == 2) {
-
-
           ShowMessageln("Go to AREA2");
           motorSpeedMaxPwm = ptr->TagSpeed;
           newtagRotAngle1 = ptr->TagAngle1;
@@ -505,6 +514,10 @@ void Robot::rfidTagTraitement(unsigned long TagNr, byte statusCurr) {
         break;
 
       case AREA3:
+        line01 = "#SENDER," + String(area1_ip) + ",A0";
+        Serial1.println(line01);
+        line01 = "#SENDER," + String(area3_ip) + ",B1";
+        Serial1.println(line01);
         if (areaToGo == 3) {
           ShowMessageln("Go to AREA3");
           motorSpeedMaxPwm = ptr->TagSpeed;
@@ -901,6 +914,8 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, compassRollSpeedCoeff);
   eereadwrite(readflag, addr, gpsUse);
   eereadwrite(readflag, addr, stuckIfGpsSpeedBelow);
+  eereadwrite(readflag, addr, useMqtt);
+
 
   if (readflag)
   {
@@ -1249,7 +1264,10 @@ void Robot::printSettingSerial() {
   ShowMessageln(F("---------- RASPBERRY PI------ "));
   ShowMessage  (F("RaspberryPIUse  : "));
   ShowMessageln(RaspberryPIUse);
-
+// ----- MQTT --------------
+  ShowMessageln(F("---------- MQTT        ------ "));
+  ShowMessage  (F("useMqtt  : "));
+  ShowMessageln(useMqtt);
   // ----- other ----------------------------------------------------
   ShowMessageln(F("---------- other ------------"));
   ShowMessage  (F("buttonUse              : "));
@@ -2740,7 +2758,7 @@ void Robot::setup()  {
 
   Console.println("Watchdog configuration start ");
   WDT_timings_t config;
-  config.trigger = 2; /* in seconds, 0->128 */
+  config.trigger = 20; /* in seconds, 0->128 */
   config.timeout = 30; /* in seconds, 0->128 */
   config.callback = myCallback;
   wdt.begin(config);
@@ -5501,7 +5519,14 @@ void Robot::loop()  {
   stateTime = millis() - stateStartTime;
   int steer;
 
-
+ if ((useMqtt) && (millis()>next_time_refresh_mqtt)) {
+     next_time_refresh_mqtt=millis()+3000;
+     temperatureDht=21.0;
+     String line01 = "#RMSTA," + String(statusNames[statusCurr]) + "," + String(stateNames[stateCurr]) + "," + String(temperatureDht)+ "," + String(batVoltage) + "," + String(loopsPerSec)  ;
+     Serial1.println(line01);
+      
+  
+ }
 
   if (RaspberryPIUse) {
     MyRpi.run();
@@ -7175,8 +7200,7 @@ void Robot::loop()  {
 
   loopsPerSecCounter++;
   wdt.feed();
-  //watchdogReset();
-  //perimeter.speedTest();
+  
   /*
     StartReadAt = millis();
     distance_find = sensor.readRangeSingleMillimeters();

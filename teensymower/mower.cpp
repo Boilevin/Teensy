@@ -33,6 +33,8 @@ Mower robot;
 Mower::Mower() {
 
 
+
+
   name = "Ardumower";
   // ------- wheel motors -----------------------------
   motorAccel       = 1500;  // motor wheel acceleration - only functional when odometry is not in use (warning: do not set too low)
@@ -220,6 +222,8 @@ Mower::Mower() {
   buttonUse         = 1;       // has digital ON/OFF button?
   RaspberryPIUse = false; // a raspberryPi is connected to USBNative port
   mowPatternDurationMax = 120; //in minutes
+  useMqtt = true; //select this to exchange data over mqtt protocol for homeassistant.
+  
 
   // ----- user-defined switch ---------------------------
   userSwitch1       = 0;       // user-defined switch 1 (default value)

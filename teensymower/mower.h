@@ -37,7 +37,7 @@
 #define pinMotorMowEnable 8       // EN mower motor enable      (if using MOSFET/L298N, keep unconnected)
 #define pinMotorMowPWM 10           // M1_IN1 mower motor PWM pin (if using MOSFET, use this pin)
 #define pinMotorMowDir 9          // M1_IN2 mower motor Dir pin (if using MOSFET, keep unconnected)
-//#define pinMotorMowSense A3        // M1_FB  mower motor current sense  
+//#define pinMotorMowSense A3        // M1_FB  mower motor current sense
 //#define pinMotorMowFault 26        // M1_SF  mower motor fault   (if using MOSFET/L298N, keep unconnected)
 //#define pinMotorMowRpm A11
 
@@ -72,7 +72,7 @@
 //#define pinChargeCurrent A8        // charge current sensor
 #define pinChargeEnable 34          // charge relay
 //#define pinRemoteMow 12            // remote control mower motor
-//#define pinRemoteSteer 11          // remote control steering 
+//#define pinRemoteSteer 11          // remote control steering
 //#define pinRemoteSpeed 10          // remote control speed
 //#define pinRemoteSwitch 52         // remote control switch
 //#define pinVoltageMeasurement A7   // test pin for your own voltage measurements
@@ -80,12 +80,12 @@
 #define pinOdometryLeft 12     // left odometry sensor
 //#define pinOdometryLeft2 DAC1    // left odometry sensor (optional two-wire)
 #define pinOdometryRight 11   // right odometry sensor  
-//#define pinOdometryRight2 CANTX  // right odometry sensor (optional two-wire)  
+//#define pinOdometryRight2 CANTX  // right odometry sensor (optional two-wire)
 
 //#define pinLawnFrontRecv 40        // lawn sensor front receive
-//#define pinLawnFrontSend 41        // lawn sensor front sender 
+//#define pinLawnFrontSend 41        // lawn sensor front sender
 //#define pinLawnBackRecv 42         // lawn sensor back receive
-//#define pinLawnBackSend 43         // lawn sensor back sender 
+//#define pinLawnBackSend 43         // lawn sensor back sender
 //#define pinUserSwitch1 13          // user-defined switch 1
 //#define pinUserSwitch2 32          // user-defined switch 2
 //#define pinUserSwitch3 A16          // user-defined switch 3
@@ -94,9 +94,11 @@
 #define pinUserOut1 13          // remote control mower motor
 #define pinUserOut2 32          // remote control steering 
 #define pinUserOut3 A16        // remote control speed
-//#define pinUserOut4 52    
+//#define pinUserOut4 52
 // IMU (compass/gyro/accel): I2C  (SCL, SDA)
 
+// ------- ultrasonic config ---------------------------------------------------------
+#define NO_ECHO 0
 
 
 
@@ -104,17 +106,10 @@
 
 
 
-// ------ used serial ports for console, Bluetooth, ESP8266 -----------------------------
-
-// Due has two serial ports: Native (SerialUSB) and Programming (Serial) -
-// we use 'SerialUSB' for 'Console' so the Raspberry PI receive all data
-// we use 'Serial' for 'Console' so the PC receive all data
-
-
 
 //#define COMPASS_IS HMC5883L
 #define COMPASS_IS QMC5883L
- 
+
 #define Console Serial
 #define CONSOLE_BAUDRATE    115200       // baudrate used for Raspberry PI console
 
@@ -135,10 +130,6 @@
 #define GpsPort Serial3  // GPS do not forget workarround if PCB1.3 use
 
 
-// ------- ultrasonic config ---------------------------------------------------------
-#define NO_ECHO 0
-
-
 // ---- choose only one perimeter signal code ----
 #define SIGCODE_1  // Ardumower default perimeter signal
 //#define SIGCODE_2  // Ardumower alternative perimeter signal
@@ -155,10 +146,10 @@ class Mower : public Robot
     Mower();
     virtual void setup(void);
     // virtual void resetMotorFault();
-    
+
     virtual void setActuator(char type, int value);
-   
-   
+
+
 };
 
 
