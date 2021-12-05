@@ -17,7 +17,7 @@
 
 //See config.h for more parameter
 
-//FOR RFID BOARD
+//TO RFID BOARD
 // ESP-32    <--> PN5180 pin mapping:
 // Vin       <--> 5V  if esp32 powered using USB YOU NEED TO SEND THE 5V TO PN5180
 // 3.3V      <--> 3.3V
@@ -30,20 +30,21 @@
 // Reset, GPIO14  --> RST
 //
 
-//FOR PCB1.3
+//TO PCB1.3
 // ESP-32    <--> pcb1.3 pin mapping:
 // Vin       <--> 5v ON BT CONNECTOR
 // GND       <--> GND ON BT CONNECTOR
 // RX2       <--> TX ON BT CONNECTOR
 // TX2       <--> RX ON BT CONNECTOR
 
-
+#include "esp_http_client.h"
 #include "PN5180.h"
 #include "PN5180ISO15693.h"
 
 #include "config.h"
 #include <esp_wifi.h>
 #include <WiFi.h>
+#include <HTTPClient.h>
 
 #ifdef BLUETOOTH
 #include <BluetoothSerial.h>
@@ -65,7 +66,7 @@ uint16_t inWiFI = 0;
 
 char line_receive[256];
 byte mon_index = 0;
-String entete="";
+String entete = "";
 
 
 /*
@@ -78,21 +79,41 @@ uint8_t lastUid[8];
 
 
 
-void esp32_Action () {
-  //inData is a char array separate by ,
+void esp32_Sender() {
+  //line_receive is a char array separate by ,
   //example to stop sender on ip 15  "#SENDER,10.0.0.15,A0
   //example to start sender on ip 15  "#SENDER,10.0.0.15,A1
+  HTTPClient http;
 
-  for (uint8_t posit = 0; posit < mon_index; posit++) {
 
-    Serial.println("trouvé");
-     
-    
-  }
- 
+  char val1[20], val2[20], val3[10];
+  sscanf(line_receive, "%[^,],%[^,],%[^,]", val1, val2, val3);
+  //sscanf(line_receive, "%s %s %s", val1, val2, val3);
+
+
+  String serverPath = "http://" + String(val2) + "/" + String(val3);
+  Serial.println(serverPath);
+  Serial.println(millis());
+
+  http.begin(serverPath.c_str());
+  //  http.begin("http://10.0.0.150:80/A1"); // URL
+  //int httpCode = http.GET(); //we don't need the feedback smoothmag value is used to check if sender is OK
+  http.GET();
+  Serial.println(millis());
+
+  // for (uint8_t posit = 0; posit < mon_index; posit++) {
+
+
+
+  // }
+
 }
 
+void esp32_Mqtt() {
+  //inData is a char array separate by ,
+  //example to stop sender on ip 15  "#MQTT,10.0.0.15,A0
 
+}
 
 
 
@@ -101,6 +122,10 @@ void setup() {
   Serial.begin(115200);
   Serial2.begin(19200);
   if (debug) Serial.println("\n\n ESP32 BT and WiFi serial bridge V1.00");
+
+
+
+  //
 
 
 #ifdef MODE_AP
@@ -302,24 +327,17 @@ void loop() {
         WIFIbuf[inWiFI] = Serial2.read(); // read char from UART(2)
         char aChar = WIFIbuf[inWiFI];
         if (inWiFI < bufferSize - 1) inWiFI++;
-        
+
         if (aChar == '\n')
         {
           // End of record detected. Time to parse and check for non pfod sentence
           Serial.println(line_receive);
           if (strncmp(line_receive, "#SENDER", 7) == 0) {
-
-            esp32_Action();
-
-
-            
-
-
-
-
-
+            esp32_Sender();
           }
-
+          if (strncmp(line_receive, "#MQTT", 5) == 0) {
+            esp32_Mqtt();
+          }
           mon_index = 0;
           line_receive[mon_index] = NULL;
         }
