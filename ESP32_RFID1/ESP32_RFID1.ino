@@ -37,7 +37,7 @@
 // RX2       <--> TX ON BT CONNECTOR
 // TX2       <--> RX ON BT CONNECTOR
 
-#include "esp_http_client.h"
+
 #include "PN5180.h"
 #include "PN5180ISO15693.h"
 

@@ -3,12 +3,13 @@
 //Select one of the 2 possibility AP (access point) or STA (station)
 //#define MODE_AP // phone connects directly to ESP32 inside the mower 
 #define MODE_STA // ESP32 and phone connects to wifi routeur
-#define PROTOCOL_TCP
-#define bufferSize 1024
+#define my_bufferSize 1024
+#define rfid_board_IsPluged true
+#define useMqtt true
+#define VERSION "1.20"
 
+const char* mqtt_server = "10.0.0.8";
 bool debug = true;
-
-#define VERSION "1.00"
 
 #ifdef MODE_STA
 // For standard mode:
