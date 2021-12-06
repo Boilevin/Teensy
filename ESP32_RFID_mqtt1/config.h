@@ -2,6 +2,7 @@
 //If you don't have wifi in all the garden:
 //uncomment #define MODE_AP and comment #define MODE_STA
 //pfod setting :  IP 192.168.1.4 port 8881 -> mower is the Access point pfod and perimeter sender connect to the mower
+//Mqtt can't work you need to deactivate it
 
 //If you have wifi in all the garden:
 //comment #define MODE_AP and uncomment #define MODE_STA
@@ -9,14 +10,15 @@
 //pfod setting : IP 10.0.0.122 (or change to correct IPgroup of your router) port 8881 -> mower and sender are connected to your home wifi router
 
 //Bluetooth:
-//limitation no automatic start and stop sender on multiple mowing area
+//limitation no automatic start and stop sender on multiple mowing area no mqtt
+//Mqtt can't work you need to deactivate it
 
 //*********WIFI***************//
 //Uncomment only one of the 2 possibility : AP (access point) or STA (station)
 //#define MODE_AP // phone connects directly to ESP32 inside the mower IP: 192.168.4.1 port 8881
 #define MODE_STA // ESP32 and phone connects to wifi routeur
-const char *ssid = "ASUS_38_2G";  // Your Routeur : You need to connect your phone to the same Access Point to use PfodApp
-const char *pw = "basicsheep714"; // and this is the password
+const char *ssid = "your ssid";  // Your Routeur : You need to connect your phone to the same Access Point to use PfodApp
+const char *pw = "your_pass"; // and this is the password
 IPAddress ip(10, 0, 0, 123); //you need to set a fix IP according to your routeur value
 IPAddress gateway(10, 0, 0, 1); //
 IPAddress netmask(255, 255, 255, 0);
