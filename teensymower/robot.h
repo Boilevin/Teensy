@@ -693,7 +693,7 @@ class Robot
     boolean beepState;//for the beeper true when sound
     unsigned long  nextTimeBeeper;// use for beeper
     boolean startByTimer; // use to know if the start is initiate by timer or manual via PFOD
-    unsigned int whereToStart; // use to know where the mower need to leave the wire and start to mow
+    int whereToStart; // use to know where the mower need to leave the wire and start to mow
     unsigned int whereToResetSpeed; // use with Rfid Speed to know when reset to maxpwm
 
     int beaconToStart; // use to know where the mower need to leave the wire and start to mow

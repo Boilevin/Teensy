@@ -70,14 +70,14 @@ PN5180ISO15693 nfc(12, 13, 14);
 uint8_t lastUid[8];
 
 void receivedCallback(char* topic, byte* payload, unsigned int length) {
-  // Serial.print("Mqtt received: ");
-  // Serial.println(topic);
+  Serial.print("Mqtt received: ");
+  Serial.println(topic);
   String payloadString = "";
   // Serial.print("payload: ");
   for (int i = 0; i < length; i++) {
     payloadString = payloadString + String(((char)payload[i]));
   }
-  // Serial.println(payloadString);
+  if (debug) Serial.println(payloadString);
   if (payloadString == "START") {
     Serial2.println("{ra}");
 
@@ -88,17 +88,54 @@ void receivedCallback(char* topic, byte* payload, unsigned int length) {
   if (payloadString == "HOME") {
     Serial2.println("{rh}");
   }
+  //for test on motor max power
+  if (payloadString == "ON") {
+    Serial2.println("{ya0`1}");
+    Serial2.println("{ya1`2}");
+    Serial2.println("{ya2`1}");
+    Serial2.println("{ya3`220}");
+    Serial2.println("{ya4`3}");
+    Serial2.println("{ya5`80}");
+
+  }
+  if (payloadString == "OFF") {
+    Serial2.println("{ya0`2}");
+    Serial2.println("{ya1`3}");
+    Serial2.println("{ya2`0}");
+    Serial2.println("{ya3`440}");
+    Serial2.println("{ya4`1}");
+    Serial2.println("{ya5`10}");
+
+    
+  }
+  //end test
+
   if (payloadString == "STARTTIMER") {
-    //Serial2.println("{a02`160}");  //a02 is the motor power max pfod slider a ` is use for int 160 and ~ for string
+
+    Serial2.println("{ya0`1}");
+    Serial2.println("{ya1`3}");
+    Serial2.println("{ya2`0}");
+    Serial2.println("{ya3`440}");
+    Serial2.println("{ya4`1}");
+    Serial2.println("{ya5`10}");
 
     Serial2.println("{rv}");
   }
+
+  //payload : STARTTIMER;1;1;0;25;2;50 it's to start from station STARTTIMER;MowPattern;LaneNr;rollDir;WhereStart;areToGo;LaneLenght
   /*
     if(str(responsetable[0]) == "STARTTIMER"):
                   send_var_message('w','mowPatternCurr',''+str(responsetable[1])+'','laneUseNr',''+str(responsetable[2])+'','rollDir',''+str(responsetable[3])+'','0','0','0')
                   send_var_message('w','whereToStart',''+str(responsetable[4])+'','areaToGo',''+str(responsetable[5])+'','actualLenghtByLane',''+str(responsetable[6])+'','0','0','0')
                   send_pfo_message('rv','1','2','3','4','5','6',)
 
+
+    sendSlider("ya0", F("mowPatternCurr"), robot->mowPatternCurr, "", 1, 3, 0);
+    sendSlider("ya1", F("laneUseNr"), robot->laneUseNr, "", 1, 3, 0);
+    sendSlider("ya2", F("rollDir"), robot->rollDir, "", 1, 1, 0);
+    sendSlider("ya3", F("whereToStart"), robot->whereToStart, "", 1,9999, 0);
+    sendSlider("ya4", F("areaToGo"), robot->areaToGo, "", 1, 3, 0);
+    sendSlider("ya5", F("actualLenghtByLane"), robot->actualLenghtByLane, "", 1, 255, 0);
   */
 
 
@@ -107,25 +144,25 @@ void receivedCallback(char* topic, byte* payload, unsigned int length) {
 void mqttconnect() {
 
   if (!client.connected()) {
-    Serial.print("MQTT connecting ...");
+    if (debug) Serial.print("MQTT connecting ...");
     /* client ID */
-    String clientId = "admin";
+    //String clientId = "admin";
     /* connect now */
 
     //if (client.connect(clientId.c_str())) {
     if (client.connect(mqtt_id, mqtt_user, mqtt_pass)) {
-      Serial.println("connected");
-      char* cmd_msg = "/COMMAND/#";
-      char outMessage[strlen(mower_name) + strlen(cmd_msg)];
-      sprintf(outMessage, "%s%s", mower_name, cmd_msg);
-      Serial.print("Subscribe to : ");
-      Serial.println(outMessage);
+      if (debug) Serial.println("connected");
+      //const char* cmd_msg = "/COMMAND/#";
+      char outMessage[strlen(mower_name) + strlen(mqtt_subscribeTopic1)];
+      sprintf(outMessage, "%s%s", mower_name, mqtt_subscribeTopic1);
+      if (debug) Serial.print("Subscribe to : ");
+      if (debug) Serial.println(outMessage);
       client.subscribe(outMessage);
 
     } else {
-      Serial.print("mqtt failed, status code =");
-      Serial.print(client.state());
-      Serial.println("try again in 5 seconds");
+      if (debug) Serial.print("mqtt failed, status code =");
+      if (debug) Serial.print(client.state());
+      if (debug) Serial.println("try again in 5 seconds");
 
     }
   }
@@ -144,40 +181,33 @@ void esp32_Sender() {
 }
 
 void esp32_Mqtt_sta() {
+  //receive from mower msgid,status,state,temp,battery,idle
+  //message separation
   char val1[6], val2[20], val3[20], val4[20], val5[20], val6[20];
   sscanf(line_receive, "%[^,],%[^,],%[^,],%[^,],%[^,],%[^,]", val1, val2, val3, val4, val5, val6);
-  char* cmd_msg1 = "/Status";
-  char outTopic1[strlen(mower_name) + strlen(cmd_msg1)];
-  sprintf(outTopic1, "%s%s", mower_name, cmd_msg1);
+
+  //status
+  char outTopic1[strlen(mower_name) + strlen(mqtt_statusTopic)];
+  sprintf(outTopic1, "%s%s", mower_name, mqtt_statusTopic);
   client.publish(outTopic1, val2);
-  char* cmd_msg2 = "/State";
-  char outTopic2[strlen(mower_name) + strlen(cmd_msg2)];
-  sprintf(outTopic2, "%s%s", mower_name, cmd_msg2);
+  //state
+  char outTopic2[strlen(mower_name) + strlen(mqtt_stateTopic)];
+  sprintf(outTopic2, "%s%s", mower_name, mqtt_stateTopic);
   client.publish(outTopic2, val3);
-  char* cmd_msg3 = "/Temp";
-  char outTopic3[strlen(mower_name) + strlen(cmd_msg3)];
-  sprintf(outTopic3, "%s%s", mower_name, cmd_msg3);
+  //temp
+  char outTopic3[strlen(mower_name) + strlen(mqtt_tempTopic)];
+  sprintf(outTopic3, "%s%s", mower_name, mqtt_tempTopic);
   client.publish(outTopic3, val4);
-  char* cmd_msg4 = "/Battery";
-  char outTopic4[strlen(mower_name) + strlen(cmd_msg4)];
-  sprintf(outTopic4, "%s%s", mower_name, cmd_msg4);
+  //battery
+  char outTopic4[strlen(mower_name) + strlen(mqtt_batteryTopic)];
+  sprintf(outTopic4, "%s%s", mower_name, mqtt_batteryTopic);
   client.publish(outTopic4, val5);
-  char* cmd_msg5 = "/Idle";
-  char outTopic5[strlen(mower_name) + strlen(cmd_msg5)];
-  sprintf(outTopic5, "%s%s", mower_name, cmd_msg5);
+  //idle
+  char outTopic5[strlen(mower_name) + strlen(mqtt_idleTopic)];
+  sprintf(outTopic5, "%s%s", mower_name, mqtt_idleTopic);
   client.publish(outTopic5, val6);
-
-
-
-
-
 }
-void esp32_Mqtt_stu() {
-  char val1[6], val2[20], val3[10];
-  sscanf(line_receive, "%[^,],%[^,],%[^,]", val1, val2, val3);
-  client.publish("Rl1000/Status", val2);
 
-}
 
 
 void setup() {
@@ -251,7 +281,6 @@ void loop() {
   //********************************MQTT code*************************************
   if ((useMqtt) && (!client.connected()) && (millis() > next_test_connection))
   {
-    Serial.println(client.connected());
     next_test_connection = millis() + 5000;
     mqttconnect();
   }
@@ -345,7 +374,7 @@ void loop() {
         {
           // End of record detected. Time to parse and check for non pfod sentence
           //here data coming from mqtt or pfod over wifi
-          Serial.println(line_receive);
+          if (debug) Serial.println(line_receive);
           if (strncmp(line_receive, "$SENDER", 7) == 0) {
             esp32_Sender();
           }

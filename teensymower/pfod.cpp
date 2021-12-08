@@ -232,7 +232,7 @@ void RemoteControl::sendMainMenu(boolean update) {
     serialPort->print(robot->name);
     serialPort->print(")");
   }
-  serialPort->print(F("|r~Commands|n~Manual|s~Settings|in~Info|c~Test IMU|yt~Test ODO|m1~Console|yp~Plot"));
+  serialPort->print(F("|r~Commands|n~Manual|s~Settings|in~Info|c~Test IMU|yt~Test ODO|ya~Test Main|m1~Console|yp~Plot"));
   serialPort->println(F("|y4~Error counters}"));
 }
 
@@ -1657,9 +1657,31 @@ void RemoteControl::processManualMenu(String pfodCmd) {
   }
 }
 
+void RemoteControl::sendMainTestMenu(boolean update) {
+  if (update) serialPort->print("{:"); else serialPort->println(F("{.MainTest`1000"));
+  sendSlider("ya0", F("mowPatternCurr"), robot->mowPatternCurr, "", 1, 3, 0);
+  sendSlider("ya1", F("laneUseNr"), robot->laneUseNr, "", 1, 3, 0);
+  sendSlider("ya2", F("rollDir"), robot->rollDir, "", 1, 1, 0);
+  sendSlider("ya3", F("whereToStart"), robot->whereToStart, "", 1,9999, 0);
+  sendSlider("ya4", F("areaToGo"), robot->areaToGo, "", 1, 3, 0);
+  sendSlider("ya5", F("actualLenghtByLane"), robot->actualLenghtByLane, "", 1, 255, 0);
+  serialPort->println("}");
+
+}
+void RemoteControl::processMainTestMenu(String pfodCmd) {
+  if (pfodCmd.startsWith("ya0")) processSlider(pfodCmd, robot->mowPatternCurr, 1);
+  else if (pfodCmd.startsWith("ya1")) processSlider(pfodCmd, robot->laneUseNr, 1);
+  else if (pfodCmd.startsWith("ya2")) processSlider(pfodCmd, robot->rollDir, 1);
+  else if (pfodCmd.startsWith("ya3")) processSlider(pfodCmd, robot->whereToStart, 1);
+  else if (pfodCmd.startsWith("ya4")) processSlider(pfodCmd, robot->areaToGo, 1);
+  else if (pfodCmd.startsWith("ya5")) processSlider(pfodCmd, robot->actualLenghtByLane, 1);
+  sendMainTestMenu(true);
+
+
+}
+
 void RemoteControl::sendTestOdoMenu(boolean update) {
   if (update) serialPort->print("{:"); else serialPort->println(F("{.TestOdo`1000"));
-
   serialPort->println(F("|yt10~Ticks Right / Left "));
   serialPort->print(robot->odometryRight);
   serialPort->print(F(" / "));
@@ -1668,10 +1690,8 @@ void RemoteControl::sendTestOdoMenu(boolean update) {
   serialPort->print(robot->perimeterMag);
   serialPort->print(F("/"));
   serialPort->print(int(robot->perimeterNoise));
-
   serialPort->print(F("|yt12~Mow is "));
   sendOnOff(robot->motorMowEnable);
-
   //serialPort->print(F("|yt8~Calib Ticks/Second"));  //to compute the ticks per second motor speed
   serialPort->print(F("|yt0~1 turn Wheel Fwd"));  //to verify and adjust the TicksPerRevolution
   serialPort->print(F("|yt1~5 turns Wheel Fwd"));  //to verify and adjust the TicksPerRevolution  and PWM right OFFSET the 2 wheel need to stop at the same time
@@ -1685,6 +1705,9 @@ void RemoteControl::sendTestOdoMenu(boolean update) {
   serialPort->println("}");
 
 }
+
+
+
 
 void RemoteControl::processTestOdoMenu(String pfodCmd) {
   if (pfodCmd == "yt0") {
@@ -2059,6 +2082,8 @@ boolean RemoteControl::readSerial() {
       else if (pfodCmd == "yr") sendRFIDMenu(false);
       else if (pfodCmd == "y4") sendErrorMenu(false);
       else if (pfodCmd == "yt") sendTestOdoMenu(false);
+      else if (pfodCmd == "ya") sendMainTestMenu(false);
+
       else if (pfodCmd == "w") sendByLaneMenu(false);
       else if (pfodCmd == "n") sendManualMenu(false);
       else if (pfodCmd == "s") sendSettingsMenu(false);
@@ -2095,6 +2120,7 @@ boolean RemoteControl::readSerial() {
       else if (pfodCmd.startsWith("v")) processInfoMenu(pfodCmd);
       else if (pfodCmd.startsWith("w")) processByLaneMenu(pfodCmd);
       else if (pfodCmd.startsWith("x")) processFactorySettingsMenu(pfodCmd);
+      else if (pfodCmd.startsWith("ya")) processMainTestMenu(pfodCmd);
       else if (pfodCmd.startsWith("yt")) processTestOdoMenu(pfodCmd);
       else if (pfodCmd.startsWith("z")) processErrorMenu(pfodCmd);
       else if (pfodCmd.startsWith("RFID")) {
@@ -2145,5 +2171,7 @@ void RemoteControl::processPI(String RpiCmd, float v1, float v2, float v3) {
   else if (pfodCmd.startsWith("w")) processByLaneMenu(pfodCmd);
   else if (pfodCmd.startsWith("x")) processFactorySettingsMenu(pfodCmd);
   else if (pfodCmd.startsWith("yt")) processTestOdoMenu(pfodCmd);
+  else if (pfodCmd.startsWith("ya")) processMainTestMenu(pfodCmd);
+
   else if (pfodCmd.startsWith("z")) processErrorMenu(pfodCmd);
 }
