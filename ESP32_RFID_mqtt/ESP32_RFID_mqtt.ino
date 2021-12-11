@@ -1,21 +1,7 @@
-//passerelle for ESP32
-//Possible use of ESP32 to pfod communication
+//SEE config.h for all the setting
+//WARNING to compile without error into tool set the Partition scheme to Huge APP
 
-//WIFI:
-//you don't have wifi in all the garden:
-//into config.h uncomment #define MODE_AP and comment #define MODE_STA
-//pfod setting :  IP 192.168.1.4 port 8881 -> mower is the Access point pfod and perimeter sender connect to the mower
-
-//you have wifi in all the garden:
-//into config.h comment #define MODE_AP and uncomment #define MODE_STA
-//set your ssid and password acoording to your WIFI router
-//pfod setting : IP 10.0.0.122 (or change to correct IPgroup of your router) port 8881 -> mower and sender are connected to your home wifi router
-
-
-//Bluetooth:
-//limitation no automatic start and stop sender on multiple mowing area
-
-//See config.h for more parameter
+//Hardware wiring :
 
 //TO RFID BOARD
 // ESP-32    <--> PN5180 pin mapping:
@@ -30,13 +16,12 @@
 // Reset, GPIO14  --> RST
 //
 
-//TO PCB1.3
+//TO PCB1.3 if used :
 // ESP-32    <--> pcb1.3 pin mapping:
 // Vin       <--> 5v ON BT CONNECTOR
 // GND       <--> GND ON BT CONNECTOR
 // RX2       <--> TX ON BT CONNECTOR
 // TX2       <--> RX ON BT CONNECTOR
-
 
 #include "PN5180.h"
 #include "PN5180ISO15693.h"
@@ -51,16 +36,11 @@
 BluetoothSerial SerialBT;
 #endif
 
-
-
 #include <WiFiClient.h>
 WiFiClient pfodClient;
 WiFiClient mqttClient;
 PubSubClient client(mqttClient);
-
 WiFiServer TheServeur(8881);
-
-
 
 uint8_t BTbuf[my_bufferSize];
 uint16_t iBT = 0;
@@ -75,64 +55,94 @@ char line_receive[256];
 byte mon_index = 0;
 String entete = "";
 
-
-/*
-  #include "BluetoothSerial.h" //Header File for Serial Bluetooth, will be added by default into Arduino
-  BluetoothSerial ESP_BT; //Object for Bluetooth
-*/
-
 PN5180ISO15693 nfc(12, 13, 14);
 uint8_t lastUid[8];
+String SplitResult[10];
 
-void receivedCallback(char* topic, byte* payload, unsigned int length) {
-  // Serial.print("Mqtt received: ");
-  // Serial.println(topic);
+int csvSplit(String string)//use to cut a string separator eg "STARTTIMER;1;1;0;25;2;50";
+{
+  String tempString = "";
+  int bufferIndex = 0;
+  for (int i = 0; i < string.length(); ++i)
+  {
+    char c = string[i];
+    if (c != ';')
+    {
+      tempString += c;
+    }
+    else
+    {
+      tempString += '\0';
+      SplitResult[bufferIndex++] = tempString;
+      tempString = "";
+    }
+  }
+  SplitResult[bufferIndex++] = tempString;//ecriture du dernier
+  return bufferIndex;
+}
+
+void receivedCallback(char* topic, byte* payload, unsigned int payload_length) { //data coming from mqtt
+
+  //convert payload to string
   String payloadString = "";
-  // Serial.print("payload: ");
-  for (int i = 0; i < length; i++) {
+  for (int i = 0; i < payload_length; i++) {
     payloadString = payloadString + String(((char)payload[i]));
   }
-  // Serial.println(payloadString);
-  if (payloadString == "START") {
-    Serial2.println("{ra}");
-    
+  if (debug)  Serial.print("Mqtt topic received: ");
+  if (debug)  Serial.println(topic);
+  if (debug)  Serial.print("payload: ");
+  if (debug)  Serial.println(payloadString);
+
+  if (payloadString.length() > 0) {
+    //split payload
+    int count = csvSplit(payloadString);
+    for (int j = 0; j < count; ++j)
+    {
+      if (SplitResult[j].length() > 0){
+        if (debug) Serial.print(j);
+        if (debug) Serial.print(" ");
+        if (debug) Serial.println(SplitResult[j]);
+      }     
+    }  
   }
-  if (payloadString == "STOP") {
+  if (SplitResult[0] == "START") {
+    Serial2.println("{ra}");
+  }
+  if (SplitResult[0] == "STOP") {
     Serial2.println("{ro}");
   }
-  if (payloadString == "HOME") {
+  if (SplitResult[0] == "HOME") {
     Serial2.println("{rh}");
   }
-  if (payloadString == "STARTTIMER") {
-    //Serial2.println("{a02`160}");  //a02 is the motor power max pfod slider a ` is use for int 160 and ~ for string
-    
+  if (SplitResult[0] == "STARTTIMER") {
+    Serial2.println("{ya0`" + SplitResult[1] + "}");//F("mowPatternCurr")
+    Serial2.println("{ya1`" + SplitResult[2] + "}");//F("laneUseNr")
+    Serial2.println("{ya2`" + SplitResult[3] + "}");//F("rollDir")
+    Serial2.println("{ya3`" + SplitResult[4] + "}");//F("whereToStart")
+    Serial2.println("{ya4`" + SplitResult[5] + "}");//F("areaToGo")
+    Serial2.println("{ya5`" + SplitResult[6] + "}");//F("actualLenghtByLane")
     Serial2.println("{rv}");
   }
-/*
- if(str(responsetable[0]) == "STARTTIMER"):
-                send_var_message('w','mowPatternCurr',''+str(responsetable[1])+'','laneUseNr',''+str(responsetable[2])+'','rollDir',''+str(responsetable[3])+'','0','0','0')
-                send_var_message('w','whereToStart',''+str(responsetable[4])+'','areaToGo',''+str(responsetable[5])+'','actualLenghtByLane',''+str(responsetable[6])+'','0','0','0')
-                send_pfo_message('rv','1','2','3','4','5','6',)
-
-*/
-
-  
 }
 
 void mqttconnect() {
 
   if (!client.connected()) {
-    Serial.print("MQTT connecting ...");
-    /* client ID */
-    String clientId = "admin";
-    /* connect now */
-    if (client.connect(clientId.c_str())) {
-      Serial.println("connected");
-      client.subscribe("Rl1000/COMMAND/#");
+    if (debug) Serial.print("MQTT connecting ...");
+   
+    if (client.connect(mqtt_id, mqtt_user, mqtt_pass)) {
+      if (debug) Serial.println("connected");
+      //const char* cmd_msg = "/COMMAND/#";
+      char outMessage[strlen(mower_name) + strlen(mqtt_subscribeTopic1)];
+      sprintf(outMessage, "%s%s", mower_name, mqtt_subscribeTopic1);
+      if (debug) Serial.print("Subscribe to : ");
+      if (debug) Serial.println(outMessage);
+      client.subscribe(outMessage);
+
     } else {
-      Serial.print("mqtt failed, status code =");
-      Serial.print(client.state());
-      Serial.println("try again in 5 seconds");
+      if (debug) Serial.print("mqtt failed, status code =");
+      if (debug) Serial.print(client.state());
+      if (debug) Serial.println("try again in 5 seconds");
 
     }
   }
@@ -151,26 +161,33 @@ void esp32_Sender() {
 }
 
 void esp32_Mqtt_sta() {
+  //receive from mower msgid,status,state,temp,battery,idle
+  //message separation
   char val1[6], val2[20], val3[20], val4[20], val5[20], val6[20];
   sscanf(line_receive, "%[^,],%[^,],%[^,],%[^,],%[^,],%[^,]", val1, val2, val3, val4, val5, val6);
 
-  client.publish("Rl1000/Status", val2);
-  client.publish("Rl1000/State", val3);
-  client.publish("Rl1000/Temp", val4);
-  client.publish("Rl1000/Battery", val5);
-  client.publish("Rl1000/Idle", val6);
-
-
-
-
-
+  //status
+  char outTopic1[strlen(mower_name) + strlen(mqtt_statusTopic)];
+  sprintf(outTopic1, "%s%s", mower_name, mqtt_statusTopic);
+  client.publish(outTopic1, val2);
+  //state
+  char outTopic2[strlen(mower_name) + strlen(mqtt_stateTopic)];
+  sprintf(outTopic2, "%s%s", mower_name, mqtt_stateTopic);
+  client.publish(outTopic2, val3);
+  //temp
+  char outTopic3[strlen(mower_name) + strlen(mqtt_tempTopic)];
+  sprintf(outTopic3, "%s%s", mower_name, mqtt_tempTopic);
+  client.publish(outTopic3, val4);
+  //battery
+  char outTopic4[strlen(mower_name) + strlen(mqtt_batteryTopic)];
+  sprintf(outTopic4, "%s%s", mower_name, mqtt_batteryTopic);
+  client.publish(outTopic4, val5);
+  //idle
+  char outTopic5[strlen(mower_name) + strlen(mqtt_idleTopic)];
+  sprintf(outTopic5, "%s%s", mower_name, mqtt_idleTopic);
+  client.publish(outTopic5, val6);
 }
-void esp32_Mqtt_stu() {
-  char val1[6], val2[20], val3[10];
-  sscanf(line_receive, "%[^,],%[^,],%[^,]", val1, val2, val3);
-  client.publish("Rl1000/Status", val2);
 
-}
 
 
 void setup() {
@@ -219,7 +236,7 @@ void setup() {
 
 
   //********************************MQTT code*************************************
-  client.setServer(mqtt_server, 1883);
+  client.setServer(mqtt_server, mqtt_port);
   client.setCallback(receivedCallback);
 
   //********************************RFID code*************************************
@@ -244,7 +261,6 @@ void loop() {
   //********************************MQTT code*************************************
   if ((useMqtt) && (!client.connected()) && (millis() > next_test_connection))
   {
-    Serial.println(client.connected());
     next_test_connection = millis() + 5000;
     mqttconnect();
   }
@@ -338,14 +354,14 @@ void loop() {
         {
           // End of record detected. Time to parse and check for non pfod sentence
           //here data coming from mqtt or pfod over wifi
-          Serial.println(line_receive);
+          if (debug) Serial.println(line_receive);
           if (strncmp(line_receive, "$SENDER", 7) == 0) {
             esp32_Sender();
           }
           if (strncmp(line_receive, "#RMSTA", 6) == 0) {
             esp32_Mqtt_sta();
           }
-          
+
 
 
 
