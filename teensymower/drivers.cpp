@@ -24,22 +24,22 @@
 #include "drivers.h"
 
 const char *dayOfWeek[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-void StreamPrint_progmem(Print &out,PGM_P format,...)
+void StreamPrint_progmem(Print &out, PGM_P format, ...)
 {
   // program memory version of printf - copy of format string and result share a buffer
   // so as to avoid too much memory use
   char formatString[128], *ptr;
- 
-    strncpy( formatString, format, sizeof(formatString) ); // copy in from program mem  
-  
+
+  strncpy( formatString, format, sizeof(formatString) ); // copy in from program mem
+
   // null terminate - leave char since we might need it in worst case for result's \0
-  formatString[ sizeof(formatString)-2 ]='\0';
-  ptr=&formatString[ strlen(formatString)+1 ]; // our result buffer...
+  formatString[ sizeof(formatString) - 2 ] = '\0';
+  ptr = &formatString[ strlen(formatString) + 1 ]; // our result buffer...
   va_list args;
-  va_start (args,format);
-  vsnprintf(ptr, sizeof(formatString)-1-strlen(formatString), formatString, args );
+  va_start (args, format);
+  vsnprintf(ptr, sizeof(formatString) - 1 - strlen(formatString), formatString, args );
   va_end (args);
-  formatString[ sizeof(formatString)-1 ]='\0';
+  formatString[ sizeof(formatString) - 1 ] = '\0';
   out.print(ptr);
 }
 
@@ -100,6 +100,25 @@ String date2str(date_t date) {
   return s;
 }
 
+// brushless BL500W motor driver
+//+5V --> 5V OUTPUT
+//EL <-- Enable/Disable HIGH=Enable/LOW=Disable -> Testing with mine it is swapped
+//ZF <-- Direction HIGH=Forward/GND=Backwards
+//VR <-- Analog 0..5V (PWM)
+//GND <--> GND
+
+void setBL500W(int pinDir, int pinPWM, int pinEnable, int speed) {
+  if (speed < 0) {
+    digitalWrite(pinDir, HIGH) ;
+    if (speed >= -4) speed = -4;
+    analogWrite(pinPWM, ((byte)abs(speed)));
+  } else {
+    digitalWrite(pinDir, LOW) ;
+    if (speed <= 4) speed = 4;
+    analogWrite(pinPWM, ((byte)abs(speed)));
+  }
+}
+
 
 // L298N motor driver
 // IN2/C(10)/PinPWM   IN1/D(12)/PinDir
@@ -109,7 +128,7 @@ String date2str(date_t date) {
 // pinEnable  connected to IN2
 // pinPWM  connected to ENA
 
-void setL298N(int pinDir, int pinPWM ,int pinEnable, int speed) {
+void setL298N(int pinDir, int pinPWM , int pinEnable, int speed) {
   if (speed < 0) {
     digitalWrite(pinDir, HIGH) ;
     digitalWrite(pinEnable, LOW) ;
@@ -148,21 +167,21 @@ void setRomeoMotor(int pinDir, int pinPWM, int speed) {
 //L_IS --> NC
 //R_EN --> pinMotorRightEnable
 //L_EN --> pinMotorRightEnable
-//RPWM --> pinMotorRightPWM 
+//RPWM --> pinMotorRightPWM
 //LPWM --> pinMotorRightDir
 //setBTS7960(pinMotorLeftDir, pinMotorLeftPWM, pinMotorLeftEnable, value); break;//
-void setBTS7960(int pinDir ,int pinPWM ,int pinEnable , int speed){
-  if (speed > 0){
+void setBTS7960(int pinDir , int pinPWM , int pinEnable , int speed) {
+  if (speed > 0) {
     digitalWrite(pinEnable, HIGH) ;
     analogWrite(pinPWM, 0);
     analogWrite(pinDir, abs(speed));
-  } 
-  if (speed < 0){
+  }
+  if (speed < 0) {
     digitalWrite(pinEnable, HIGH) ;
     analogWrite(pinDir, 0);
     analogWrite(pinPWM, abs(speed));
   }
-  if (speed == 0){
+  if (speed == 0) {
     digitalWrite(pinEnable, LOW) ;
     analogWrite(pinPWM, 0);
     analogWrite(pinDir, 0);
@@ -219,14 +238,14 @@ int getDayOfWeek(int month, int day, int year, int CalendarSystem)
 
 
 
-unsigned long hstol(String recv){
+unsigned long hstol(String recv) {
   //Serial.println(recv);
   char c[recv.length() + 1];
   unsigned long resultat;
   recv.toCharArray(c, recv.length() + 1);
-  resultat=strtol(c, NULL, 16); 
+  resultat = strtol(c, NULL, 16);
   //Serial.println(resultat);
   //Serial.println(String(resultat, HEX));
-  return resultat; 
-  
+  return resultat;
+
 }

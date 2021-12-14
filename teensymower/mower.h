@@ -103,9 +103,14 @@
 
 
 // ------- baudrates---------------------------------
+//possible list of motor driver set to :
+// 1 for brushless BL500W Driver
+// 2 for DC L298N Driver
+// 3 for DC BTS7960 Driver
 
-
-
+#define LEFT_MOTOR_DRIVER 3
+#define RIGHT_MOTOR_DRIVER 3
+#define MOW_MOTOR_DRIVER 3
 
 //#define COMPASS_IS HMC5883L
 #define COMPASS_IS QMC5883L

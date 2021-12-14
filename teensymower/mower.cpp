@@ -223,7 +223,7 @@ Mower::Mower() {
   RaspberryPIUse = false; // a raspberryPi is connected to USBNative port
   mowPatternDurationMax = 120; //in minutes
   useMqtt = true; //select this to exchange data over mqtt protocol for homeassistant.
-  
+
 
   // ----- user-defined switch ---------------------------
   userSwitch1       = 0;       // user-defined switch 1 (default value)
@@ -265,7 +265,7 @@ void Mower::setup() {
 
 
   // LED, buzzer, battery
- 
+
   pinMode(pinBuzzer, OUTPUT);
   digitalWrite(pinBuzzer, 0);
 
@@ -330,17 +330,17 @@ void Mower::setup() {
   pinMode(pinUserOut2, OUTPUT);
   pinMode(pinUserOut3, OUTPUT);
   //pinMode(pinUserOut4, OUTPUT);
-  
+
   /*
-  // user switches
-  pinMode(pinUserSwitch1, OUTPUT);
-  digitalWrite(pinUserSwitch1, LOW);
-  pinMode(pinUserSwitch2, OUTPUT);
-  digitalWrite(pinUserSwitch2, LOW);
-  pinMode(pinUserSwitch3, OUTPUT);
-  digitalWrite(pinUserSwitch3, LOW);
-*/
-  
+    // user switches
+    pinMode(pinUserSwitch1, OUTPUT);
+    digitalWrite(pinUserSwitch1, LOW);
+    pinMode(pinUserSwitch2, OUTPUT);
+    digitalWrite(pinUserSwitch2, LOW);
+    pinMode(pinUserSwitch3, OUTPUT);
+    digitalWrite(pinUserSwitch3, LOW);
+  */
+
 
   Robot::setup();
 
@@ -427,23 +427,35 @@ void Mower::setActuator(char type, int value) {
 
     //case ACT_MOTOR_MOW: setL298N(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, value); break;// Motortreiber einstellung - bei Bedarf Ã¤ndern z.B setL298N auf setMC33926
 
-    case ACT_MOTOR_MOW: setBTS7960(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, abs(value)); break; //limit the rotation to only one direction
+    case ACT_MOTOR_MOW:
+      if (MOW_MOTOR_DRIVER == 1) setBL500W(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, abs(value));
+      if (MOW_MOTOR_DRIVER == 2) setL298N(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, abs(value));
+      if (MOW_MOTOR_DRIVER == 3) setBTS7960(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, abs(value));
+      break;
 
-    case ACT_MOTOR_LEFT: setBTS7960(pinMotorLeftDir, pinMotorLeftPWM, pinMotorLeftEnable, value); break;//   Motortreiber einstellung - bei Bedarf Ã¤ndern z.B setL298N auf setMC33926
+    case ACT_MOTOR_LEFT:
+      if (LEFT_MOTOR_DRIVER == 1) setBL500W(pinMotorLeftDir, pinMotorLeftPWM, pinMotorLeftEnable, value);
+      if (LEFT_MOTOR_DRIVER == 2) setL298N(pinMotorLeftDir, pinMotorLeftPWM, pinMotorLeftEnable, value);
+      if (LEFT_MOTOR_DRIVER == 3) setBTS7960(pinMotorLeftDir, pinMotorLeftPWM, pinMotorLeftEnable, value);
+      break;
 
-    case ACT_MOTOR_RIGHT: setBTS7960(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value); break;
+    case ACT_MOTOR_RIGHT:
+      if (RIGHT_MOTOR_DRIVER == 1) setBL500W(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value);
+      if (RIGHT_MOTOR_DRIVER == 2) setL298N(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value);
+      if (RIGHT_MOTOR_DRIVER == 3) setBTS7960(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value);
+      break;
 
 
-  
-    case ACT_USER_OUT1: digitalWrite(pinUserOut1, value); break;  
+
+    case ACT_USER_OUT1: digitalWrite(pinUserOut1, value); break;
     case ACT_USER_OUT2: digitalWrite(pinUserOut2, value); break;
     case ACT_USER_OUT3: digitalWrite(pinUserOut3, value); break;
-   // case ACT_USER_OUT4: digitalWrite(pinUserOut4, value); break;
-  /* 
-    case ACT_USER_SW1: digitalWrite(pinUserSwitch1, value); break;
-    case ACT_USER_SW2: digitalWrite(pinUserSwitch2, value); break;
-    case ACT_USER_SW3: digitalWrite(pinUserSwitch3, value); break;
-*/
+    // case ACT_USER_OUT4: digitalWrite(pinUserOut4, value); break;
+    /*
+      case ACT_USER_SW1: digitalWrite(pinUserSwitch1, value); break;
+      case ACT_USER_SW2: digitalWrite(pinUserSwitch2, value); break;
+      case ACT_USER_SW3: digitalWrite(pinUserSwitch3, value); break;
+    */
     case ACT_CHGRELAY: digitalWrite(pinChargeEnable, value); break;
     //case ACT_CHGRELAY: digitalWrite(pinChargeEnable, !value); break;
     case ACT_BATTERY_SW: digitalWrite(pinBatterySwitch, value); break;
