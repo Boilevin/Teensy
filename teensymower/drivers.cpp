@@ -23,83 +23,6 @@
 */
 #include "drivers.h"
 
-const char *dayOfWeek[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-void StreamPrint_progmem(Print &out, PGM_P format, ...)
-{
-  // program memory version of printf - copy of format string and result share a buffer
-  // so as to avoid too much memory use
-  char formatString[128], *ptr;
-
-  strncpy( formatString, format, sizeof(formatString) ); // copy in from program mem
-
-  // null terminate - leave char since we might need it in worst case for result's \0
-  formatString[ sizeof(formatString) - 2 ] = '\0';
-  ptr = &formatString[ strlen(formatString) + 1 ]; // our result buffer...
-  va_list args;
-  va_start (args, format);
-  vsnprintf(ptr, sizeof(formatString) - 1 - strlen(formatString), formatString, args );
-  va_end (args);
-  formatString[ sizeof(formatString) - 1 ] = '\0';
-  out.print(ptr);
-}
-
-// rescale to -PI..+PI
-double scalePI(double v)
-{
-  double d = v;
-  while (d < 0) d += 2 * PI;
-  while (d >= 2 * PI) d -= 2 * PI;
-  if (d >= PI) return (-2 * PI + d);
-  else if (d < -PI) return (2 * PI + d);
-  else return d;
-}
-
-// computes minimum distance between x radiant (current-value) and w radiant (set-value)
-double distancePI(double x, double w)
-{
-  // cases:
-  // w=330 degree, x=350 degree => -20 degree
-  // w=350 degree, x=10  degree => -20 degree
-  // w=10  degree, x=350 degree =>  20 degree
-  // w=0   degree, x=190 degree => 170 degree
-  // w=190 degree, x=0   degree => -170 degree
-  double d = scalePI(w - x);
-  if (d < -PI) d = d + 2 * PI;
-  else if (d > PI) d = d - 2 * PI;
-  return d;
-}
-
-int time2minutes(timehm_t time) {
-  return (time.hour * 60 + time.minute);
-}
-
-void minutes2time(int minutes, timehm_t &time) {
-  time.hour   = minutes / 60;
-  time.minute = minutes % 60;
-}
-
-String time2str(timehm_t time) {
-  String s = String(time.hour / 10);
-  s += (time.hour % 10);
-  s += ":";
-  s += (time.minute / 10);
-  s += (time.minute % 10);
-  return s;
-}
-
-String date2str(date_t date) {
-  String s = dayOfWeek[date.dayOfWeek];
-  s += " ";
-  s += date.day / 10;
-  s += date.day % 10;
-  s += ".";
-  s += date.month / 10;
-  s += date.month % 10;
-  s += ".";
-  s += date.year;
-  return s;
-}
-
 // brushless BL500W motor driver
 //+5V --> 5V OUTPUT
 //EL <-- Enable/Disable HIGH=Enable/LOW=Disable -> Testing with mine it is swapped
@@ -204,16 +127,82 @@ void setMC33926(int pinDir, int pinPWM, int speed) {
   }
 }
 
-// ---- sensor drivers --------------------------------------------------------------
+const char *dayOfWeek[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+void StreamPrint_progmem(Print &out, PGM_P format, ...)
+{
+  // program memory version of printf - copy of format string and result share a buffer
+  // so as to avoid too much memory use
+  char formatString[128], *ptr;
 
+  strncpy( formatString, format, sizeof(formatString) ); // copy in from program mem
 
+  // null terminate - leave char since we might need it in worst case for result's \0
+  formatString[ sizeof(formatString) - 2 ] = '\0';
+  ptr = &formatString[ strlen(formatString) + 1 ]; // our result buffer...
+  va_list args;
+  va_start (args, format);
+  vsnprintf(ptr, sizeof(formatString) - 1 - strlen(formatString), formatString, args );
+  va_end (args);
+  formatString[ sizeof(formatString) - 1 ] = '\0';
+  out.print(ptr);
+}
 
+// rescale to -PI..+PI
+double scalePI(double v)
+{
+  double d = v;
+  while (d < 0) d += 2 * PI;
+  while (d >= 2 * PI) d -= 2 * PI;
+  if (d >= PI) return (-2 * PI + d);
+  else if (d < -PI) return (2 * PI + d);
+  else return d;
+}
 
+// computes minimum distance between x radiant (current-value) and w radiant (set-value)
+double distancePI(double x, double w)
+{
+  // cases:
+  // w=330 degree, x=350 degree => -20 degree
+  // w=350 degree, x=10  degree => -20 degree
+  // w=10  degree, x=350 degree =>  20 degree
+  // w=0   degree, x=190 degree => 170 degree
+  // w=190 degree, x=0   degree => -170 degree
+  double d = scalePI(w - x);
+  if (d < -PI) d = d + 2 * PI;
+  else if (d > PI) d = d - 2 * PI;
+  return d;
+}
 
+int time2minutes(timehm_t time) {
+  return (time.hour * 60 + time.minute);
+}
 
+void minutes2time(int minutes, timehm_t &time) {
+  time.hour   = minutes / 60;
+  time.minute = minutes % 60;
+}
 
+String time2str(timehm_t time) {
+  String s = String(time.hour / 10);
+  s += (time.hour % 10);
+  s += ":";
+  s += (time.minute / 10);
+  s += (time.minute % 10);
+  return s;
+}
 
-
+String date2str(date_t date) {
+  String s = dayOfWeek[date.dayOfWeek];
+  s += " ";
+  s += date.day / 10;
+  s += date.day % 10;
+  s += ".";
+  s += date.month / 10;
+  s += date.month % 10;
+  s += ".";
+  s += date.year;
+  return s;
+}
 
 // Returns the day of week (0=Sunday, 6=Saturday) for a given date
 int getDayOfWeek(int month, int day, int year, int CalendarSystem)
