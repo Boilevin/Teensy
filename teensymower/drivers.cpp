@@ -63,22 +63,6 @@ void setL298N(int pinDir, int pinPWM , int pinEnable, int speed) {
   }
 }
 
-// DFRobot Romeo All in one V1.1 motor driver
-// D5/D6 PinPWM       D4/D7 PinDir
-// H                  L     Forward
-// H                  H     Reverse
-void setRomeoMotor(int pinDir, int pinPWM, int speed) {
-  if (speed < 0) {
-    //digitalWrite(pinDir, HIGH) ;
-    //PinMan.analogWrite(pinPWM, abs(speed));
-  } else {
-    //digitalWrite(pinDir, LOW) ;
-    //PinMan.analogWrite(pinPWM, abs(speed));
-  }
-}
-
-
-
 //bber1
 // BTS7960 motor driver
 // Dir pin is used for reverse PWM signal
@@ -111,22 +95,7 @@ void setBTS7960(int pinDir , int pinPWM , int pinEnable , int speed) {
   }
 }
 
-// MC33926 motor driver
-// Check http://forum.pololu.com/viewtopic.php?f=15&t=5272#p25031 for explanations.
-//(8-bit PWM=255, 10-bit PWM=1023)
-// IN1 PinPWM         IN2 PinDir
-// PWM                L     Forward
-// nPWM               H     Reverse
-void setMC33926(int pinDir, int pinPWM, int speed) {
-  if (speed < 0) {
-    //digitalWrite(pinDir, HIGH) ;
-    //PinMan.analogWrite(pinPWM, 255-((byte)abs(speed)));
-  } else {
-    //digitalWrite(pinDir, LOW) ;
-    //PinMan.analogWrite(pinPWM, ((byte)speed));
-  }
-}
-
+//Time and Helpers
 const char *dayOfWeek[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 void StreamPrint_progmem(Print &out, PGM_P format, ...)
 {
