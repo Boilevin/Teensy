@@ -256,12 +256,12 @@ void Mower::setup() {
   digitalWrite(pinBatterySwitch, HIGH);
 
   // Buzzer.begin();
-  Console.begin(CONSOLE_BAUDRATE);
+  Serial.begin(CONSOLE_BAUDRATE);
   // I2Creset();
   Wire.begin();
   //Wire1.begin();
 
-  Console.println("SETUP");
+  Serial.println("SETUP");
 
 
   // LED, buzzer, battery
@@ -402,7 +402,7 @@ void checkMotorFault() {
     // rtc--------------------------------------------------------------------------------------------------------
     case SEN_RTC:
       if (!readDS1307(datetime)) {
-        Console.println("RTC data error!");
+        Serial.println("RTC data error!");
         addErrorCounter(ERR_RTC_DATA);
         setNextState(STATE_ERROR, 0);
       }

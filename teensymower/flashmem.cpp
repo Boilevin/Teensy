@@ -35,7 +35,7 @@ FlashClass::FlashClass() {
 
 
 void FlashClass::test(){    
-  Console.println(F("EEPROM test - Please wait..."));
+  Serial.println(F("EEPROM test - Please wait..."));
   boolean success = true;
   for (int i=0; i < 1024; i++){ // test 1024 addresses
     byte temp = read(i);  // read original value
@@ -43,12 +43,12 @@ void FlashClass::test(){
     byte v = read(i); // get test value
     write(i, temp); // write back original value
     if (v != ((byte)i)){ // incorrect read or write or both
-      Console.println(F("EEPROM error - RTC module missing?"));
+      Serial.println(F("EEPROM error - RTC module missing?"));
       success = false;
       break;
     }   
   }
-  if (success) Console.println(F("success!"));  
+  if (success) Serial.println(F("success!"));  
 }
 
 byte FlashClass::read(uint32_t address) {
@@ -65,26 +65,26 @@ byte* FlashClass::readAddress(uint32_t address) {
 }
 
 void FlashClass::dump(){
-  Console.println(F("EEPROM dump"));
+  Serial.println(F("EEPROM dump"));
   for (int i=0; i < 1024; i++){
     byte v = read(i);
     if (v != 0){
-      Console.print(i);
-      Console.print(F("="));
-      Console.print(v);
-      Console.print(F(", "));
+      Serial.print(i);
+      Serial.print(F("="));
+      Serial.print(v);
+      Serial.print(F(", "));
     }
   }
-  Console.println();
+  Serial.println();
 }
 
 boolean FlashClass::write(uint32_t address, byte value) {
   if (verboseOutput){
-    Console.print(F("!76,"));
-    Console.print(address);
-    Console.print(F(","));
-    Console.print(value);  
-    Console.println();
+    Serial.print(F("!76,"));
+    Serial.print(address);
+    Serial.print(F(","));
+    Serial.print(value);  
+    Serial.println();
   }
  
   EEPROM.write(address, value);

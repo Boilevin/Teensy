@@ -906,8 +906,8 @@ boolean RpiRemote::encode(char c)
   }
   if (pos >= 120) //avoid a buffer overrun
   {
-    Console.print (buf);
-    Console.println("----------------- warning >120 char received  from PI------------");
+    Serial.print (buf);
+    Serial.println("----------------- warning >120 char received  from PI------------");
     memset(buf, '\0', 120);
     pos = 0;
   }
@@ -918,13 +918,13 @@ boolean RpiRemote::process_buf()
 {
   if (!check_checksum()) //if checksum is bad
   {
-    //Console.println("Error Checksum");
-    //Console.println (buf);
+    //Serial.println("Error Checksum");
+    //Serial.println (buf);
     return false; //return
   }
   else {
-    //Console.print("Checksum OK ");
-    //Console.print (buf);
+    //Serial.print("Checksum OK ");
+    //Serial.print (buf);
     //otherwise, what sort of message is it
     if (strncmp(buf, "$RMPFO", 6) == 0) read_pfo();
     if (strncmp(buf, "$RMSET", 6) == 0) readWrite_setting();
@@ -989,8 +989,8 @@ uint8_t RpiRemote::parse_hex(char c)
 void RpiRemote::receive_request() {
   //$RMREQ,INF,2,0,3,0,0,0,*35
 
-  // Console.print("Receive a request  --> ");
-  // Console.println(buf);
+  // Serial.print("Receive a request  --> ");
+  // Serial.println(buf);
   String messageType;
   int frequency ;
   int trigger ;
@@ -1058,8 +1058,8 @@ void RpiRemote::receive_request() {
 void RpiRemote::receive_command() {
   //$RMCMD,mowmotor,1,0,0,4*62
 
-  //Console.print("Receive a Actuator command  --> ");
-  //Console.println(buf);
+  //Serial.print("Receive a Actuator command  --> ");
+  //Serial.println(buf);
   String ActuatorName;
   int value ;
 
@@ -1084,8 +1084,8 @@ void RpiRemote::receive_command() {
 }
 
 void RpiRemote::readWrite_var() {  //can be use to change the value of 4 variable in one sentence
-  //Console.print("Receive Read Write variable --> ");
-  //Console.println(buf);
+  //Serial.print("Receive Read Write variable --> ");
+  //Serial.println(buf);
 
   char readOrWrite; //flag r or w
   char variable_name[4][30];
@@ -1151,8 +1151,8 @@ void RpiRemote::readWrite_var() {  //can be use to change the value of 4 variabl
       //bber50
       if (strncmp(variable_name[i], "ActualSpeedPeriPWM", 20) == 0) {
         robot->ActualSpeedPeriPWM = atoi(received_value[i]);
-        Console.print("Set New perimeter tracking speed  ");
-        Console.println(robot->ActualSpeedPeriPWM);
+        Serial.print("Set New perimeter tracking speed  ");
+        Serial.println(robot->ActualSpeedPeriPWM);
 
       }
 
@@ -1169,9 +1169,9 @@ void RpiRemote::readWrite_var() {  //can be use to change the value of 4 variabl
       {
         robot->newtagDistance1 = atoi(received_value[i]);
         robot->whereToResetSpeed =  robot->totalDistDrive + robot->newtagDistance1; // when a speed tag is read it's where the speed is back to maxpwm value
-        Console.print("Change speed for ");
-        Console.print(robot->newtagDistance1);
-        Console.println(" centimeters");
+        Serial.print("Change speed for ");
+        Serial.print(robot->newtagDistance1);
+        Serial.println(" centimeters");
 
 
       }
@@ -1220,8 +1220,8 @@ void RpiRemote::readWrite_var() {  //can be use to change the value of 4 variabl
 
 void RpiRemote::readWrite_setting()
 {
-  //Console.print("Receive Read Write setting command  --> ");
-  //Console.println(buf);
+  //Serial.print("Receive Read Write setting command  --> ");
+  //Serial.println(buf);
   String Setting_page;
   char readOrWrite; //flag r or w
   int nr_page ;
@@ -1507,8 +1507,8 @@ void RpiRemote::readWrite_setting()
 
 void RpiRemote::read_pfo()
 {
-  //Console.print("Receive Pfod command  --> ");
-  //Console.println(buf);
+  //Serial.print("Receive Pfod command  --> ");
+  //Serial.println(buf);
   float val[2] ;
   //float value1 ;
   //float value2;

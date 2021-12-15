@@ -11,7 +11,7 @@
 #include "perimeter.h"
 #include "RpiRemote.h"
 #include "NewPing.h"
-
+#include "Screen.h"
 
 //the watchdog part
 #include "Watchdog_t4.h"
@@ -20,6 +20,8 @@ WDT_T4<WDT1> wdt;
 //Setting for Raspberry -----------------------------------
 RpiRemote MyRpi;
 
+//Setting for Screen -----------------------------------
+Screen MyScreen;
 
 //Ina226 part
 #include "INA226.h"
@@ -307,7 +309,7 @@ void Robot::checkTimer() {
   randomSeed(time2minutes(datetime.time)); // initializes the pseudo-random number generator for arduino random()
   boolean stopTimerTriggered = true;
   if (timerUse) {
-    Console.println("checktimer");
+    Serial.println("checktimer");
     for (int i = 0; i < MAX_TIMERS; i++) {
       if (timer[i].active) {
         if  ( (timer[i].daysOfWeek & (1 << datetime.date.dayOfWeek)) != 0) {
@@ -315,24 +317,24 @@ void Robot::checkTimer() {
           int stopmin =  time2minutes(timer[i].stopTime);
           int currmin =  time2minutes(datetime.time);
 
-          Console.print("Timer ");
-          Console.print(i);
-          Console.print(" startmin ");
-          Console.print(startmin);
+          Serial.print("Timer ");
+          Serial.print(i);
+          Serial.print(" startmin ");
+          Serial.print(startmin);
 
-          Console.print(" stopmin ");
-          Console.print(stopmin);
+          Serial.print(" stopmin ");
+          Serial.print(stopmin);
 
-          Console.print(" currmin ");
-          Console.println(currmin);
+          Serial.print(" currmin ");
+          Serial.println(currmin);
 
           if ((currmin >= startmin) && (currmin < stopmin)) {
             // start timer triggered
             stopTimerTriggered = false;
             if ((stateCurr == STATE_STATION)) {
-              Console.print("Timer ");
-              Console.print(i);
-              Console.println(F(" start triggered"));
+              Serial.print("Timer ");
+              Serial.print(i);
+              Serial.println(F(" start triggered"));
               ActualRunningTimer = i;
               //motorMowEnable = true;
               findedYaw = 999;
@@ -347,10 +349,10 @@ void Robot::checkTimer() {
               startByTimer = true;
               mowPatternDuration = 0;
               totalDistDrive = 0;
-              Console.print(F(" Track for area "));
-              Console.println(areaToGo);
-              Console.print(F(" Distance before start "));
-              Console.println(whereToStart);
+              Serial.print(F(" Track for area "));
+              Serial.println(areaToGo);
+              Serial.print(F(" Distance before start "));
+              Serial.println(whereToStart);
 
 
               setNextState(STATE_STATION_REV, 0);
@@ -360,7 +362,7 @@ void Robot::checkTimer() {
         }
         if ((stateCurr != STATE_STATION) && (stopTimerTriggered) && (ActualRunningTimer == i)) { //Stop only the running timer
 
-          Console.println(F("timer stop triggered"));
+          Serial.println(F("timer stop triggered"));
           ActualRunningTimer = 99;
           if (perimeterUse) {
             setNextState(STATE_PERI_FIND, 0);
@@ -2590,9 +2592,9 @@ void Robot::myCallback() {
 void Robot::setup()  {
   setDefaultTime();
   //  mower.h start before the robot setup
-  Console.print("++++++++++++++* Start Robot Setup at ");
-  Console.print(millis());
-  Console.println(" ++++++++++++");
+  Serial.print("++++++++++++++* Start Robot Setup at ");
+  Serial.print(millis());
+  Serial.println(" ++++++++++++");
 
 
 
@@ -2606,8 +2608,16 @@ void Robot::setup()  {
   rc.initSerial(&Bluetooth, BLUETOOTH_BAUDRATE);
 
   if (RaspberryPIUse) MyRpi.init();
+
+  
+  //------------------------  SCREEN parts  ----------------------------------------
+  if (Enable_Screen) {
+    MyScreen.init();
+  }
+
+  
   //initialise the date time part
-  Console.println("Initialise date time library ");
+  Serial.println("Initialise date time library ");
   setSyncProvider(getTeensy3Time);
 
   if (timeStatus() != timeSet) {
@@ -2648,11 +2658,11 @@ void Robot::setup()  {
   }
   else
   {
-    Console.println(" IMU is not activate ");
+    Serial.println(" IMU is not activate ");
   }
 
   if (perimeterUse) {
-    Console.println(" ------- Initialize Perimeter Setting ------- ");
+    Serial.println(" ------- Initialize Perimeter Setting ------- ");
     // perimeter.changeArea(1);
     perimeter.begin(pinPerimeterLeft, pinPerimeterRight);
     //perimeter.begin(A8, A9);
@@ -2669,20 +2679,20 @@ void Robot::setup()  {
 
   setBeeper(3000, 500, 250, 2000, 200);//beep for 3 sec
   gps.init();
-  Console.println(F("START"));
-  Console.print(F("Mower "));
-  Console.println(VER);
+  Serial.println(F("START"));
+  Serial.print(F("Mower "));
+  Serial.println(VER);
 
-  Console.print(F("Config: "));
-  Console.println(name);
-  Console.println(F("press..."));
-  Console.println(F("  d for menu"));
-  Console.println(F("  v to change console output (sensor counters, values, perimeter etc.)"));
-  Console.println(consoleModeNames[consoleMode]);
-  Console.println ();
+  Serial.print(F("Config: "));
+  Serial.println(name);
+  Serial.println(F("press..."));
+  Serial.println(F("  d for menu"));
+  Serial.println(F("  v to change console output (sensor counters, values, perimeter etc.)"));
+  Serial.println(consoleModeNames[consoleMode]);
+  Serial.println ();
 
 
-  Console.println ("Starting Ina226 current sensor ");
+  Serial.println ("Starting Ina226 current sensor ");
   MotLeftIna226.begin(0x41);
   ChargeIna226.begin(0x40);
   MotRightIna226.begin(0x44);
@@ -2690,38 +2700,38 @@ void Robot::setup()  {
   Mow2Ina226.begin_I2C1(0x41);  //MOW2 is connect on I2C1
   Mow3Ina226.begin_I2C1(0x44);  //MOW3 is connect on I2C1
 
-  Console.println ("Checking  ina226 current sensor connection");
+  Serial.println ("Checking  ina226 current sensor connection");
   //check sense powerboard i2c connection
   powerboard_I2c_line_Ok = true;
   if (!ChargeIna226.isConnected(0x40)) {
-    Console.println("INA226 Battery Charge is not OK");
+    Serial.println("INA226 Battery Charge is not OK");
     powerboard_I2c_line_Ok = false;
   }
   if (!MotRightIna226.isConnected(0x44)) {
-    Console.println("INA226 Motor Right is not OK");
+    Serial.println("INA226 Motor Right is not OK");
     powerboard_I2c_line_Ok = false;
   }
   if (!MotLeftIna226.isConnected(0x41)) {
-    Console.println("INA226 Motor Left is not OK");
+    Serial.println("INA226 Motor Left is not OK");
     powerboard_I2c_line_Ok = false;
   }
   if (!Mow1Ina226.isConnected_I2C1(0x40)) {
-    Console.println("INA226 MOW1 is not OK");
+    Serial.println("INA226 MOW1 is not OK");
     powerboard_I2c_line_Ok = false;
   }
   if (!Mow2Ina226.isConnected_I2C1(0x41)) {
-    Console.println("INA226 MOW2 is not OK");
+    Serial.println("INA226 MOW2 is not OK");
     powerboard_I2c_line_Ok = false;
   }
   if (!Mow3Ina226.isConnected_I2C1(0x44)) {
-    Console.println("INA226 MOW3 is not OK");
+    Serial.println("INA226 MOW3 is not OK");
     powerboard_I2c_line_Ok = false;
   }
 
 
   if (powerboard_I2c_line_Ok)
   {
-    Console.println ("Ina226 Begin OK ");
+    Serial.println ("Ina226 Begin OK ");
     // Configure INA226
 
 
@@ -2733,7 +2743,7 @@ void Robot::setup()  {
     Mow2Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
     Mow3Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
 
-    Console.println ("Ina226 Configure OK ");
+    Serial.println ("Ina226 Configure OK ");
     // Calibrate INA226. Rshunt = 0.01 ohm, Max excepted current = 4A
     ChargeIna226.calibrate(0.02, 4);
     MotLeftIna226.calibrate(0.02, 4);
@@ -2743,12 +2753,12 @@ void Robot::setup()  {
     Mow2Ina226.calibrate_I2C1(0.02, 4);
     Mow3Ina226.calibrate_I2C1(0.02, 4);
 
-    Console.println ("Ina226 Calibration OK ");
+    Serial.println ("Ina226 Calibration OK ");
   }
   else
   {
-    Console.println ("************** WARNING **************");
-    Console.println ("INA226 powerboard connection is not OK");
+    Serial.println ("************** WARNING **************");
+    Serial.println ("INA226 powerboard connection is not OK");
   }
 
 
@@ -2756,17 +2766,17 @@ void Robot::setup()  {
   //if wdt is not reset during the trigger duration a myCallback function start.
   // if after timeout wdt is always not reset tennsy reboot
 
-  Console.println("Watchdog configuration start ");
+  Serial.println("Watchdog configuration start ");
   WDT_timings_t config;
   config.trigger = 20; /* in seconds, 0->128 */
   config.timeout = 30; /* in seconds, 0->128 */
   config.callback = myCallback;
   wdt.begin(config);
-  Console.println("Watchdog configuration Finish ");
+  Serial.println("Watchdog configuration Finish ");
 
 
   nextTimeInfo = millis();
-  Console.println("Setup finish");
+  Serial.println("Setup finish");
 
 
 }
@@ -2859,20 +2869,20 @@ void Robot::printInfo(Stream & s) {
 }
 
 void Robot::printMenu() {
-  Console.println(" ");
-  Console.println(F(" MAIN MENU:"));
-  Console.println(F("1=test motors"));
-  Console.println(F("To test odometry --> use Arduremote"));
-  Console.println(F("3=communications menu"));
-  Console.println(F("5=Deactivate and Delete GYRO calibration : To calibrate GYRO --> use Arduremote Do not move IMU during the Calib"));
-  Console.println(F("6=Deactivate and Delete Compass calibration : To calibrate Compass --> use Arduremote start/stop"));
-  Console.println(F("9=save user settings"));
-  Console.println(F("l=load factory settings: Do not save setting before restart the mower"));
-  Console.println(F("r=delete robot stats"));
-  Console.println(F("x=read settings"));
-  Console.println(F("e=delete all errors"));
-  Console.println(F("0=exit"));
-  Console.println(" ");
+  Serial.println(" ");
+  Serial.println(F(" MAIN MENU:"));
+  Serial.println(F("1=test motors"));
+  Serial.println(F("To test odometry --> use Arduremote"));
+  Serial.println(F("3=communications menu"));
+  Serial.println(F("5=Deactivate and Delete GYRO calibration : To calibrate GYRO --> use Arduremote Do not move IMU during the Calib"));
+  Serial.println(F("6=Deactivate and Delete Compass calibration : To calibrate Compass --> use Arduremote start/stop"));
+  Serial.println(F("9=save user settings"));
+  Serial.println(F("l=load factory settings: Do not save setting before restart the mower"));
+  Serial.println(F("r=delete robot stats"));
+  Serial.println(F("x=read settings"));
+  Serial.println(F("e=delete all errors"));
+  Serial.println(F("0=exit"));
+  Serial.println(" ");
 }
 
 void Robot::delayWithWatchdog(int ms) {
@@ -2887,7 +2897,7 @@ void Robot::delayInfo(int ms) {
   unsigned long endtime = millis() + ms;
   while (millis() < endtime) {
     // readSensors();
-    printInfo(Console);
+    printInfo(Serial);
     //watchdogReset();
     delay(1000);
     //watchdogReset();
@@ -2943,8 +2953,8 @@ void Robot::menu() {
     //watchdogReset();
     resetIdleTime();
     // imu.update();
-    if ((!RaspberryPIUse) && (Console.available() > 0)) {  //do not read console is raspberry connected
-      ch = (char)Console.read();
+    if ((!RaspberryPIUse) && (Serial.available() > 0)) {  //do not read console is raspberry connected
+      ch = (char)Serial.read();
       switch (ch) {
         case '0':
           nextTimeInfo = millis();
@@ -3000,8 +3010,8 @@ void Robot::menu() {
 void Robot::readSerial() {
 
 
-  if ((!RaspberryPIUse) && (Console.available() > 0)) {  //do not read console if raspberry connected
-    char ch = (char)Console.read();
+  if ((!RaspberryPIUse) && (Serial.available() > 0)) {  //do not read console if raspberry connected
+    char ch = (char)Serial.read();
     //resetIdleTime();
     switch (ch) {
       case '0':
@@ -4693,26 +4703,26 @@ void Robot::setNextState(byte stateNew, byte dir) {
 
 
 void Robot::ShowMessage(String message) {
-  Console.print (message);
+  Serial.print (message);
   if (ConsoleToPfod) {
     Bluetooth.print (message);
   }
 }
 void Robot::ShowMessageln(String message) {
-  Console.println(message);
+  Serial.println(message);
   if (ConsoleToPfod) {
     Bluetooth.println(message);
   }
 }
 
 void Robot::ShowMessage(float value) {
-  Console.print (value);
+  Serial.print (value);
   if (ConsoleToPfod) {
     Bluetooth.print (value);
   }
 }
 void Robot::ShowMessageln(float value) {
-  Console.println(value);
+  Serial.println(value);
   if (ConsoleToPfod) {
     Bluetooth.println(value);
   }
@@ -5127,7 +5137,7 @@ void Robot::checkStuckOnIsland() {
   //bber600
   if (track_ClockWise) {
     if ((odometryRight - odometryLeft) - PeriOdoIslandDiff > 6 * odometryTicksPerRevolution) {
-      Console.println("Right wheel is 6 full revolution more than left one --> Island  ??? ");
+      Serial.println("Right wheel is 6 full revolution more than left one --> Island  ??? ");
       newtagRotAngle1 = 90;
       setNextState(STATE_PERI_STOP_TOROLL, 0);
       return;
@@ -5135,7 +5145,7 @@ void Robot::checkStuckOnIsland() {
   }
   else {
     if ((odometryLeft - odometryRight) - PeriOdoIslandDiff > 6 * odometryTicksPerRevolution) {
-      Console.println("Right wheel is 6 full revolution more than left one --> Island  ??? ");
+      Serial.println("Right wheel is 6 full revolution more than left one --> Island  ??? ");
       newtagRotAngle1 = 90;
       setNextState(STATE_PERI_STOP_TOROLL, 0);
       return;
@@ -5267,7 +5277,7 @@ void Robot::checkSonarPeriTrack() {
 
     if (((sonarDistRight != NO_ECHO) && (sonarDistRight < sonarTriggerBelow)) ||  ((sonarDistLeft != NO_ECHO) && (sonarDistLeft < sonarTriggerBelow))  ) {
     //setBeeper(1000, 50, 50, 60, 60);
-    Console.println("Sonar reduce speed on tracking for 2 meters");
+    Serial.println("Sonar reduce speed on tracking for 2 meters");
     whereToResetSpeed =  totalDistDrive + 200; // when a speed tag is read it's where the speed is back to maxpwm value
 
     nextTimeCheckSonar = millis() + 3000;  //wait before next reading
@@ -5580,7 +5590,7 @@ void Robot::loop()  {
     gps.run();
   }
 
-  /*
+  
     if ((Enable_Screen) && (millis() >= nextTimeScreen))   { // warning : refresh screen take 40 ms
       nextTimeScreen = millis() + 250;
       StartReadAt = millis();
@@ -5611,7 +5621,7 @@ void Robot::loop()  {
 
 
     }
-  */
+  
 
   if (millis() >= nextTimeInfo) {
     if ((millis() - nextTimeInfo > 250)) {
@@ -5622,7 +5632,7 @@ void Robot::loop()  {
     }
     nextTimeInfo = millis() + 1000; //1000
 
-    printInfo(Console);
+    printInfo(Serial);
     checkErrorCounter();
     //if (stateCurr == STATE_REMOTE) printRemote();
     loopsPerSec = loopsPerSecCounter;
@@ -7101,14 +7111,14 @@ void Robot::loop()  {
 
           if ((perimeterInside) && (smoothPeriMag > 250)) //check if signal here and inside need a big value to be sure it is not only noise
           {
-            Console.print("SIGNAL OK SmoothMagnitude =  ");
-            Console.println(smoothPeriMag);
+            Serial.print("SIGNAL OK SmoothMagnitude =  ");
+            Serial.println(smoothPeriMag);
             setNextState(STATE_STATION_FORW, rollDir);
             return;
           }
           else {
-            Console.print("ERROR No SIGNAL SmoothMagnitude =  ");
-            Console.println(smoothPeriMag);
+            Serial.print("ERROR No SIGNAL SmoothMagnitude =  ");
+            Serial.println(smoothPeriMag);
             setNextState(STATE_ERROR, 0);
             return;
           }
@@ -7125,8 +7135,8 @@ void Robot::loop()  {
           setNextState(STATE_STATION_FORW, rollDir);
         }
         else {
-          Console.print("ERROR No SIGNAL SmoothMagnitude =  ");
-          Console.println(smoothPeriMag);
+          Serial.print("ERROR No SIGNAL SmoothMagnitude =  ");
+          Serial.println(smoothPeriMag);
           setNextState(STATE_ERROR, 0);
         }
       }

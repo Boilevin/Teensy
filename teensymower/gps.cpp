@@ -50,7 +50,7 @@ void GPS::init() {
     0xB5, 0x62, 0x0A, 0x04, 0x00, 0x00, 0x0E, 0x34 //<- UBX MON,  Size   8,  'Monitor'
   };
   // send configuration data in UBX protocol
-  Console.println("Send config sentence");
+  Serial.println("Send config sentence");
   for (int i = 0; i < sizeof(UBLOX_INIT); i++) {
     GpsPort.write( pgm_read_byte(UBLOX_INIT + i) );
     delay(5); // simulating a 38400baud pace (or less), otherwise commands are not accepted by the device.
@@ -62,7 +62,7 @@ void GPS::init() {
   /*
     //fail to change speed on M6n so stay at 9600 bps
     GpsPort.flush();
-    Console.println("Restore the new baudRate to 38400 ");
+    Serial.println("Restore the new baudRate to 38400 ");
     GpsPort.begin(38400);
   */
 }

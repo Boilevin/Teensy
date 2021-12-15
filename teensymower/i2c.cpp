@@ -92,13 +92,13 @@ void I2Creset(){
   while (true){
     int rtn = I2CclearBus(); // clear the I2C bus first before calling Wire.begin()
     if (rtn == 0) return;
-    Console.println(F("I2C bus error. Could not clear (PCB not powered ON or RTC module missing or JCx jumper set for missing I2C module)"));
+    Serial.println(F("I2C bus error. Could not clear (PCB not powered ON or RTC module missing or JCx jumper set for missing I2C module)"));
     if (rtn == 1) {
-      Console.println(F("SCL clock line held low"));
+      Serial.println(F("SCL clock line held low"));
     } else if (rtn == 2) {
-      Console.println(F("SCL clock line held low by slave clock stretch"));
+      Serial.println(F("SCL clock line held low by slave clock stretch"));
     } else if (rtn == 3) {
-      Console.println(F("SDA data line held low"));
+      Serial.println(F("SDA data line held low"));
     }
   }
 }

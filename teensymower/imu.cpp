@@ -66,13 +66,13 @@ void IMUClass::begin() {
   if (robot.CompassUse) {
 
     if (COMPASS_IS == HMC5883L) {
-      Console.println(F("--------------------------------- COMPASS HMC5883L INITIALISATION ---------------"));
+      Serial.println(F("--------------------------------- COMPASS HMC5883L INITIALISATION ---------------"));
       uint8_t data = 0;
       //while (true) {
       I2CreadFrom(HMC5883L, 10, 1, &data, 1);
-      Console.print(F("COMPASS HMC5883L ID NEED TO BE 72 IF ALL IS OK ------>  ID="));
-      Console.println(data);
-      if (data != 72) Console.println(F("COMPASS HMC5883L FAIL"));
+      Serial.print(F("COMPASS HMC5883L ID NEED TO BE 72 IF ALL IS OK ------>  ID="));
+      Serial.println(data);
+      if (data != 72) Serial.println(F("COMPASS HMC5883L FAIL"));
       delay(1000);
       //}
       comOfs.x = comOfs.y = comOfs.z = 0;
@@ -85,7 +85,7 @@ void IMUClass::begin() {
     }
 
     if (COMPASS_IS == QMC5883L) {
-      Console.println(F("--------------------------------- COMPASS QMC5883L INITIALISATION ---------------"));
+      Serial.println(F("--------------------------------- COMPASS QMC5883L INITIALISATION ---------------"));
       comOfs.x = comOfs.y = comOfs.z = 0;
       comScale.x = comScale.y = comScale.z = 2;
       useComCalibration = true;
@@ -107,21 +107,21 @@ void IMUClass::begin() {
   printCalib();
 
   //initialisation of MPU6050
-  Console.println(F("--------------------------------- GYRO ACCEL INITIALISATION ---------------"));
+  Serial.println(F("--------------------------------- GYRO ACCEL INITIALISATION ---------------"));
   mpu.initialize();
-  //Console.println(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));
+  //Serial.println(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));
   if (mpu.testConnection()) {
-    Console.println("MPU6050 connection successful");
+    Serial.println("MPU6050 connection successful");
   }
   else
   {
-    Console.println("MPU6050 connection failed");
+    Serial.println("MPU6050 connection failed");
     robot.imuUse = false;
     return;
 
   }
-  Console.println(mpu.getDeviceID());
-  Console.println(F("Initializing DMP..."));
+  Serial.println(mpu.getDeviceID());
+  Serial.println(F("Initializing DMP..."));
   devStatus = mpu.dmpInitialize();
 
   mpu.setXAccelOffset(ax_offset); //-1929
@@ -135,40 +135,40 @@ void IMUClass::begin() {
 
   // make sure it worked (returns 0 if so)
   if (devStatus == 0) {
-    Console.print(F("Enabling DMP...  "));
+    Serial.print(F("Enabling DMP...  "));
     mpu.setDMPEnabled(true);
     packetSize = mpu.dmpGetFIFOPacketSize();
-    Console.print(F("Packet size "));
-    Console.println(packetSize);
+    Serial.print(F("Packet size "));
+    Serial.println(packetSize);
   }
   else {
-    Console.println(F("DMP Initialization failed "));
+    Serial.println(F("DMP Initialization failed "));
     robot.imuUse = false;
     return;
   }
   nextTimeAdjustYaw = millis();
-  Console.println(F("Wait 3 secondes to stabilize the Drift"));
+  Serial.println(F("Wait 3 secondes to stabilize the Drift"));
   //delay(3000); // wait 3 sec to help DMP stop drift
   // read the AccelGyro and the CompassHMC5883 to find the initial CompassYaw
 
   run();
-  Console.print(F("AccelGyro Yaw: "));
-  Console.print(ypr.yaw);
+  Serial.print(F("AccelGyro Yaw: "));
+  Serial.print(ypr.yaw);
 
   if (robot.CompassUse) {
-    Console.print(F("  Compass Yaw: "));
-    Console.print(comYaw);
+    Serial.print(F("  Compass Yaw: "));
+    Serial.print(comYaw);
     CompassGyroOffset = distancePI(ypr.yaw, comYaw);
-    Console.print(F("  Diff between compass and accelGyro in Radian and Deg"));
-    Console.print(CompassGyroOffset);
-    Console.print(" / ");
-    Console.println(CompassGyroOffset * 180 / PI);
+    Serial.print(F("  Diff between compass and accelGyro in Radian and Deg"));
+    Serial.print(CompassGyroOffset);
+    Serial.print(" / ");
+    Serial.println(CompassGyroOffset * 180 / PI);
   }
   else {
     CompassGyroOffset = 0;
   }
 
-  Console.println(F("--------------------------------- IMU READY ------------------------------"));
+  Serial.println(F("--------------------------------- IMU READY ------------------------------"));
 }
 
 // weight fusion (w=0..1) of two radiant values (a,b)
@@ -253,19 +253,19 @@ void IMUClass::calibration() {
     meansensors();
     
     //watchdogReset();
-    Console.print("Wait until accel 3 val are < 8 : ");
-    Console.print(abs(mean_ax));
-    Console.print(" ");
-    Console.print(abs(mean_ay));
-    Console.print(" ");
-    Console.print(abs(16384 - mean_az));
-    Console.print(" and Gyro 3 val are < 1 : ");
-    Console.print(abs(mean_gx));
-    Console.print(" ");
-    Console.print(abs(mean_gy));
-    Console.print(" ");
-    Console.print(abs(mean_gz));
-    Console.println(" ");
+    Serial.print("Wait until accel 3 val are < 8 : ");
+    Serial.print(abs(mean_ax));
+    Serial.print(" ");
+    Serial.print(abs(mean_ay));
+    Serial.print(" ");
+    Serial.print(abs(16384 - mean_az));
+    Serial.print(" and Gyro 3 val are < 1 : ");
+    Serial.print(abs(mean_gx));
+    Serial.print(" ");
+    Serial.print(abs(mean_gy));
+    Serial.print(" ");
+    Serial.print(abs(mean_gz));
+    Serial.println(" ");
 
 
     if (abs(mean_ax) <= acel_deadzone) ready++;
@@ -338,7 +338,7 @@ void IMUClass::run() {
   while (fifoCount < packetSize) {  //leave time to the DMP to fill the FIFO
     fifoCount = mpu.getFIFOCount();
     if (millis() > start_fill_fifo + 100) {
-      Console.println("fifo read take more than 100 ms");
+      Serial.println("fifo read take more than 100 ms");
       fifoCount = 100;
     }
 
@@ -350,7 +350,7 @@ void IMUClass::run() {
   }
 
   if (fifoCount != 0) {
-    //Console.println("//////MPU6050 DMP fill the fifo during the reading IMU value are skip //////////////");
+    //Serial.println("//////MPU6050 DMP fill the fifo during the reading IMU value are skip //////////////");
     return;  ///the DMP fill the fifo during the reading , all the value are false but without interrupt it's the only way i have find to make it work ???certainly i am wrong
   }
 
@@ -364,11 +364,11 @@ void IMUClass::run() {
   if (((abs(yprtest[1]) - abs(ypr.pitch)) > 0.3490) && useComCalibration && millis() > nextSendPitchRollError) //check only after startup finish , avoid trouble if iMU not calibrate
   {
     nextSendPitchRollError = millis() + 2000;
-    Console.print("Last pitch : ");
-    Console.print(ypr.pitch / PI * 180);
-    Console.print(" Actual pitch : ");
-    Console.println(yprtest[1] / PI * 180);
-    Console.println("pitch change 20 deg in less than 50 ms ????????? value is skip");
+    Serial.print("Last pitch : ");
+    Serial.print(ypr.pitch / PI * 180);
+    Serial.print(" Actual pitch : ");
+    Serial.println(yprtest[1] / PI * 180);
+    Serial.println("pitch change 20 deg in less than 50 ms ????????? value is skip");
 
   }
   else
@@ -379,11 +379,11 @@ void IMUClass::run() {
   if (((abs(yprtest[2]) - abs(ypr.roll)) > 0.3490) && useComCalibration && millis() > nextSendPitchRollError) //check only after startup finish , avoid trouble if iMU not calibrate
   {
     nextSendPitchRollError = millis() + 2000;
-    Console.print("Last roll : ");
-    Console.print(ypr.roll / PI * 180);
-    Console.print(" Actual roll : ");
-    Console.println(yprtest[2] / PI * 180);
-    Console.println("roll change 20 deg in less than 50 ms ????????? value is skip");
+    Serial.print("Last roll : ");
+    Serial.print(ypr.roll / PI * 180);
+    Serial.print(" Actual roll : ");
+    Serial.println(yprtest[2] / PI * 180);
+    Serial.println("roll change 20 deg in less than 50 ms ????????? value is skip");
   }
   else
   {
@@ -419,7 +419,7 @@ void IMUClass::readQMC5883L() {
   uint8_t buf[6];
 
   if (I2CreadFrom(QMC5883L, 0x00, 6, (uint8_t*)buf) != 6) {
-    Console.println("error when read compass");
+    Serial.println("error when read compass");
     robot.addErrorCounter(ERR_IMU_COMM);
     return;
   }
@@ -447,7 +447,7 @@ void IMUClass::readQMC5883L() {
 void IMUClass::readHMC5883L() {
   uint8_t buf[6];
   if (I2CreadFrom(HMC5883L, 0x03, 6, (uint8_t*)buf) != 6) {
-    Console.println("error when read compass");
+    Serial.println("error when read compass");
     robot.addErrorCounter(ERR_IMU_COMM);
     return;
   }
@@ -478,8 +478,8 @@ void IMUClass::readHMC5883L() {
 void IMUClass::loadSaveCalib(boolean readflag) {
   int addr = ADDR;
   short magic = MAGIC;
-  if (readflag) Console.println(F("Load Calibration"));
-  else Console.println(F("Save Calibration"));
+  if (readflag) Serial.println(F("Load Calibration"));
+  else Serial.println(F("Save Calibration"));
   eereadwrite(readflag, addr, magic); // magic
   //accelgyro offset
   eereadwrite(readflag, addr, ax_offset);
@@ -491,40 +491,40 @@ void IMUClass::loadSaveCalib(boolean readflag) {
   //compass offset
   eereadwrite(readflag, addr, comOfs);
   eereadwrite(readflag, addr, comScale);
-  Console.print(F("Calibration address Start = "));
-  Console.println(ADDR);
-  Console.print(F("Calibration address Stop = "));
-  Console.println(addr);
+  Serial.print(F("Calibration address Start = "));
+  Serial.println(ADDR);
+  Serial.print(F("Calibration address Stop = "));
+  Serial.println(addr);
 }
 
 
 void IMUClass::printPt(point_float_t p) {
-  Console.print(p.x);
-  Console.print(",");
-  Console.print(p.y);
-  Console.print(",");
-  Console.println(p.z);
+  Serial.print(p.x);
+  Serial.print(",");
+  Serial.print(p.y);
+  Serial.print(",");
+  Serial.println(p.z);
 }
 void IMUClass::printCalib() {
-  Console.println(F("-------- IMU CALIBRATION  --------"));
-  Console.print("ACCEL GYRO MPU6050 OFFSET ax: ");
-  Console.print(ax_offset);
-  Console.print(" ay: ");
-  Console.print(ay_offset);
-  Console.print(" az: ");
-  Console.print(az_offset);
-  Console.print(" gx: ");
-  Console.print(gx_offset);
-  Console.print(" gy: ");
-  Console.print(gy_offset);
-  Console.print(" gz: ");
-  Console.println(gz_offset);
-  Console.println("COMPASS OFFSET X.Y.Z AND SCALE X.Y.Z");
-  Console.print(F("comOfs="));
+  Serial.println(F("-------- IMU CALIBRATION  --------"));
+  Serial.print("ACCEL GYRO MPU6050 OFFSET ax: ");
+  Serial.print(ax_offset);
+  Serial.print(" ay: ");
+  Serial.print(ay_offset);
+  Serial.print(" az: ");
+  Serial.print(az_offset);
+  Serial.print(" gx: ");
+  Serial.print(gx_offset);
+  Serial.print(" gy: ");
+  Serial.print(gy_offset);
+  Serial.print(" gz: ");
+  Serial.println(gz_offset);
+  Serial.println("COMPASS OFFSET X.Y.Z AND SCALE X.Y.Z");
+  Serial.print(F("comOfs="));
   printPt(comOfs);
-  Console.print(F("comScale="));
+  Serial.print(F("comScale="));
   printPt(comScale);
-  Console.println(F("."));
+  Serial.println(F("."));
 }
 
 void IMUClass::loadCalib() {
@@ -535,7 +535,7 @@ void IMUClass::loadCalib() {
   //value = EEPROM.read(address);
   //EEPROM.write(addr, val);
   if (magic != MAGIC) {
-    Console.println(F("IMU Warning: no calib data"));
+    Serial.println(F("IMU Warning: no calib data"));
     ax_offset = 376;
     ay_offset = -1768;
     az_offset = 1512;
@@ -549,7 +549,7 @@ void IMUClass::loadCalib() {
   }
   calibrationAvail = true;
   useComCalibration = true;
-  Console.println(F("IMU: found calib data"));
+  Serial.println(F("IMU: found calib data"));
   loadSaveCalib(true);
 }
 
@@ -563,7 +563,7 @@ void IMUClass::deleteCompassCalib() {
   //eewrite(addr, (short)0); // magic
   comOfs.x = comOfs.y = comOfs.z = 0;
   comScale.x = comScale.y = comScale.z = 2;
-  Console.println("Compass calibration deleted");
+  Serial.println("Compass calibration deleted");
 }
 void IMUClass::deleteAccelGyroCalib() {
   int addr = ADDR;
@@ -577,33 +577,33 @@ void IMUClass::deleteAccelGyroCalib() {
   mpu.setYGyroOffset(1);//-3
   mpu.setZGyroOffset(1);//-2
 
-  Console.println("AccelGyro calibration deleted ");
+  Serial.println("AccelGyro calibration deleted ");
 }
 
 
 // calculate gyro offsets
 void IMUClass::calibGyro() {
 
-  Console.println("Reading sensors for first time... without any offset");
+  Serial.println("Reading sensors for first time... without any offset");
   //watchdogReset();
   
   meansensors();
  
   //watchdogReset();
-  Console.print("Reading ax: ");
-  Console.print(mean_ax);
-  Console.print(" ay: ");
-  Console.print(mean_ay);
-  Console.print(" az: ");
-  Console.print(mean_az);
-  Console.print(" gx: ");
-  Console.print(mean_gx);
-  Console.print(" gy: ");
-  Console.print(mean_gy);
-  Console.print(" gz: ");
-  Console.println(mean_gz);
+  Serial.print("Reading ax: ");
+  Serial.print(mean_ax);
+  Serial.print(" ay: ");
+  Serial.print(mean_ay);
+  Serial.print(" az: ");
+  Serial.print(mean_az);
+  Serial.print(" gx: ");
+  Serial.print(mean_gx);
+  Serial.print(" gy: ");
+  Serial.print(mean_gy);
+  Serial.print(" gz: ");
+  Serial.println(mean_gz);
 
-  Console.println("\nCalculating offsets...");
+  Serial.println("\nCalculating offsets...");
   //watchdogReset();
   
   calibration();
@@ -611,42 +611,42 @@ void IMUClass::calibGyro() {
   //watchdogReset();
   meansensors();
   //watchdogReset();
-  Console.println("FINISHED reading Value with new offset,If all is OK need to be close 0 exept the az close to 16384");
-  Console.print(" New reading ax: ");
-  Console.print(mean_ax);
-  Console.print(" ay: ");
-  Console.print(mean_ay);
-  Console.print(" az: ");
-  Console.print(mean_az);
-  Console.print(" gx: ");
-  Console.print(mean_gx);
-  Console.print(" gy: ");
-  Console.print(mean_gy);
-  Console.print(" gz: ");
-  Console.println(mean_gz);
+  Serial.println("FINISHED reading Value with new offset,If all is OK need to be close 0 exept the az close to 16384");
+  Serial.print(" New reading ax: ");
+  Serial.print(mean_ax);
+  Serial.print(" ay: ");
+  Serial.print(mean_ay);
+  Serial.print(" az: ");
+  Serial.print(mean_az);
+  Serial.print(" gx: ");
+  Serial.print(mean_gx);
+  Serial.print(" gy: ");
+  Serial.print(mean_gy);
+  Serial.print(" gz: ");
+  Serial.println(mean_gz);
   //watchdogReset();
-  Console.print("THE NEW OFFSET ax: ");
-  Console.print(ax_offset);
-  Console.print(" ay: ");
-  Console.print(ay_offset);
-  Console.print(" az: ");
-  Console.print(az_offset);
-  Console.print(" gx: ");
-  Console.print(gx_offset);
-  Console.print(" gy: ");
-  Console.print(gy_offset);
-  Console.print(" gz: ");
-  Console.println(gz_offset);
+  Serial.print("THE NEW OFFSET ax: ");
+  Serial.print(ax_offset);
+  Serial.print(" ay: ");
+  Serial.print(ay_offset);
+  Serial.print(" az: ");
+  Serial.print(az_offset);
+  Serial.print(" gx: ");
+  Serial.print(gx_offset);
+  Serial.print(" gy: ");
+  Serial.print(gy_offset);
+  Serial.print(" gz: ");
+  Serial.println(gz_offset);
   //watchdogReset();
   saveCalib();
 }
 
 
 void IMUClass::calibComStartStop() {
-  while ((!robot.RaspberryPIUse) && (Console.available())) Console.read(); //use to stop the calib
+  while ((!robot.RaspberryPIUse) && (Serial.available())) Serial.read(); //use to stop the calib
   if (state == IMU_CAL_COM) {
     // stop
-    Console.println(F("com calib completed"));
+    Serial.println(F("com calib completed"));
     calibrationAvail = true;
     float xrange = comMax.x - comMin.x;
     float yrange = comMax.y - comMin.y;
@@ -659,7 +659,7 @@ void IMUClass::calibComStartStop() {
     comScale.z = zrange;
     //bber18
     if ((comScale.x == 0) || (comScale.y == 0) || (comScale.z == 0)) { //jussip bug found div by 0 later
-      Console.println(F("*********************ERROR WHEN CALIBRATE : VALUE ARE TOTALY WRONG CHECK IF COMPASS IS NOT PERTURBATE **************"));
+      Serial.println(F("*********************ERROR WHEN CALIBRATE : VALUE ARE TOTALY WRONG CHECK IF COMPASS IS NOT PERTURBATE **************"));
       comOfs.x = comOfs.y = comOfs.z = 0;
       comScale.x = comScale.y = comScale.z = 2;
     }
@@ -671,8 +671,8 @@ void IMUClass::calibComStartStop() {
 
   } else {
     // start
-    Console.println(F("com calib..."));
-    Console.println(F("rotate sensor 360 degree around all three axis until NO new data are coming"));
+    Serial.println(F("com calib..."));
+    Serial.println(F("rotate sensor 360 degree around all three axis until NO new data are coming"));
     //watchdogReset();
     foundNewMinMax = false;
     useComCalibration = false;
@@ -689,33 +689,33 @@ void IMUClass::calibComQMC5883Update() {
   //watchdogReset();
   if (com.x < comMin.x) {
     comMin.x = com.x;
-    Console.print("NEW min x: ");
-    Console.println(comMin.x);
+    Serial.print("NEW min x: ");
+    Serial.println(comMin.x);
   }
   if (com.y < comMin.y) {
     comMin.y = com.y;
-    Console.print("NEW min y: ");
-    Console.println(comMin.y);
+    Serial.print("NEW min y: ");
+    Serial.println(comMin.y);
   }
   if (com.z < comMin.z) {
     comMin.z = com.z;
-    Console.print("NEW min z: ");
-    Console.println(comMin.z);
+    Serial.print("NEW min z: ");
+    Serial.println(comMin.z);
   }
   if (com.x > comMax.x) {
     comMax.x = com.x;
-    Console.print("NEW max x: ");
-    Console.println(comMax.x);
+    Serial.print("NEW max x: ");
+    Serial.println(comMax.x);
   }
   if (com.y > comMax.y) {
     comMax.y = com.y;
-    Console.print("NEW max y: ");
-    Console.println(comMax.y);
+    Serial.print("NEW max y: ");
+    Serial.println(comMax.y);
   }
   if (com.z > comMax.z) {
     comMax.z = com.z;
-    Console.print("NEW max z: ");
-    Console.println(comMax.z);
+    Serial.print("NEW max z: ");
+    Serial.println(comMax.z);
   }
 }
 void IMUClass::calibComUpdate() {
@@ -754,19 +754,19 @@ void IMUClass::calibComUpdate() {
     if (newfound) {
       foundNewMinMax = true;
       ////watchdogReset();
-      Console.print("x:");
-      Console.print(comMin.x);
-      Console.print(",");
-      Console.print(comMax.x);
-      Console.print("\t  y:");
-      Console.print(comMin.y);
-      Console.print(",");
-      Console.print(comMax.y);
-      Console.print("\t  z:");
-      Console.print(comMin.z);
-      Console.print(",");
-      Console.print(comMax.z);
-      Console.println("\t");
+      Serial.print("x:");
+      Serial.print(comMin.x);
+      Serial.print(",");
+      Serial.print(comMax.x);
+      Serial.print("\t  y:");
+      Serial.print(comMin.y);
+      Serial.print(",");
+      Serial.print(comMax.y);
+      Serial.print("\t  z:");
+      Serial.print(comMin.z);
+      Serial.print(",");
+      Serial.print(comMax.z);
+      Serial.println("\t");
     }
   }
 }
