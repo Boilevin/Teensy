@@ -1,9 +1,4 @@
 /*
-  Ardumower (www.ardumower.de)
-  Copyright (c) 2013-2014 by Alexander Grau
-  Copyright (c) 2013-2014 by Sven Gennat
-  Copyright (c) 2014 by Maxime Carpentieri
-
   Private-use only! (you need to ask for a commercial-use)
 
   This program is free software: you can redistribute it and/or modify
@@ -20,7 +15,9 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   Private-use only! (you need to ask for a commercial-use)
+
 */
+
 #include "drivers.h"
 
 // brushless BL500W motor driver
@@ -95,6 +92,7 @@ void setBTS7960(int pinDir , int pinPWM , int pinEnable , int speed) {
   }
 }
 
+
 //Time and Helpers
 const char *dayOfWeek[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 void StreamPrint_progmem(Print &out, PGM_P format, ...)
@@ -116,6 +114,7 @@ void StreamPrint_progmem(Print &out, PGM_P format, ...)
   out.print(ptr);
 }
 
+
 // rescale to -PI..+PI
 double scalePI(double v)
 {
@@ -126,6 +125,7 @@ double scalePI(double v)
   else if (d < -PI) return (2 * PI + d);
   else return d;
 }
+
 
 // computes minimum distance between x radiant (current-value) and w radiant (set-value)
 double distancePI(double x, double w)
@@ -142,14 +142,17 @@ double distancePI(double x, double w)
   return d;
 }
 
+
 int time2minutes(timehm_t time) {
   return (time.hour * 60 + time.minute);
 }
+
 
 void minutes2time(int minutes, timehm_t &time) {
   time.hour   = minutes / 60;
   time.minute = minutes % 60;
 }
+
 
 String time2str(timehm_t time) {
   String s = String(time.hour / 10);
@@ -159,6 +162,7 @@ String time2str(timehm_t time) {
   s += (time.minute % 10);
   return s;
 }
+
 
 String date2str(date_t date) {
   String s = dayOfWeek[date.dayOfWeek];
@@ -172,6 +176,7 @@ String date2str(date_t date) {
   s += date.year;
   return s;
 }
+
 
 // Returns the day of week (0=Sunday, 6=Saturday) for a given date
 int getDayOfWeek(int month, int day, int year, int CalendarSystem)
@@ -193,7 +198,6 @@ int getDayOfWeek(int month, int day, int year, int CalendarSystem)
            + CalendarSystem
          ) % 7;
 }
-
 
 
 unsigned long hstol(String recv) {
