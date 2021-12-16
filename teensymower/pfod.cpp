@@ -705,20 +705,20 @@ void RemoteControl::sendRainMenu(boolean update) {
   serialPort->println(F("|m02~Value"));
   serialPort->print(robot->rain);
 
-  serialPort->println(F("|m03~DHT22 Use "));
-  sendYesNo(robot->DHT22Use);
-  serialPort->println(F("|m04~Temperature "));
-  serialPort->print(robot->temperatureDht);
-  serialPort->println(F("|m05~Humidity "));
-  serialPort->print(robot->humidityDht);
-  sendSlider("m06", F("Maximum Temperature"), robot->maxTemperature, "", 1 , 80, 1);
+  //serialPort->println(F("|m03~DHT22 Use "));
+  //sendYesNo(robot->DHT22Use);
+  serialPort->println(F("|m04~Temperature Teensy "));
+  serialPort->print(robot->temperatureTeensy);
+  serialPort->println(F("|m05~Temperature Imu "));
+  serialPort->print(robot->temperatureImu);
+  sendSlider("m06", F("Max Teensy Temperature"), robot->maxTemperature, "", 1 , 80, 1);
 
   serialPort->println("}");
 }
 
 void RemoteControl::processRainMenu(String pfodCmd) {
   if (pfodCmd == "m00") robot->rainUse = !robot->rainUse;
-  else if (pfodCmd == "m03") robot->DHT22Use = !robot->DHT22Use;
+  //else if (pfodCmd == "m03") robot->DHT22Use = !robot->DHT22Use;
   else if (pfodCmd.startsWith("m06")) processSlider(pfodCmd, robot->maxTemperature, 1);
   sendRainMenu(true);
 }

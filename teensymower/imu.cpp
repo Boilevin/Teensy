@@ -249,9 +249,9 @@ void IMUClass::calibration() {
     mpu.setYGyroOffset(gy_offset);
     mpu.setZGyroOffset(gz_offset);
     //robot.resetWatchdog();
-    
+
     meansensors();
-    
+
     //watchdogReset();
     Serial.print("Wait until accel 3 val are < 8 : ");
     Serial.print(abs(mean_ax));
@@ -291,7 +291,7 @@ void IMUClass::calibration() {
 }
 void IMUClass::meansensors() {
   long i = 0, buff_ax = 0, buff_ay = 0, buff_az = 0, buff_gx = 0, buff_gy = 0, buff_gz = 0;
-  
+
   while (i < (buffersize + 101)) {  //default buffersize=1000
     // read raw accel/gyro measurements from device
     mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
@@ -315,6 +315,12 @@ void IMUClass::meansensors() {
     i++;
     delay(2); //Needed so we don't get repeated measures
   }
+}
+void IMUClass::readImuTemperature() {
+  int16_t rawTemp = 0;
+  rawTemp = mpu.getTemperature();
+  robot.temperatureImu = (rawTemp / 340.) + 36.53;
+  
 }
 
 void IMUClass::run() {
@@ -353,6 +359,8 @@ void IMUClass::run() {
     //Serial.println("//////MPU6050 DMP fill the fifo during the reading IMU value are skip //////////////");
     return;  ///the DMP fill the fifo during the reading , all the value are false but without interrupt it's the only way i have find to make it work ???certainly i am wrong
   }
+
+  
 
   mpu.dmpGetQuaternion(&q, fifoBuffer);
   mpu.dmpGetGravity(&gravity, &q);
@@ -586,9 +594,9 @@ void IMUClass::calibGyro() {
 
   Serial.println("Reading sensors for first time... without any offset");
   //watchdogReset();
-  
+
   meansensors();
- 
+
   //watchdogReset();
   Serial.print("Reading ax: ");
   Serial.print(mean_ax);
@@ -605,7 +613,7 @@ void IMUClass::calibGyro() {
 
   Serial.println("\nCalculating offsets...");
   //watchdogReset();
-  
+
   calibration();
 
   //watchdogReset();
