@@ -40,6 +40,7 @@ float shuntvoltager = 0;
 //end Ina226
 
 //teensy 4 datetime library
+#include "InternalTemperature.h"
 #include <TimeLib.h>
 time_t getTeensy3Time()
 {
@@ -424,7 +425,7 @@ boolean Robot::search_rfid_list(unsigned long TagNr) {
 
 void Robot::rfidTagTraitement(unsigned long TagNr, byte statusCurr) {
   boolean tagAndStatus_exist_in_list = false;
-  String line01="";
+  String line01 = "";
   //struct rfid_list *temp = (struct rfid_list*) malloc(sizeof(rfid_list));
   ptr = head;
   if (ptr != NULL) {
@@ -481,7 +482,7 @@ void Robot::rfidTagTraitement(unsigned long TagNr, byte statusCurr) {
         Serial1.println(line01);
         line01 = "#SENDER," + String(area3_ip) + ",B0";
         Serial1.println(line01);
-        
+
         areaToGo = 1;
         ShowMessageln("Return to Station area ");
         motorSpeedMaxPwm = ptr->TagSpeed;
@@ -499,7 +500,7 @@ void Robot::rfidTagTraitement(unsigned long TagNr, byte statusCurr) {
         }
         break;
       case AREA2:
-      //send data to ESP32 to start AREA2 sender and stop AREA1 one
+        //send data to ESP32 to start AREA2 sender and stop AREA1 one
         line01 = "#SENDER," + String(area1_ip) + ",A0";
         Serial1.println(line01);
         line01 = "#SENDER," + String(area2_ip) + ",B1";
@@ -906,7 +907,7 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, maxDurationDmpAutocalib);
   eereadwrite(readflag, addr, mowPatternDurationMax);
   eereadwrite(readflag, addr, DistPeriOutStop);
-  eereadwrite(readflag, addr, DHT22Use);
+  eereadwrite(readflag, addr, RaspberryPIUse); //free replace dht22
   eereadwrite(readflag, addr, RaspberryPIUse);
   //RaspberryPIUse=false;
   eereadwrite(readflag, addr, sonarToFrontDist);
@@ -1047,9 +1048,7 @@ void Robot::printSettingSerial() {
   ShowMessageln(rainUse);
 
   // ------ DHT22 Temperature -----------------------
-  ShowMessageln("----------  DHT22 Temperature ---");
-  ShowMessage  ("DHT22Use           : ");
-  ShowMessageln(DHT22Use);
+  ShowMessageln("----------  Temperature ---");
   ShowMessage  ("MaxTemperature     : ");
   ShowMessageln(maxTemperature);
 
@@ -1266,7 +1265,7 @@ void Robot::printSettingSerial() {
   ShowMessageln(F("---------- RASPBERRY PI------ "));
   ShowMessage  (F("RaspberryPIUse  : "));
   ShowMessageln(RaspberryPIUse);
-// ----- MQTT --------------
+  // ----- MQTT --------------
   ShowMessageln(F("---------- MQTT        ------ "));
   ShowMessage  (F("useMqtt  : "));
   ShowMessageln(useMqtt);
@@ -2609,13 +2608,13 @@ void Robot::setup()  {
 
   if (RaspberryPIUse) MyRpi.init();
 
-  
+
   //------------------------  SCREEN parts  ----------------------------------------
   if (Enable_Screen) {
     MyScreen.init();
   }
 
-  
+
   //initialise the date time part
   Serial.println("Initialise date time library ");
   setSyncProvider(getTeensy3Time);
@@ -3172,7 +3171,7 @@ void Robot::newTagFind() {
     ShowMessage("Find a tag : ");
     ShowMessageln(rfidTagFind);
     unsigned long rfidTagFind_long = hstol(rfidTagFind);
-    
+
     //bber200
 
     if (rfidUse) {
@@ -5510,8 +5509,26 @@ void Robot::calcOdometry() {
 
 
 }
-void Robot::readDHT22() {
+void Robot::readAllTemperature() {
+  if (millis() > nextTimeReadTemperature) {
+    nextTimeReadTemperature = millis() + 3000;
+    temperatureTeensy=InternalTemperature.readTemperatureC();
+    imu.readImuTemperature();
 
+    if (temperatureTeensy >= maxTemperature) {
+      ShowMessageln("Temperature too high ***************");
+      ShowMessageln("PCB AutoStop in the next 2 minutes *");
+      ShowMessage("Maxi Setting = ");
+      ShowMessage(maxTemperature);
+      ShowMessage(" Actual Temperature = ");
+      ShowMessageln(temperatureTeensy);
+      nextTimeReadTemperature = nextTimeReadTemperature + 180000; // do not read again the temp for the next 3 minute and set the idle bat to 2 minute to poweroff the PCB
+      batSwitchOffIfIdle = 2; //use to switch all off after 1 minute
+      setNextState(STATE_ERROR, 0);
+      return;
+    }
+    
+  }
 }
 void Robot::checkTimeout() {
   if (stateTime > motorForwTimeMax) {
@@ -5529,14 +5546,13 @@ void Robot::loop()  {
   stateTime = millis() - stateStartTime;
   int steer;
 
- if ((useMqtt) && (millis()>next_time_refresh_mqtt)) {
-     next_time_refresh_mqtt=millis()+3000;
-     temperatureDht=21.0;
-     String line01 = "#RMSTA," + String(statusNames[statusCurr]) + "," + String(stateNames[stateCurr]) + "," + String(temperatureDht)+ "," + String(batVoltage) + "," + String(loopsPerSec)  ;
-     Serial1.println(line01);
-      
-  
- }
+  if ((useMqtt) && (millis() > next_time_refresh_mqtt)) {
+    next_time_refresh_mqtt = millis() + 3000;
+    String line01 = "#RMSTA," + String(statusNames[statusCurr]) + "," + String(stateNames[stateCurr]) + "," + String(temperatureTeensy) + "," + String(batVoltage) + "," + String(loopsPerSec)  ;
+    Serial1.println(line01);
+
+
+  }
 
   if (RaspberryPIUse) {
     MyRpi.run();
@@ -5553,7 +5569,7 @@ void Robot::loop()  {
   rc.readSerial();// see the readserial function into pfod.cpp
 
   readSensors();
-
+  readAllTemperature();
   // checkRobotStats();
   checkPerimeterBoundary();
   calcOdometry();
@@ -5590,38 +5606,38 @@ void Robot::loop()  {
     gps.run();
   }
 
-  
-    if ((Enable_Screen) && (millis() >= nextTimeScreen))   { // warning : refresh screen take 40 ms
-      nextTimeScreen = millis() + 250;
-      StartReadAt = millis();
 
-      if ((statusCurr == WAIT) || (statusCurr == MANUAL) || (statusCurr == REMOTE) || (statusCurr == TESTING) || (statusCurr == WAITSIG2)) {
-        MyScreen.refreshWaitScreen();
-      }
-      if ((statusCurr == NORMAL_MOWING) || (statusCurr == SPIRALE_MOWING) || (statusCurr == WIRE_MOWING)) {
-        MyScreen.refreshMowScreen();
-        nextTimeScreen = millis() + 500; // in mowing mode don't need a big refresh rate and avoid trouble on loop
-      }
-      if ((statusCurr == BACK_TO_STATION) || (statusCurr == TRACK_TO_START) ) {
-        MyScreen.refreshTrackScreen();
-        nextTimeScreen = millis() + 500;
-      }
-      if (statusCurr == IN_ERROR ) {
-        MyScreen.refreshErrorScreen();
-      }
-      if (statusCurr == IN_STATION) {
-        MyScreen.refreshStationScreen();
-      }
+  if ((Enable_Screen) && (millis() >= nextTimeScreen))   { // warning : refresh screen take 40 ms
+    nextTimeScreen = millis() + 250;
+    StartReadAt = millis();
 
-      EndReadAt = millis();
-      ReadDuration = EndReadAt - StartReadAt;
-      //ShowMessage("Screen Duration ");
-      //ShowMessageln(ReadDuration);
-
-
-
+    if ((statusCurr == WAIT) || (statusCurr == MANUAL) || (statusCurr == REMOTE) || (statusCurr == TESTING) || (statusCurr == WAITSIG2)) {
+      MyScreen.refreshWaitScreen();
     }
-  
+    if ((statusCurr == NORMAL_MOWING) || (statusCurr == SPIRALE_MOWING) || (statusCurr == WIRE_MOWING)) {
+      MyScreen.refreshMowScreen();
+      nextTimeScreen = millis() + 500; // in mowing mode don't need a big refresh rate and avoid trouble on loop
+    }
+    if ((statusCurr == BACK_TO_STATION) || (statusCurr == TRACK_TO_START) ) {
+      MyScreen.refreshTrackScreen();
+      nextTimeScreen = millis() + 500;
+    }
+    if (statusCurr == IN_ERROR ) {
+      MyScreen.refreshErrorScreen();
+    }
+    if (statusCurr == IN_STATION) {
+      MyScreen.refreshStationScreen();
+    }
+
+    EndReadAt = millis();
+    ReadDuration = EndReadAt - StartReadAt;
+    //ShowMessage("Screen Duration ");
+    //ShowMessageln(ReadDuration);
+
+
+
+  }
+
 
   if (millis() >= nextTimeInfo) {
     if ((millis() - nextTimeInfo > 250)) {
@@ -5673,7 +5689,7 @@ void Robot::loop()  {
       //bber13
       motorMowEnable = false; //to stop mow motor in OFF mode by pressing OFF again (the one shot OFF is bypass)
       checkSonar();  // only for test never use or the mower can't stay into the station
-      readDHT22();
+
       checkBattery();
 
 
@@ -6347,7 +6363,7 @@ void Robot::loop()  {
       else {
         if (millis() - stateStartTime > 10000) checkTimer(); //only check timer after 10 second to avoid restart before charging
       }
-      readDHT22();
+
       break;
 
     case STATE_STATION_CHARGING:
@@ -6374,7 +6390,7 @@ void Robot::loop()  {
           return;
         }
       }
-      readDHT22();
+
 
       break;
 
@@ -7210,7 +7226,7 @@ void Robot::loop()  {
 
   loopsPerSecCounter++;
   wdt.feed();
-  
+
   /*
     StartReadAt = millis();
     distance_find = sensor.readRangeSingleMillimeters();

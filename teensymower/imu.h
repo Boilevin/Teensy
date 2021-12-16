@@ -109,6 +109,7 @@ class IMUClass {
     float gyroAccYaw;
     float ecartYprCompass;
     float nextTimeAdjustYaw;
+   
     boolean calibrationAvail;
     // --------- compass state --------------------------
 
@@ -166,6 +167,7 @@ class IMUClass {
 
     void begin();
     void run();
+    void readImuTemperature();
     float getYaw();
     boolean needGyroCal();
     boolean needCompassCal();

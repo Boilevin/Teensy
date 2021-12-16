@@ -698,11 +698,13 @@ class Robot
 
     int beaconToStart; // use to know where the mower need to leave the wire and start to mow
     byte areaToGo;// use to know the area where to start by timer
-    //-------- DHT22 Temperature humidity ------------------
-    boolean DHT22Use;//for the DHT22
-    unsigned long  nextTimeReadDHT22;
-    float humidityDht;
-    float temperatureDht;
+    //--------  Temperature humidity ------------------
+    
+    unsigned long  nextTimeReadTemperature=0;
+    //float humidityDht;
+    float temperatureTeensy;
+    float temperatureImu;
+    
     float maxTemperature;  //switch to OFF when reach this temp
 
     // ----- user-defined switch ---------------------------
@@ -930,7 +932,7 @@ class Robot
     virtual void OdoRampCompute() ;
     virtual void motorControlOdo() ;
     virtual void motorControlPerimeter();
-    virtual void readDHT22();
+    virtual void readAllTemperature();
     virtual void motorMowControl();
 
     // date & time

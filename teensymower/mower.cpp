@@ -95,7 +95,7 @@ Mower::Mower() {
   rainUse          = 0;      // use rain sensor?
 
   // ------ DHT22Use ------------------------------------
-  DHT22Use          = 0;      // use DHT22 sensor?
+  //DHT22Use          = 0;      // use DHT22 sensor?
   maxTemperature    = 55;     // max temp before switch off
   //bber35
   // ------ RFID ------------------------------------
