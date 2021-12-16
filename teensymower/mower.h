@@ -19,6 +19,11 @@
 #define LEFT_MOTOR_DRIVER 3
 #define RIGHT_MOTOR_DRIVER 3
 #define MOW_MOTOR_DRIVER 3
+
+#define PWM_FREQUENCY_BL500W  29300 //
+#define PWM_FREQUENCY_L298N  10000 
+#define PWM_FREQUENCY_BTS7960  10000
+
 //***********************************************************************
 
 //**********************       COMPASS         **************************

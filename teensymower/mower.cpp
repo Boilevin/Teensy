@@ -272,37 +272,68 @@ void Mower::setup() {
   pinMode(pinChargeEnable, OUTPUT);
   setActuator(ACT_CHGRELAY, 0);
 
-  analogWriteFrequency(pinMotorLeftPWM, 10000);
-  analogWriteFrequency(pinMotorLeftDir, 10000);
-  analogWriteFrequency(pinMotorRightPWM, 10000);
-  analogWriteFrequency(pinMotorRightDir, 10000);
-
-
-  // left wheel motor
-  pinMode(pinMotorLeftEnable, OUTPUT);
-  digitalWrite(pinMotorLeftEnable, LOW);
-  pinMode(pinMotorLeftPWM, OUTPUT);
-  pinMode(pinMotorLeftDir, OUTPUT);
-
-
-  // right wheel motor
-  pinMode(pinMotorRightEnable, OUTPUT);
-  digitalWrite(pinMotorRightEnable, LOW);
-  pinMode(pinMotorRightPWM, OUTPUT);
-  pinMode(pinMotorRightDir, OUTPUT);
-
-
-  // mower motor
-  // datashett 8 bit resolution ideal freq 585937.5
-
-  analogWriteFrequency(pinMotorMowPWM, 20000);
-
-
+  //mow motor setting *************************************
   pinMode(pinMotorMowDir, OUTPUT);
   pinMode(pinMotorMowPWM, OUTPUT);
   pinMode(pinMotorMowEnable, OUTPUT);
   digitalWrite(pinMotorMowEnable, LOW);
 
+  analogWriteFrequency(pinMotorMowPWM, 20000);//default value
+  analogWriteFrequency(pinMotorMowDir, 20000);
+  if (MOW_MOTOR_DRIVER == 1) {
+    analogWriteFrequency(pinMotorMowPWM, PWM_FREQUENCY_BL500W);
+    analogWriteFrequency(pinMotorMowDir, PWM_FREQUENCY_BL500W);
+  }
+  if (MOW_MOTOR_DRIVER == 2) {
+    analogWriteFrequency(pinMotorMowPWM, PWM_FREQUENCY_L298N);
+    analogWriteFrequency(pinMotorMowDir, PWM_FREQUENCY_L298N);
+  }
+  if (MOW_MOTOR_DRIVER == 3) {
+    analogWriteFrequency(pinMotorMowPWM, PWM_FREQUENCY_BTS7960);
+    analogWriteFrequency(pinMotorMowDir, PWM_FREQUENCY_BTS7960);
+  }
+
+  //left motor setting********************************************
+  pinMode(pinMotorLeftEnable, OUTPUT);
+  digitalWrite(pinMotorLeftEnable, LOW);
+  pinMode(pinMotorLeftPWM, OUTPUT);
+  pinMode(pinMotorLeftDir, OUTPUT);
+  
+  analogWriteFrequency(pinMotorLeftPWM, 10000);//default value
+  analogWriteFrequency(pinMotorLeftDir, 10000);
+  if (LEFT_MOTOR_DRIVER == 1) {
+    analogWriteFrequency(pinMotorLeftPWM, PWM_FREQUENCY_BL500W);
+    analogWriteFrequency(pinMotorLeftDir, PWM_FREQUENCY_BL500W);
+  }
+  if (LEFT_MOTOR_DRIVER == 2) {
+    analogWriteFrequency(pinMotorLeftPWM, PWM_FREQUENCY_L298N);
+    analogWriteFrequency(pinMotorLeftDir, PWM_FREQUENCY_L298N);
+  }
+  if (LEFT_MOTOR_DRIVER == 3) {
+    analogWriteFrequency(pinMotorLeftPWM, PWM_FREQUENCY_BTS7960);
+    analogWriteFrequency(pinMotorLeftDir, PWM_FREQUENCY_BTS7960);
+  }
+
+  //right motor setting *********************************
+  pinMode(pinMotorRightEnable, OUTPUT);
+  digitalWrite(pinMotorRightEnable, LOW);
+  pinMode(pinMotorRightPWM, OUTPUT);
+  pinMode(pinMotorRightDir, OUTPUT);
+  
+  analogWriteFrequency(pinMotorRightPWM, 10000);//default value
+  analogWriteFrequency(pinMotorRightDir, 10000);
+  if (RIGHT_MOTOR_DRIVER == 1) {
+    analogWriteFrequency(pinMotorRightPWM, PWM_FREQUENCY_BL500W);
+    analogWriteFrequency(pinMotorRightDir, PWM_FREQUENCY_BL500W);
+  }
+  if (RIGHT_MOTOR_DRIVER == 2) {
+    analogWriteFrequency(pinMotorRightPWM, PWM_FREQUENCY_L298N);
+    analogWriteFrequency(pinMotorRightDir, PWM_FREQUENCY_L298N);
+  }
+  if (RIGHT_MOTOR_DRIVER == 3) {
+    analogWriteFrequency(pinMotorRightPWM, PWM_FREQUENCY_BTS7960);
+    analogWriteFrequency(pinMotorRightDir, PWM_FREQUENCY_BTS7960);
+  }
 
 
   // perimeter
