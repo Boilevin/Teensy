@@ -253,7 +253,7 @@ Robot::Robot() {
   motorRightPID.Kp = motorLeftPID.Kp;
   motorRightPID.Ki = motorLeftPID.Ki;
   motorRightPID.Kd = motorLeftPID.Kd;
-  gpsReady = false;
+
   MyrpiStatusSync = false;
   ConsoleToPfod = false;
 }
@@ -407,6 +407,125 @@ void Robot::loadSaveRobotStats(boolean readflag) {
   ShowMessage(F("Robot Stats address Stop = "));
   ShowMessageln(addr);
 
+}
+
+
+void Robot::receiveGPSTime() {
+  if (gpsUse) {
+    unsigned long chars = 0;
+    unsigned short good_sentences = 0;
+    unsigned short failed_cs = 0;
+    gps.stats(&chars, &good_sentences, &failed_cs);
+    if (good_sentences == 0) {
+      // no GPS sentences received so far
+      ShowMessageln(F("GPS communication error!"));
+      addErrorCounter(ERR_GPS_COMM);
+      // next line commented out as GPS communication may not be available if GPS signal is poor
+      //setNextState(STATE_ERROR, 0);
+    }
+    ShowMessage(F("GPS sentences: "));
+    ShowMessageln(good_sentences);
+    ShowMessage(F("GPS satellites in view: "));
+    ShowMessageln(gps.satellites());
+    if (gps.satellites() == 255) {
+      // no GPS satellites received so far
+      addErrorCounter(ERR_GPS_DATA);
+    }
+    int year;
+    byte month, day, hour, minute, second, hundredths;
+    unsigned long age;
+    gps.crack_datetime(&year, &month, &day, &hour, &minute, &second, &hundredths, &age);
+    if (age != GPS::GPS_INVALID_AGE)
+    {
+      ShowMessage(F("GPS date received: "));
+      ShowMessageln(date2str(datetime.date));
+      datetime.date.dayOfWeek = getDayOfWeek(month, day, year, 1);
+      datetime.date.day = day;
+      datetime.date.month = month;
+      datetime.date.year = year;
+      datetime.time.hour = hour;
+      datetime.time.minute = minute;
+      if (timerUse) {
+        // set RTC using GPS data
+        ShowMessage(F("RTC date set: "));
+        ShowMessageln(date2str(datetime.date));
+        setActuator(ACT_RTC, 0);
+      }
+    }
+  }
+}// check if mower is stuck ToDo: take HDOP into consideration if gpsSpeed is reliable
+void Robot::checkIfStuck() {
+  if (millis() < nextTimeCheckIfStuck) return;
+  nextTimeCheckIfStuck = millis() + 300;
+  if ((gpsUse) && (gps.hdop() < 500))  {
+    //float gpsSpeedRead = gps.f_speed_kmph();
+    float gpsSpeed = gps.f_speed_kmph();
+
+    // low-pass filter
+    // double accel = 0.1;
+    // float gpsSpeed = (1.0-accel) * gpsSpeed + accel * gpsSpeedRead;
+    // ShowMessageln(gpsSpeed);
+    // ShowMessageln(robotIsStuckCounter);
+    // ShowMessageln(errorCounter[ERR_STUCK]);
+    if ((stateCurr != STATE_MANUAL) && (stateCurr != STATE_REMOTE) && (gpsSpeed <= stuckIfGpsSpeedBelow)    // checks if mower is stuck and counts up
+        && ((motorLeftRpmCurr && motorRightRpmCurr) != 0) && (millis() > stateStartTime + gpsSpeedIgnoreTime) ) {
+      robotIsStuckCounter++;
+    }
+
+    else {                         // if mower gets unstuck it resets errorCounterMax to zero and reenabling motorMow
+      robotIsStuckCounter = 0;    // resets temporary counter to zero
+      if ( (errorCounter[ERR_STUCK] == 0) && (stateCurr != STATE_OFF) && (stateCurr != STATE_MANUAL) && (stateCurr != STATE_STATION)
+           && (stateCurr != STATE_STATION_CHARGING) && (stateCurr != STATE_STATION_CHECK)
+           && (stateCurr != STATE_STATION_REV) && (stateCurr != STATE_STATION_ROLL)
+           && (stateCurr != STATE_REMOTE) && (stateCurr != STATE_ERROR)) {
+        motorMowEnable = true;
+        errorCounterMax[ERR_STUCK] = 0;
+      }
+      return;
+    }
+
+    if (robotIsStuckCounter >= 5) {
+      motorMowEnable = false;
+      if (errorCounterMax[ERR_STUCK] >= 3) {  // robot is definately stuck and unable to move
+        ShowMessageln(F("Error: Mower is stuck"));
+        addErrorCounter(ERR_STUCK);
+        setNextState(STATE_ERROR, 0);   //mower is switched into ERROR
+        //robotIsStuckCounter = 0;
+      }
+      else if (errorCounter[ERR_STUCK] < 3) {   // mower tries 3 times to get unstuck
+        if (stateCurr == STATE_FORWARD) {
+          motorMowEnable = false;
+          addErrorCounter(ERR_STUCK);
+          setMotorPWM( 0, 0, false );
+          reverseOrBidir(RIGHT);
+        }
+        else if (stateCurr == STATE_ROLL) {
+          motorMowEnable = false;
+          addErrorCounter(ERR_STUCK);
+          setMotorPWM( 0, 0, false );
+          setNextState (STATE_FORWARD, 0);
+        }
+      }
+    }
+  }
+}
+
+
+void Robot::processGPSData()
+{
+  if (millis() < nextTimeGPS) return;
+  nextTimeGPS = millis() + 1000;
+  float nlat, nlon;
+  unsigned long age;
+  gps.f_get_position(&nlat, &nlon, &age);
+  if (nlat == GPS::GPS_INVALID_F_ANGLE ) return;
+  if (gpsLon == 0) {
+    gpsLon = nlon;  // this is xy (0,0)
+    gpsLat = nlat;
+    return;
+  }
+  gpsX = (float)gps.distance_between(nlat,  gpsLon,  gpsLat, gpsLon);
+  gpsY = (float)gps.distance_between(gpsLat, nlon,   gpsLat, gpsLon);
 }
 
 boolean Robot::search_rfid_list(unsigned long TagNr) {
@@ -917,6 +1036,7 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, compassRollSpeedCoeff);
   eereadwrite(readflag, addr, gpsUse);
   eereadwrite(readflag, addr, stuckIfGpsSpeedBelow);
+  eereadwrite(readflag, addr, gpsSpeedIgnoreTime);
   eereadwrite(readflag, addr, useMqtt);
 
 
@@ -1244,18 +1364,6 @@ void Robot::printSettingSerial() {
   ShowMessageln( odometryWheelBaseCm);
 
 
-
-  //watchdogReset();
-
-  // ----- GPS ----------------------------------------------------------------------
-  ShowMessageln(F("---------- GPS -----------------------------------------------"));
-  ShowMessage  (F("gpsUse                : "));
-  ShowMessageln(gpsUse);
-  ShowMessage  (F("stuckIfGpsSpeedBelow  : "));
-  ShowMessageln(stuckIfGpsSpeedBelow);
-  //ShowMessage  (F("gpsBaudrate           : "));
-  //ShowMessageln(gpsBaudrate);
-  //bber35
   // ----- RFID ----------------------------------------------------------------------
   ShowMessageln(F("---------- RFID ----------- "));
   ShowMessage  (F("rfidUse         : "));
@@ -1269,6 +1377,21 @@ void Robot::printSettingSerial() {
   ShowMessageln(F("---------- MQTT        ------ "));
   ShowMessage  (F("useMqtt  : "));
   ShowMessageln(useMqtt);
+
+
+  // ----- GPS ----------------------------------------------------------------------
+  ShowMessageln(F("---------- GPS -----------------------------------------------"));
+  ShowMessage  (F("gpsUse                                     : "));
+  ShowMessageln(gpsUse);
+  ShowMessage  (F("stuckIfGpsSpeedBelow                       : "));
+  ShowMessageln(stuckIfGpsSpeedBelow);
+  ShowMessage  (F("gpsSpeedIgnoreTime                         : "));
+  ShowMessageln(gpsSpeedIgnoreTime);
+
+
+
+
+
   // ----- other ----------------------------------------------------
   ShowMessageln(F("---------- other ------------"));
   ShowMessage  (F("buttonUse              : "));
@@ -1420,7 +1543,7 @@ void Robot::resetMotorFault() {
     // rtc--------------------------------------------------------------------------------------------------------
     case SEN_RTC:
       if (!readDS1307(datetime)) {
-        Console.println("RTC data error!");
+        ShowMessageln("RTC data error!");
         addErrorCounter(ERR_RTC_DATA);
         setNextState(STATE_ERROR, 0);
       }
@@ -2596,10 +2719,17 @@ void Robot::setup()  {
   Serial.println(" ++++++++++++");
 
 
+  if (ODOMETRY_ONLY_RISING)
+  {
+    attachInterrupt(digitalPinToInterrupt(pinOdometryRight), OdoRightCountInt, RISING);
+    attachInterrupt(digitalPinToInterrupt(pinOdometryLeft), OdoLeftCountInt, RISING);
+  }
+  else
+  {
+    attachInterrupt(digitalPinToInterrupt(pinOdometryRight), OdoRightCountInt, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(pinOdometryLeft), OdoLeftCountInt, CHANGE);
+  }
 
-
-  attachInterrupt(digitalPinToInterrupt(pinOdometryRight), OdoRightCountInt, RISING);
-  attachInterrupt(digitalPinToInterrupt(pinOdometryLeft), OdoLeftCountInt, RISING);
 
 
 
@@ -5386,89 +5516,8 @@ void Robot::checkTilt() {
   */
 }
 
-// check if mower is stuck ToDo: take HDOP into consideration if gpsSpeed is reliable
-void Robot::checkIfStuck() {
-  /*
-    if (millis() < nextTimeCheckIfStuck) return;
-    nextTimeCheckIfStuck = millis() + 500;
-
-    if ((gpsUse) && (gps.hdop() < 500))  {
-    //float gpsSpeedRead = gps.f_speed_kmph();
-    float gpsSpeed = gps.f_speed_kmph();
-    //bb
-    //if (gpsSpeedIgnoreTime >= motorReverseTime) gpsSpeedIgnoreTime = motorReverseTime - 500;
-    // low-pass filter
-    // double accel = 0.1;
-    // float gpsSpeed = (1.0-accel) * gpsSpeed + accel * gpsSpeedRead;
-    // ShowMessageln(gpsSpeed);
-    // ShowMessageln(robotIsStuckCounter);
-    // ShowMessageln(errorCounter[ERR_STUCK]);
-    if ((stateCurr != STATE_MANUAL) && (stateCurr != STATE_REMOTE) && (gpsSpeed <= stuckIfGpsSpeedBelow)    // checks if mower is stuck and counts up
-    && ((motorLeftRpmCurr && motorRightRpmCurr) != 0) && (millis() > stateStartTime + gpsSpeedIgnoreTime) ) {
-    robotIsStuckCounter++;
-    }
 
 
-    else {                         // if mower gets unstuck it resets errorCounterMax to zero and reenabling motorMow
-    robotIsStuckCounter = 0;    // resets temporary counter to zero
-    if ( (errorCounter[ERR_STUCK] == 0) && (stateCurr != STATE_OFF) && (stateCurr != STATE_MANUAL) && (stateCurr != STATE_STATION)
-    && (stateCurr != STATE_STATION_CHARGING) && (stateCurr != STATE_STATION_CHECK)
-    && (stateCurr != STATE_STATION_REV) && (stateCurr != STATE_STATION_ROLL)
-    && (stateCurr != STATE_REMOTE) && (stateCurr != STATE_ERROR)) {
-    ShowMessageln("Mower not stuck       MOW can start");
-    // motorMowEnable = true;
-    errorCounterMax[ERR_STUCK] = 0;
-    }
-
-    return;
-    }
-
-    if (robotIsStuckCounter >= 5) {
-    motorMowEnable = false;
-    if (errorCounterMax[ERR_STUCK] >= 3) {  // robot is definately stuck and unable to move
-    ShowMessageln(F("Error : Mower is stuck"));
-    addErrorCounter(ERR_STUCK);
-    setNextState(STATE_ERROR, 0);   //mower is switched into ERROR
-    //robotIsStuckCounter = 0;
-    }
-    else if (errorCounter[ERR_STUCK] < 3) {   // mower tries 3 times to get unstuck
-    if (stateCurr == STATE_FORWARD) {
-    motorMowEnable = false;
-    addErrorCounter(ERR_STUCK);
-    setMotorPWM( 0, 0, false );
-    reverseOrBidir(RIGHT);
-    }
-    else if (stateCurr == STATE_ROLL) {
-    motorMowEnable = false;
-    addErrorCounter(ERR_STUCK);
-    setMotorPWM( 0, 0, false );
-    setNextState (STATE_FORWARD, 0);
-    }
-    }
-    }
-    }
-  */
-}
-
-
-void Robot::processGPSData()
-{
-  /*
-    if (millis() < nextTimeGPS) return;
-    nextTimeGPS = millis() + 1000;
-    float nlat, nlon;
-    unsigned long age;
-    gps.f_get_position(&nlat, &nlon, &age);
-    if (nlat == GPS::GPS_INVALID_F_ANGLE ) return;
-    if (gpsLon == 0) {
-    gpsLon = nlon;  // this is xy (0,0)
-    gpsLat = nlat;
-    return;
-    }
-    gpsX = (float)gps.distance_between(nlat,  gpsLon,  gpsLat, gpsLon);
-    gpsY = (float)gps.distance_between(gpsLat, nlon,   gpsLat, gpsLon);
-  */
-}
 
 // calculate map position by odometry sensors
 void Robot::calcOdometry() {
@@ -5512,7 +5561,7 @@ void Robot::calcOdometry() {
 void Robot::readAllTemperature() {
   if (millis() > nextTimeReadTemperature) {
     nextTimeReadTemperature = millis() + 3000;
-    temperatureTeensy=InternalTemperature.readTemperatureC();
+    temperatureTeensy = InternalTemperature.readTemperatureC();
     imu.readImuTemperature();
 
     if (temperatureTeensy >= maxTemperature) {
@@ -5527,7 +5576,7 @@ void Robot::readAllTemperature() {
       setNextState(STATE_ERROR, 0);
       return;
     }
-    
+
   }
 }
 void Robot::checkTimeout() {
@@ -5601,11 +5650,11 @@ void Robot::loop()  {
       }
     }
   }
-  if (gpsUse && gpsReady && (millis() >= nextTimeGpsRead)) {
-    nextTimeGpsRead = millis() + 1000;
-    gps.run();
-  }
 
+  if (gpsUse) {
+    gps.feed();
+    processGPSData();
+  }
 
   if ((Enable_Screen) && (millis() >= nextTimeScreen))   { // warning : refresh screen take 40 ms
     nextTimeScreen = millis() + 250;
