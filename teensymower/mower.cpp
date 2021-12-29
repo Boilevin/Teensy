@@ -216,6 +216,10 @@ Mower::Mower() {
   odometryTicksPerCm = 12.9;  // encoder ticks per cm
   odometryWheelBaseCm = 43;    // wheel-to-wheel distance (cm)
 
+  // ----- GPS -------------------------------------------
+  gpsUse                     = 0;          // use GPS?
+  stuckIfGpsSpeedBelow       = 0.2;        // if Gps speed is below given value the mower is stuck
+  gpsSpeedIgnoreTime         = 5000;       // how long gpsSpeed is ignored when robot switches into a new STATE (in ms)
 
 
   // ----- other -----------------------------------------
@@ -298,7 +302,7 @@ void Mower::setup() {
   digitalWrite(pinMotorLeftEnable, LOW);
   pinMode(pinMotorLeftPWM, OUTPUT);
   pinMode(pinMotorLeftDir, OUTPUT);
-  
+
   analogWriteFrequency(pinMotorLeftPWM, 10000);//default value
   analogWriteFrequency(pinMotorLeftDir, 10000);
   if (LEFT_MOTOR_DRIVER == 1) {
@@ -319,7 +323,7 @@ void Mower::setup() {
   digitalWrite(pinMotorRightEnable, LOW);
   pinMode(pinMotorRightPWM, OUTPUT);
   pinMode(pinMotorRightDir, OUTPUT);
-  
+
   analogWriteFrequency(pinMotorRightPWM, 10000);//default value
   analogWriteFrequency(pinMotorRightDir, 10000);
   if (RIGHT_MOTOR_DRIVER == 1) {

@@ -264,13 +264,15 @@ class Robot
     // -------- gps state -------------------------------
     GPS gps;
     boolean gpsUse            ;       // use GPS?
-    boolean gpsReady;
+
     float gpsLat;
     float gpsLon;
     float gpsX ;   // X position (m)
     float gpsY ;   // Y position (m)
     unsigned long nextTimeGPS ;
     unsigned long nextTimeCheckIfStuck ;
+    int gpsSpeedIgnoreTime ; // how long gpsSpeed is ignored when robot switches into a new STATE (in ms)
+
     float stuckIfGpsSpeedBelow ;
     int robotIsStuckCounter ;
 
@@ -699,12 +701,12 @@ class Robot
     int beaconToStart; // use to know where the mower need to leave the wire and start to mow
     byte areaToGo;// use to know the area where to start by timer
     //--------  Temperature humidity ------------------
-    
-    unsigned long  nextTimeReadTemperature=0;
+
+    unsigned long  nextTimeReadTemperature = 0;
     //float humidityDht;
     float temperatureTeensy;
     float temperatureImu;
-    
+
     float maxTemperature;  //switch to OFF when reach this temp
 
     // ----- user-defined switch ---------------------------
@@ -830,6 +832,7 @@ class Robot
 
     // GPS
     virtual void processGPSData();
+    virtual void receiveGPSTime();
 
     // read hardware sensor (HAL)
     //bb

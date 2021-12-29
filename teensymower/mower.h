@@ -16,14 +16,15 @@
 // 1 for brushless BL500W Driver
 // 2 for DC L298N Driver
 // 3 for DC BTS7960 Driver
-#define LEFT_MOTOR_DRIVER 3
-#define RIGHT_MOTOR_DRIVER 3
-#define MOW_MOTOR_DRIVER 3
+#define LEFT_MOTOR_DRIVER 2
+#define RIGHT_MOTOR_DRIVER 2
+#define MOW_MOTOR_DRIVER 2
 
 #define PWM_FREQUENCY_BL500W  29300 //
 #define PWM_FREQUENCY_L298N  10000 
 #define PWM_FREQUENCY_BTS7960  10000
 
+#define ODOMETRY_ONLY_RISING false
 //***********************************************************************
 
 //**********************       COMPASS         **************************
@@ -39,9 +40,9 @@
 #define Bluetooth Serial1  // Ardumower default OK for ESP32 or HC05
 #define BLUETOOTH_BAUDRATE  19200     // baudrate used for communication with Bluetooth module (Ardumower default: 19200)
 
-#define Enable_Screen true //set to true if OLED SCREEN is connected
+#define Enable_Screen false //set to true if OLED SCREEN is connected
 
-#define GpsPort Serial3  // GPS do not forget workarround if PCB1.3 use
+#define GpsPort Serial3  // GPS 
 
 
 // ---- choose only one perimeter signal code ----
