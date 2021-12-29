@@ -477,7 +477,7 @@ void RpiRemote::receivePiReqSetting (String Setting_page, int nb_page) {
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->rainUse;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->rainUse; //old GPSUse
+    lineToSend = lineToSend + robot->gpsUse; 
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->rainUse; //old stuckIfGpsSpeedBelow
     lineToSend = lineToSend + ",";
@@ -699,7 +699,7 @@ void RpiRemote::RaspberryPISendImu () {
 
 void RpiRemote::RaspberryPISendInfo () {
 
-  //Console.print(motorPowerMax);
+  //ShowMessage(motorPowerMax);
   String lineToSend;
   lineToSend = "RMINF";
   lineToSend = lineToSend + ",";
@@ -725,8 +725,8 @@ void RpiRemote::RaspberryPISendInfo () {
 }
 
 void RpiRemote::SendStatusToPi () {
-  //Console.print("New Status : ");
-  //Console.println(robot->statusCurr);
+  //ShowMessage("New Status : ");
+  //ShowMessageln(robot->statusCurr);
   String lineToSend;
   lineToSend = "RMSTU,";
   lineToSend = lineToSend + robot->statusCurr;
@@ -772,8 +772,8 @@ void RpiRemote::SendStatusToPi () {
 }
 
 void RpiRemote::SendRfidToPi () {
-  //Console.print("New Status : ");
-  //Console.println(robot->statusCurr);
+  //ShowMessage("New Status : ");
+  //ShowMessageln(robot->statusCurr);
   String lineToSend;
   lineToSend = "RMRFI,";
   lineToSend = lineToSend + robot->statusCurr;
@@ -798,7 +798,7 @@ void RpiRemote::SendRfidToPi () {
 }
 
 void RpiRemote::RaspberryPISendStat () {
-  //Console.print(motorPowerMax);
+  //ShowMessage(motorPowerMax);
   String lineToSend;
   lineToSend = "RMSTA,";
   lineToSend = lineToSend + millis();
@@ -844,7 +844,7 @@ void RpiRemote::writePi(String stringLine) {
   RaspberryPIPort.println(lineToSend);
   
   //watchdogReset();
-  //Console.println(lineToSend);
+  //ShowMessageln(lineToSend);
 }
 
 void RpiRemote::readPi() {
@@ -897,8 +897,8 @@ boolean RpiRemote::encode(char c)
   pos++;
   if (c == '\n') //linefeed
   {
-    //Console.println("..........FIND THE END LINE................");
-    //Console.println(buf);
+    //ShowMessageln("..........FIND THE END LINE................");
+    //ShowMessageln(buf);
     boolean ret = process_buf();
     memset(buf, '\0', 120);
     pos = 0;

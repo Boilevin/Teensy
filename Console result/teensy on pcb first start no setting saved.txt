@@ -1,0 +1,54 @@
+
+Console result:
+
+
+SETUP
+++++++++++++++* Start Robot Setup at 339 ++++++++++++
+Pfod connection initialisation at : 19200
+Initialise date time library 
+RTC has set the system time
+Load ErrorCounters
+ErrorCounters address Start=500.00
+ErrorCounters address Stop=522.00
+EEPROM USERDATA: NO EEPROM USER DATA
+PLEASE CHECK AND SAVE YOUR SETTINGS
+Save Robot Stats
+Robot Stats address Start = 800.00
+Robot Stats address Stop = 826.00
+ERROR / ERR
+Load Robot Stats
+Robot Stats address Start = 800.00
+Robot Stats address Stop = 826.00
+IMU: found calib data
+Load Calibration
+Calibration address Start = 600
+Calibration address Stop = 650
+-------- IMU CALIBRATION  --------
+ACCEL GYRO MPU6050 OFFSET ax: -753 ay: -3767 az: 1395 gx: 109 gy: -27 gz: -7
+COMPASS OFFSET X.Y.Z AND SCALE X.Y.Z
+comOfs=0.00,0.00,0.00
+comScale=2.00,2.00,2.00
+.
+--------------------------------- GYRO ACCEL INITIALISATION ---------------
+MPU6050 connection successful
+52
+Initializing DMP...
+Enabling DMP...  Packet size 28
+Wait 3 secondes to stabilize the Drift
+AccelGyro Yaw: -0.00--------------------------------- IMU READY ------------------------------
+START
+Mower 1.0-Teensyber GY-521
+Config: Ardumower
+press...
+  d for menu
+  v to change console output (sensor counters, values, perimeter etc.)
+off
+
+Starting Ina226 current sensor 
+Checking  ina226 current sensor connection
+Ina226 Begin OK 
+Ina226 Configure OK 
+Ina226 Calibration OK 
+Watchdog configuration start 
+Watchdog configuration Finish 
+Setup finish

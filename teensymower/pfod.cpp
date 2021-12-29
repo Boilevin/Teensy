@@ -56,9 +56,9 @@ float RemoteControl::stringToFloat(String &s) {
   s.toCharArray(tmp, sizeof(tmp));
   v = atof(tmp);
   //v = strtod(tmp, NULL);
-  /*Console.print(s);
-    Console.print("=");
-    Console.println(v, 6);   */
+  /*ShowMessage(s);
+    ShowMessage("=");
+    ShowMessageln(v, 6);   */
   return v;
 }
 
@@ -137,7 +137,7 @@ void RemoteControl::processPIDSlider(String result, String cmd, PID &pid, double
   else {
     int idx = result.indexOf('`');
     String s = result.substring(idx + 1);
-    //Console.println(tmp);
+    //ShowMessageln(tmp);
     float v = stringToFloat(s);
     if (pfodCmd.startsWith(cmd + "p")) {
       pid.Kp = v * scale;
@@ -413,8 +413,8 @@ void RemoteControl::processMotorMenu(String pfodCmd) {
 
   if (pfodCmd.startsWith("a02")) {
     processSlider(pfodCmd, robot->motorPowerMax, 0.1);
-    //Console.print("motorpowermax=");
-    //Console.println(robot->motorPowerMax);
+    //ShowMessage("motorpowermax=");
+    //ShowMessageln(robot->motorPowerMax);
   }
 
   // else if (pfodCmd.startsWith("a03")) {
@@ -724,13 +724,17 @@ void RemoteControl::processRainMenu(String pfodCmd) {
 }
 void RemoteControl::sendGPSMenu(boolean update) {
   if (update) serialPort->print("{:"); else serialPort->print(F("{.GPS`1000"));
-  serialPort->print(F("|q00~GPS Use(Need Reboot) "));
+  serialPort->print(F("|q00~Use "));
   sendYesNo(robot->gpsUse);
+  sendSlider("q01", F("Stuck if GPS speed is below"), robot->stuckIfGpsSpeedBelow, "", 0.1, 3);
+  sendSlider("q02", F("GPS speed ignore time"), robot->gpsSpeedIgnoreTime, "", 1, 10000, 2000);
   serialPort->println("}");
 }
 
 void RemoteControl::processGPSMenu(String pfodCmd) {
   if (pfodCmd == "q00") robot->gpsUse = !robot->gpsUse;
+  else if (pfodCmd.startsWith("q01")) processSlider(pfodCmd, robot->stuckIfGpsSpeedBelow, 0.1);
+  else if (pfodCmd.startsWith("q02")) processSlider(pfodCmd, robot->gpsSpeedIgnoreTime, 1);
   sendGPSMenu(true);
 }
 
@@ -1049,8 +1053,8 @@ void RemoteControl::sendBatteryMenu(boolean update) {
     sendSlider("j08", F("Sense factor"), robot->batSenseFactor, "", 0.01, 12, 9);
   }
   //end add
-  //Console.print("batFactor=");
-  //Console.println(robot->batFactor);
+  //ShowMessage("batFactor=");
+  //ShowMessageln(robot->batFactor);
   sendSlider("j02", F("Go home if below Volt"), robot->batGoHomeIfBelow, "", 0.1, robot->batFull, (robot->batFull * 0.72)); // for Sony Konion cells 4.2V * 0,72= 3.024V which is pretty safe to use
   sendSlider("j12", F("Switch off if idle minutes"), robot->batSwitchOffIfIdle, "", 1, 300, 1);
   sendSlider("j03", F("Switch off if below Volt"), robot->batSwitchOffIfBelow, "", 0.1, robot->batFull, (robot->batFull * 0.72));
@@ -1071,8 +1075,8 @@ void RemoteControl::processBatteryMenu(String pfodCmd) {
   if (pfodCmd == "j01") robot->batMonitor = !robot->batMonitor;
   else if (pfodCmd.startsWith("j02")) {
     processSlider(pfodCmd, robot->batGoHomeIfBelow, 0.1);
-    //Console.print("gohomeifbelow=");
-    //Console.println(robot->batGoHomeIfBelow);
+    //ShowMessage("gohomeifbelow=");
+    //ShowMessageln(robot->batGoHomeIfBelow);
   }
   else if (pfodCmd.startsWith("j03")) processSlider(pfodCmd, robot->batSwitchOffIfBelow, 0.1);
   else if (pfodCmd.startsWith("j05")) processSlider(pfodCmd, robot->batFactor, 0.01);
@@ -1662,7 +1666,7 @@ void RemoteControl::sendMainTestMenu(boolean update) {
   sendSlider("ya0", F("mowPatternCurr"), robot->mowPatternCurr, "", 1, 3, 0);
   sendSlider("ya1", F("laneUseNr"), robot->laneUseNr, "", 1, 3, 0);
   sendSlider("ya2", F("rollDir"), robot->rollDir, "", 1, 1, 0);
-  sendSlider("ya3", F("whereToStart"), robot->whereToStart, "", 1,9999, 0);
+  sendSlider("ya3", F("whereToStart"), robot->whereToStart, "", 1, 9999, 0);
   sendSlider("ya4", F("areaToGo"), robot->areaToGo, "", 1, 3, 0);
   sendSlider("ya5", F("actualLenghtByLane"), robot->actualLenghtByLane, "", 1, 255, 0);
   serialPort->println("}");
@@ -1949,18 +1953,31 @@ void RemoteControl::run() {
   } else if (pfodState == PFOD_PLOT_GPS) {
     if (millis() >= nextPlotTime) {
       nextPlotTime = millis() + 200;
-      //float lat, lon;
-      //unsigned long age;
-
+      float lat, lon;
+      unsigned long age;
+      robot->gps.f_get_position(&lat, &lon, &age);
+      serialPort->print((float(millis()) / 1000.0f));
+      serialPort->print(",");
+      serialPort->print(robot->gps.hdop());
+      serialPort->print(",");
+      serialPort->print(robot->gps.satellites());
+      serialPort->print(",");
+      serialPort->print(robot->gps.f_speed_kmph());
+      serialPort->print(",");
+      serialPort->print(robot->gps.f_course());
+      serialPort->print(",");
+      serialPort->print(robot->gps.f_altitude());
+      serialPort->print(",");
+      serialPort->print(lat);
+      serialPort->print(",");
+      serialPort->println(lon);
     }
   } else if (pfodState == PFOD_PLOT_GPS2D) {
     if (millis() >= nextPlotTime) {
       nextPlotTime = millis() + 500;
-      /*
-        serialPort->print(robot->gpsX);
-        serialPort->print(",");
-        serialPort->println(robot->gpsY);
-      */
+      serialPort->print(robot->gpsX);
+      serialPort->print(",");
+      serialPort->println(robot->gpsY);
     }
   } else if (pfodState == PFOD_PLOT_MOTOR) {
     if (millis() >= nextPlotTime) {
