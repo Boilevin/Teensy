@@ -23,8 +23,8 @@
 
 #include "gps.h"
 
-#define _GPRMC_TERM   "GNRMC"
-#define _GPGGA_TERM   "GNGGA"
+#define _GPRMC_TERM   "GNRMC" //for m6n use GPRMC
+#define _GPGGA_TERM   "GNGGA"  //for m6n use GPGGA
 
 GPS::GPS()
   :  _time(GPS_INVALID_TIME)

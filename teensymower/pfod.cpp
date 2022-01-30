@@ -339,7 +339,7 @@ void RemoteControl::processErrorMenu(String pfodCmd) {
 
 
 void RemoteControl::sendMotorMenu(boolean update) {
-  if (update) serialPort->print("{:"); else serialPort->print(F("{.Motor`200"));
+  if (update) serialPort->print("{:"); else serialPort->print(F("{.Motor`1000"));
 
   serialPort->println(F("|a01~Power in Watt l, r "));
   serialPort->print(robot->motorLeftPower);
