@@ -24,6 +24,9 @@
 #define PWM_FREQUENCY_L298N  10000 
 #define PWM_FREQUENCY_BTS7960  10000
 
+#define INA226_MOW2_PRESENT true
+#define INA226_MOW3_PRESENT true
+
 #define ODOMETRY_ONLY_RISING false
 //***********************************************************************
 

@@ -1448,9 +1448,9 @@ void Robot::saveUserSettings() {
 
 
 void Robot::deleteUserSettings() {
-  //int addr = ADDR_USER_SETTINGS;
+  int addr = ADDR_USER_SETTINGS;
   ShowMessageln(F("ALL USER SETTINGS ARE DELETED PLEASE RESTART THE DUE"));
-  // eewrite(addr, (short)0); // magic
+  eewrite(addr, (short)0); // magic
 }
 
 void Robot::deleteRobotStats() {
@@ -2826,8 +2826,8 @@ void Robot::setup()  {
   ChargeIna226.begin(0x40);
   MotRightIna226.begin(0x44);
   Mow1Ina226.begin_I2C1(0x40);  //MOW1 is connect on I2C1
-  Mow2Ina226.begin_I2C1(0x41);  //MOW2 is connect on I2C1
-  Mow3Ina226.begin_I2C1(0x44);  //MOW3 is connect on I2C1
+  if (INA226_MOW2_PRESENT) Mow2Ina226.begin_I2C1(0x41);  //MOW2 is connect on I2C1
+  if (INA226_MOW3_PRESENT) Mow3Ina226.begin_I2C1(0x44);  //MOW3 is connect on I2C1
 
   Serial.println ("Checking  ina226 current sensor connection");
   //check sense powerboard i2c connection
@@ -2848,11 +2848,11 @@ void Robot::setup()  {
     Serial.println("INA226 MOW1 is not OK");
     powerboard_I2c_line_Ok = false;
   }
-  if (!Mow2Ina226.isConnected_I2C1(0x41)) {
+  if ((INA226_MOW2_PRESENT) && (!Mow2Ina226.isConnected_I2C1(0x41))) {
     Serial.println("INA226 MOW2 is not OK");
     powerboard_I2c_line_Ok = false;
   }
-  if (!Mow3Ina226.isConnected_I2C1(0x44)) {
+  if ((INA226_MOW3_PRESENT) && (!Mow3Ina226.isConnected_I2C1(0x44))) {
     Serial.println("INA226 MOW3 is not OK");
     powerboard_I2c_line_Ok = false;
   }
@@ -2869,8 +2869,8 @@ void Robot::setup()  {
     MotRightIna226.configure(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
     //I2C1 bus
     Mow1Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
-    Mow2Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
-    Mow3Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
+    if (INA226_MOW2_PRESENT) Mow2Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
+    if (INA226_MOW3_PRESENT) Mow3Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
 
     Serial.println ("Ina226 Configure OK ");
     // Calibrate INA226. Rshunt = 0.01 ohm, Max excepted current = 4A
@@ -2879,8 +2879,8 @@ void Robot::setup()  {
     MotRightIna226.calibrate(0.02, 4);
     //I2C1 bus
     Mow1Ina226.calibrate_I2C1(0.02, 4);
-    Mow2Ina226.calibrate_I2C1(0.02, 4);
-    Mow3Ina226.calibrate_I2C1(0.02, 4);
+    if (INA226_MOW2_PRESENT) Mow2Ina226.calibrate_I2C1(0.02, 4);
+    if (INA226_MOW3_PRESENT) Mow3Ina226.calibrate_I2C1(0.02, 4);
 
     Serial.println ("Ina226 Calibration OK ");
   }
@@ -3372,8 +3372,19 @@ void Robot::readSensors() {
       motorRightPower = MotRightIna226.readBusPower() ;
       motorLeftPower  = MotLeftIna226.readBusPower() ;
       Mow1_Power = Mow1Ina226.readBusPower_I2C1() ;
-      Mow2_Power = Mow2Ina226.readBusPower_I2C1() ;
-      Mow3_Power = Mow3Ina226.readBusPower_I2C1() ;
+      if (INA226_MOW2_PRESENT) {
+        Mow2_Power = Mow2Ina226.readBusPower_I2C1() ;
+      }
+      else {
+        Mow2_Power = 0;
+      }
+      if (INA226_MOW3_PRESENT) {
+        Mow3_Power = Mow3Ina226.readBusPower_I2C1() ;
+      }
+      else {
+        Mow3_Power = 0;
+      }
+
     }
     //Mow2_Power = 0 ;
     //Mow3_Power = 0 ;
