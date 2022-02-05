@@ -1,6 +1,11 @@
 /*
+  Ardumower (www.ardumower.de)
+  Copyright (c) 2013-2014 by Alexander Grau
+  Copyright (c) 2013-2014 by Sven Gennat
+  Copyright (c) 2014 by Maxime Carpentieri
+  
   Private-use only! (you need to ask for a commercial-use)
-
+ 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
@@ -13,7 +18,7 @@
 
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+  
   Private-use only! (you need to ask for a commercial-use)
 
 */
@@ -25,11 +30,12 @@
 #include <Arduino.h>
 
 // ---------- date time --------------------------------------
+
 extern const char *dayOfWeek[];
 
 struct timehm_t {
   byte hour;
-  byte minute;
+  byte minute;  
 };
 
 typedef struct timehm_t timehm_t;
@@ -38,7 +44,7 @@ struct date_t {
   byte dayOfWeek;
   byte day;
   byte month;
-  short year;
+  short year;  
 };
 
 typedef struct date_t date_t;
@@ -63,6 +69,7 @@ struct ttimer_t {
   boolean startRollDir;
   byte startLaneMaxlengh;
   int rfidBeacon;
+  
 };
 
 typedef struct ttimer_t ttimer_t;
@@ -70,14 +77,16 @@ typedef struct ttimer_t ttimer_t;
 
 // ---- other ----------------------------------
 
+
 // returns sign of variable (-1, 0, +1)
 template <typename T> int sign(T val) {
     return (T(0) < val) - (val < T(0));
 }
 
+// ---------- driver functions ----------------------------------
 
 //int freeRam();
-
+  
 // print helpers
 void StreamPrint_progmem(Print &out,PGM_P format,...);
 //#define Serialprint(format, ...) StreamPrint_progmem(Serial,PSTR(format),##__VA_ARGS__)
@@ -102,8 +111,10 @@ double distancePI(double x, double w);
 void setPwmFrequency(int pin, int divisor);
 void setBL500W(int pinDir, int pinPWM, int pinEnable, int speed);
 void setL298N(int pinDir, int pinPWM, int pinEnable, int speed);
+void setRomeoMotor(int pinDir, int pinPWM, int speed);
+void setMC33926(int pinDir, int pinPWM, int speed);
 void setBTS7960(int pinDir ,int pinPWM ,int pinEnable , int speed);
 // Returns the day of week (0=Sunday, 6=Saturday) for a given date
 int getDayOfWeek(int month, int day, int year, int CalendarSystem);
 unsigned long hstol(String recv);
-#endif
+#endif 

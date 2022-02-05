@@ -1,4 +1,9 @@
 /*
+  Ardumower (www.ardumower.de)
+  Copyright (c) 2013-2014 by Alexander Grau
+  Copyright (c) 2013-2014 by Sven Gennat
+  Copyright (c) 2014 by Maxime Carpentieri
+
   Private-use only! (you need to ask for a commercial-use)
 
   This program is free software: you can redistribute it and/or modify
@@ -15,10 +20,85 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   Private-use only! (you need to ask for a commercial-use)
-
 */
-
 #include "drivers.h"
+
+const char *dayOfWeek[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+void StreamPrint_progmem(Print &out, PGM_P format, ...)
+{
+  // program memory version of printf - copy of format string and result share a buffer
+  // so as to avoid too much memory use
+  char formatString[128], *ptr;
+
+  strncpy( formatString, format, sizeof(formatString) ); // copy in from program mem
+
+  // null terminate - leave char since we might need it in worst case for result's \0
+  formatString[ sizeof(formatString) - 2 ] = '\0';
+  ptr = &formatString[ strlen(formatString) + 1 ]; // our result buffer...
+  va_list args;
+  va_start (args, format);
+  vsnprintf(ptr, sizeof(formatString) - 1 - strlen(formatString), formatString, args );
+  va_end (args);
+  formatString[ sizeof(formatString) - 1 ] = '\0';
+  out.print(ptr);
+}
+
+// rescale to -PI..+PI
+double scalePI(double v)
+{
+  double d = v;
+  while (d < 0) d += 2 * PI;
+  while (d >= 2 * PI) d -= 2 * PI;
+  if (d >= PI) return (-2 * PI + d);
+  else if (d < -PI) return (2 * PI + d);
+  else return d;
+}
+
+// computes minimum distance between x radiant (current-value) and w radiant (set-value)
+double distancePI(double x, double w)
+{
+  // cases:
+  // w=330 degree, x=350 degree => -20 degree
+  // w=350 degree, x=10  degree => -20 degree
+  // w=10  degree, x=350 degree =>  20 degree
+  // w=0   degree, x=190 degree => 170 degree
+  // w=190 degree, x=0   degree => -170 degree
+  double d = scalePI(w - x);
+  if (d < -PI) d = d + 2 * PI;
+  else if (d > PI) d = d - 2 * PI;
+  return d;
+}
+
+int time2minutes(timehm_t time) {
+  return (time.hour * 60 + time.minute);
+}
+
+void minutes2time(int minutes, timehm_t &time) {
+  time.hour   = minutes / 60;
+  time.minute = minutes % 60;
+}
+
+String time2str(timehm_t time) {
+  String s = String(time.hour / 10);
+  s += (time.hour % 10);
+  s += ":";
+  s += (time.minute / 10);
+  s += (time.minute % 10);
+  return s;
+}
+
+String date2str(date_t date) {
+  String s = dayOfWeek[date.dayOfWeek];
+  s += " ";
+  s += date.day / 10;
+  s += date.day % 10;
+  s += ".";
+  s += date.month / 10;
+  s += date.month % 10;
+  s += ".";
+  s += date.year;
+  return s;
+}
 
 // brushless BL500W motor driver
 //+5V --> 5V OUTPUT
@@ -60,6 +140,22 @@ void setL298N(int pinDir, int pinPWM , int pinEnable, int speed) {
   }
 }
 
+// DFRobot Romeo All in one V1.1 motor driver
+// D5/D6 PinPWM       D4/D7 PinDir
+// H                  L     Forward
+// H                  H     Reverse
+void setRomeoMotor(int pinDir, int pinPWM, int speed) {
+  if (speed < 0) {
+    //digitalWrite(pinDir, HIGH) ;
+    //PinMan.analogWrite(pinPWM, abs(speed));
+  } else {
+    //digitalWrite(pinDir, LOW) ;
+    //PinMan.analogWrite(pinPWM, abs(speed));
+  }
+}
+
+
+
 //bber1
 // BTS7960 motor driver
 // Dir pin is used for reverse PWM signal
@@ -92,90 +188,31 @@ void setBTS7960(int pinDir , int pinPWM , int pinEnable , int speed) {
   }
 }
 
-
-//Time and Helpers
-const char *dayOfWeek[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-void StreamPrint_progmem(Print &out, PGM_P format, ...)
-{
-  // program memory version of printf - copy of format string and result share a buffer
-  // so as to avoid too much memory use
-  char formatString[128], *ptr;
-
-  strncpy( formatString, format, sizeof(formatString) ); // copy in from program mem
-
-  // null terminate - leave char since we might need it in worst case for result's \0
-  formatString[ sizeof(formatString) - 2 ] = '\0';
-  ptr = &formatString[ strlen(formatString) + 1 ]; // our result buffer...
-  va_list args;
-  va_start (args, format);
-  vsnprintf(ptr, sizeof(formatString) - 1 - strlen(formatString), formatString, args );
-  va_end (args);
-  formatString[ sizeof(formatString) - 1 ] = '\0';
-  out.print(ptr);
+// MC33926 motor driver
+// Check http://forum.pololu.com/viewtopic.php?f=15&t=5272#p25031 for explanations.
+//(8-bit PWM=255, 10-bit PWM=1023)
+// IN1 PinPWM         IN2 PinDir
+// PWM                L     Forward
+// nPWM               H     Reverse
+void setMC33926(int pinDir, int pinPWM, int speed) {
+  if (speed < 0) {
+    //digitalWrite(pinDir, HIGH) ;
+    //PinMan.analogWrite(pinPWM, 255-((byte)abs(speed)));
+  } else {
+    //digitalWrite(pinDir, LOW) ;
+    //PinMan.analogWrite(pinPWM, ((byte)speed));
+  }
 }
 
-
-// rescale to -PI..+PI
-double scalePI(double v)
-{
-  double d = v;
-  while (d < 0) d += 2 * PI;
-  while (d >= 2 * PI) d -= 2 * PI;
-  if (d >= PI) return (-2 * PI + d);
-  else if (d < -PI) return (2 * PI + d);
-  else return d;
-}
+// ---- sensor drivers --------------------------------------------------------------
 
 
-// computes minimum distance between x radiant (current-value) and w radiant (set-value)
-double distancePI(double x, double w)
-{
-  // cases:
-  // w=330 degree, x=350 degree => -20 degree
-  // w=350 degree, x=10  degree => -20 degree
-  // w=10  degree, x=350 degree =>  20 degree
-  // w=0   degree, x=190 degree => 170 degree
-  // w=190 degree, x=0   degree => -170 degree
-  double d = scalePI(w - x);
-  if (d < -PI) d = d + 2 * PI;
-  else if (d > PI) d = d - 2 * PI;
-  return d;
-}
 
 
-int time2minutes(timehm_t time) {
-  return (time.hour * 60 + time.minute);
-}
 
 
-void minutes2time(int minutes, timehm_t &time) {
-  time.hour   = minutes / 60;
-  time.minute = minutes % 60;
-}
 
 
-String time2str(timehm_t time) {
-  String s = String(time.hour / 10);
-  s += (time.hour % 10);
-  s += ":";
-  s += (time.minute / 10);
-  s += (time.minute % 10);
-  return s;
-}
-
-
-String date2str(date_t date) {
-  String s = dayOfWeek[date.dayOfWeek];
-  s += " ";
-  s += date.day / 10;
-  s += date.day % 10;
-  s += ".";
-  s += date.month / 10;
-  s += date.month % 10;
-  s += ".";
-  s += date.year;
-  return s;
-}
 
 
 // Returns the day of week (0=Sunday, 6=Saturday) for a given date
@@ -198,6 +235,7 @@ int getDayOfWeek(int month, int day, int year, int CalendarSystem)
            + CalendarSystem
          ) % 7;
 }
+
 
 
 unsigned long hstol(String recv) {
