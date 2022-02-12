@@ -43,7 +43,7 @@
 */
 
 // code version
-#define VER "1.0-Teensyber GY-521"
+#define VER "1.1-Teensyber GY-521"
 
 
 // sensors
@@ -865,6 +865,8 @@ class Robot
     //virtual void RaspberryPISendStat ();
 
     virtual void receivePiPfodCommand (String RpiCmd, float v1, float v2, float v3);
+
+    virtual void ResetWatchdog();
 
     virtual void ShowMessage(String message);
     virtual void ShowMessageln(String message);

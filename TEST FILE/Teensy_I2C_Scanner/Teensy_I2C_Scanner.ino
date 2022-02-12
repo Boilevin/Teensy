@@ -35,7 +35,7 @@ void setup() {
   // uncomment these to use alternate pins
   //Wire.setSCL(16);
   //Wire.setSDA(17);
-  Wire.begin();
+  Wire1.begin();
   Serial.begin(115200);
   while (!Serial);        // Leonardo: wait for serial monitor
   Serial.println(F("\nI2C Scanner"));
@@ -53,8 +53,8 @@ void loop() {
     // The i2c_scanner uses the return value of
     // the Write.endTransmisstion to see if
     // a device did acknowledge to the address.
-    Wire.beginTransmission(address);
-    error = Wire.endTransmission();
+    Wire1.beginTransmission(address);
+    error = Wire1.endTransmission();
 
     if (error == 0) {
       Serial.print(F("Device found at address 0x"));

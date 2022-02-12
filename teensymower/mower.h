@@ -16,9 +16,9 @@
 // 1 for brushless BL500W Driver
 // 2 for DC L298N Driver
 // 3 for DC BTS7960 Driver
-#define LEFT_MOTOR_DRIVER 2
-#define RIGHT_MOTOR_DRIVER 2
-#define MOW_MOTOR_DRIVER 2
+#define LEFT_MOTOR_DRIVER 3
+#define RIGHT_MOTOR_DRIVER 3
+#define MOW_MOTOR_DRIVER 3
 
 #define PWM_FREQUENCY_BL500W  29300 //
 #define PWM_FREQUENCY_L298N  10000 

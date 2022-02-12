@@ -295,6 +295,7 @@ void IMUClass::meansensors() {
   while (i < (buffersize + 101)) {  //default buffersize=1000
     // read raw accel/gyro measurements from device
     mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+    robot.ResetWatchdog();
     //watchdogReset();
     if (i > 100 && i <= (buffersize + 100)) { //First 100 measures are discarded
       buff_ax = buff_ax + ax;
@@ -593,11 +594,11 @@ void IMUClass::deleteAccelGyroCalib() {
 void IMUClass::calibGyro() {
 
   Serial.println("Reading sensors for first time... without any offset");
-  //watchdogReset();
+  robot.ResetWatchdog();
 
   meansensors();
 
-  //watchdogReset();
+  robot.ResetWatchdog();
   Serial.print("Reading ax: ");
   Serial.print(mean_ax);
   Serial.print(" ay: ");
@@ -612,13 +613,13 @@ void IMUClass::calibGyro() {
   Serial.println(mean_gz);
 
   Serial.println("\nCalculating offsets...");
-  //watchdogReset();
+  robot.ResetWatchdog();
 
   calibration();
 
-  //watchdogReset();
+  robot.ResetWatchdog();
   meansensors();
-  //watchdogReset();
+  robot.ResetWatchdog();
   Serial.println("FINISHED reading Value with new offset,If all is OK need to be close 0 exept the az close to 16384");
   Serial.print(" New reading ax: ");
   Serial.print(mean_ax);
@@ -632,7 +633,7 @@ void IMUClass::calibGyro() {
   Serial.print(mean_gy);
   Serial.print(" gz: ");
   Serial.println(mean_gz);
-  //watchdogReset();
+  robot.ResetWatchdog();
   Serial.print("THE NEW OFFSET ax: ");
   Serial.print(ax_offset);
   Serial.print(" ay: ");
@@ -645,7 +646,7 @@ void IMUClass::calibGyro() {
   Serial.print(gy_offset);
   Serial.print(" gz: ");
   Serial.println(gz_offset);
-  //watchdogReset();
+  robot.ResetWatchdog();
   saveCalib();
 }
 
