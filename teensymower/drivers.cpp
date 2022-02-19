@@ -110,11 +110,11 @@ String date2str(date_t date) {
 void setBL500W(int pinDir, int pinPWM, int pinEnable, int speed) {
   if (speed < 0) {
     digitalWrite(pinDir, HIGH) ;
-    //if (speed >= -4) speed = -4;
+    if (speed >= -4) speed = -4;
     analogWrite(pinPWM, ((byte)abs(speed)));
   } else {
     digitalWrite(pinDir, LOW) ;
-    //if (speed <= 4) speed = 4;
+    if (speed <= 4) speed = 4;
     analogWrite(pinPWM, ((byte)abs(speed)));
   }
 }

@@ -992,7 +992,8 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, statsOverride);
   eereadwrite(readflag, addr, reduceSpeedNearPerimeter);
   eereadwrite(readflag, addr, autoAdjustSlopeSpeed);
-  eereadwriteString(readflag, addr, esp8266ConfigString);
+  eereadwriteString(readflag, addr, esp8266ConfigString);//string not used
+  esp8266ConfigString="1234";                             // not use but initialised for pi use
   eereadwrite(readflag, addr, tiltUse);
   eereadwrite(readflag, addr, trackingPerimeterTransitionTimeOut);
   eereadwrite(readflag, addr, motorMowForceOff);
@@ -1035,6 +1036,7 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, rfidUse);
   eereadwrite(readflag, addr, compassRollSpeedCoeff);
   eereadwrite(readflag, addr, gpsUse);
+  if(gpsUse >1) gpsUse = 0; //avoid memory error
   eereadwrite(readflag, addr, stuckIfGpsSpeedBelow);
   eereadwrite(readflag, addr, gpsSpeedIgnoreTime);
   eereadwrite(readflag, addr, useMqtt);

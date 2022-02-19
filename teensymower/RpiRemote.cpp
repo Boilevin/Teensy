@@ -500,7 +500,7 @@ void RpiRemote::receivePiReqSetting (String Setting_page, int nb_page) {
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->esp8266Use;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->esp8266ConfigString;
+    lineToSend = lineToSend + 0;  //robot->esp8266ConfigString;
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->tiltUse;
     lineToSend = lineToSend + ",";
@@ -1443,9 +1443,9 @@ void RpiRemote::readWrite_setting()
         robot->userSwitch3 = val[1];
         robot->timerUse = val[2];
         robot->rainUse = val[3];
-        robot->rainUse = val[4]; //old gps
-        robot->rainUse = val[5];//old gps
-        robot->rainUse = val[6];//old gps
+        robot->gpsUse = val[4];
+        //robot->stuckIfGpsSpeedBelow = val[5];
+        //robot->gpsBaudrate = val[6];
         robot->dropUse = val[7];
         robot->statsOverride = val[8];
         robot->bluetoothUse = val[9];
