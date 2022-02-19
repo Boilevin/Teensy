@@ -43,7 +43,7 @@
 */
 
 // code version
-#define VER "1.0-Teensyber GY-521"
+#define VER "1.2-Teensyber GY-521"
 
 
 // sensors
@@ -257,7 +257,7 @@ class Robot
     boolean bluetoothUse;       // use Bluetooth module?
     // ----- esp8266 ---------------------------------------
     boolean esp8266Use;         // use ESP8266 Wifi module?
-    String esp8266ConfigString = "";
+    String esp8266ConfigString = "1234";
     // -------- mow pattern -----------------------------
     byte mowPatternCurr;
     const char *mowPatternName();
@@ -865,6 +865,8 @@ class Robot
     //virtual void RaspberryPISendStat ();
 
     virtual void receivePiPfodCommand (String RpiCmd, float v1, float v2, float v3);
+
+    virtual void ResetWatchdog();
 
     virtual void ShowMessage(String message);
     virtual void ShowMessageln(String message);

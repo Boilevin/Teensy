@@ -992,7 +992,8 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, statsOverride);
   eereadwrite(readflag, addr, reduceSpeedNearPerimeter);
   eereadwrite(readflag, addr, autoAdjustSlopeSpeed);
-  eereadwriteString(readflag, addr, esp8266ConfigString);
+  eereadwriteString(readflag, addr, esp8266ConfigString);//string not used
+  esp8266ConfigString="1234";                             // not use but initialised for pi use
   eereadwrite(readflag, addr, tiltUse);
   eereadwrite(readflag, addr, trackingPerimeterTransitionTimeOut);
   eereadwrite(readflag, addr, motorMowForceOff);
@@ -1035,6 +1036,7 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, rfidUse);
   eereadwrite(readflag, addr, compassRollSpeedCoeff);
   eereadwrite(readflag, addr, gpsUse);
+  if(gpsUse >1) gpsUse = 0; //avoid memory error
   eereadwrite(readflag, addr, stuckIfGpsSpeedBelow);
   eereadwrite(readflag, addr, gpsSpeedIgnoreTime);
   eereadwrite(readflag, addr, useMqtt);
@@ -2697,8 +2699,8 @@ void Robot::OdoLeftCountInt() {
 
 void Robot::myCallback() {
 
-  robot.ShowMessageln("warning Watchdog detect that loops take more than 1 second ");
-  robot.ShowMessageln("Tennsy can automaticly reboot  ");
+  robot.ShowMessageln("warning Watchdog detect that loops take too long duration ");
+  robot.ShowMessageln("Tennsy can automaticly reboot if issue is not reset ");
   // try to stop everything
   robot.setNextState(STATE_OFF, 0);
   return;
@@ -2897,8 +2899,8 @@ void Robot::setup()  {
 
   Serial.println("Watchdog configuration start ");
   WDT_timings_t config;
-  config.trigger = 20; /* in seconds, 0->128 */
-  config.timeout = 30; /* in seconds, 0->128 */
+  config.trigger = 10; /* in seconds, 0->128 */
+  config.timeout = 50; /* in seconds, 0->128 */
   config.callback = myCallback;
   wdt.begin(config);
   Serial.println("Watchdog configuration Finish ");
@@ -3358,15 +3360,10 @@ void Robot::pfodSetDateTime(byte hr1, byte min1, byte sec1, byte day1, byte mont
 }
 
 void Robot::readSensors() {
-  //NOTE: this function should only put sensors value into variables - it should NOT change any state!
-  //The ADC return is now 12 bits so 0 to 4096
-
-
-
-
   if (millis() >= nextTimeMotorSense) {
     nextTimeMotorSense = millis() +  50;
     double accel = 0.10;  //filter percent
+    unsigned long readingDuration;
 
     if (powerboard_I2c_line_Ok) {
       motorRightPower = MotRightIna226.readBusPower() ;
@@ -3384,7 +3381,11 @@ void Robot::readSensors() {
       else {
         Mow3_Power = 0;
       }
-
+      readingDuration = millis() - nextTimeMotorSense + 50;
+      if (readingDuration > 30 ) {  //leave 30 ms to I2C reading
+        ShowMessage("Error in INA226 motor power Timeout reading I2C : ");
+        ShowMessageln(readingDuration);
+      }
     }
     //Mow2_Power = 0 ;
     //Mow3_Power = 0 ;
@@ -3505,6 +3506,7 @@ void Robot::readSensors() {
     double chgvolt = 0.1 ;
     double curramp = 0.1; //  0.1 instead 0 to avoid div/0
     double batvolt = 0.1 ;
+    unsigned long readingDuration;
     nextTimeBattery = millis() + 500;
     if ((millis() > 30000) and (millis() < 30550) and (!powerboard_I2c_line_Ok)) {
       ShowMessageln("POWERBOARD I2C LINE is not OK");
@@ -3518,6 +3520,11 @@ void Robot::readSensors() {
       chgvolt = ChargeIna226.readBusVoltage() ;
       curramp = ChargeIna226.readBusPower(); //  ?? sense don't work
       batvolt = MotRightIna226.readBusVoltage() ;
+      readingDuration = millis() - nextTimeBattery + 500;
+      if (readingDuration > 30 ) {  //leave 30 ms to I2C reading
+        ShowMessage("Error in INA226 Bat Voltage Timeout reading I2C : ");
+        ShowMessageln(readingDuration);
+      }
     }
     if (chgvolt != 0) {
       curramp = curramp / chgvolt;
@@ -5569,6 +5576,12 @@ void Robot::calcOdometry() {
 
 
 }
+
+void Robot::ResetWatchdog() {
+  wdt.feed();
+}
+
+
 void Robot::readAllTemperature() {
   if (millis() > nextTimeReadTemperature) {
     nextTimeReadTemperature = millis() + 3000;
@@ -7264,7 +7277,8 @@ void Robot::loop()  {
       motorControlOdo();
       if (!perimeterInside) {
         ShowMessageln("Try to start at other location : We are not inside perimeter");
-        setNextState(STATE_PERI_OUT_STOP, rollDir);
+        setNextState(STATE_OFF, rollDir);
+        //setNextState(STATE_PERI_OUT_STOP, rollDir);
         return;
       }
       if ((millis() > (stateStartTime + MaxOdoStateDuration)) || (odometryRight >= stateEndOdometryRight) || (odometryLeft >= stateEndOdometryLeft) ) {
