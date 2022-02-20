@@ -125,10 +125,10 @@ class RemoteControl
     void sendMotorMenu(boolean update);
     void sendMowMenu(boolean update);
     void sendBumperMenu(boolean update);
-    void sendDropMenu(boolean update);
+    
     void sendSonarMenu(boolean update);
     void sendPerimeterMenu(boolean update);
-    void sendLawnSensorMenu(boolean update);
+    
     void sendImuMenu(boolean update);
     void sendRemoteMenu(boolean update);
     void sendBatteryMenu(boolean update);
@@ -151,9 +151,9 @@ class RemoteControl
     void processBumperMenu(String pfodCmd);
     void processSonarMenu(String pfodCmd);
     void processPerimeterMenu(String pfodCmd);
-    void processLawnSensorMenu(String pfodCmd);
+    
     void processRainMenu(String pfodCmd);
-    void processDropMenu(String pfodCmd);
+    
     void processGPSMenu(String pfodCmd);
     void processRFIDMenu(String pfodCmd);
     void processRfidDetailMenu(int rfidDetailIdx,String pfodCmd);

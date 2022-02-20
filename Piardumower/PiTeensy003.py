@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-PiVersion="T001"
+PiVersion="T003"
 import traceback
 import sys
 import serial
@@ -52,7 +52,6 @@ if(useVision):
 import threading
 
 
-    
    
 
 if(useMqtt):   
@@ -224,11 +223,17 @@ def ButtonFlashDue_click():
     Due_Serial.close()
     ButtonClearConsole_click()
     ConsolePage.tkraise()
-    consoleInsertText("Loader need to start in new windows" + '\n')
+    consoleInsertText("  KEEP THE POWER BUTTON PUSH DURING THE FLASH PROCESS" + '\n')
+    consoleInsertText("  Select a file and start flash" + '\n')
+    consoleInsertText("  PiTeensy close after 10 secondes" + '\n')
+    consoleInsertText("  Loader need to start in new windows" + '\n')
+    
     fen1.update()
     subprocess.Popen("/home/pi/Documents/./teensy &", shell=True)
-    consoleInsertText("Select a file and start flash" + '\n')
-    fen1.update()
+    
+    time.sleep(10)
+    fen1.destroy()
+                    
 
 #################################### CAMERA MANAGEMENT ###############################################
 class streamVideo_class(object):
@@ -468,17 +473,17 @@ ManualKeyboardUse=tk.IntVar()
 MainperimeterUse= tk.IntVar()
 MainimuUse= tk.IntVar()
 MaingpsUse= tk.IntVar()
-MainbluetoothUse= tk.IntVar()
+#MainbluetoothUse= tk.IntVar()
 MainbumperUse= tk.IntVar()
 MainsonarUse= tk.IntVar()
-MainDHT22Use= tk.IntVar()
-MainlawnSensorUse= tk.IntVar()
+#MainDHT22Use= tk.IntVar()
+#MainlawnSensorUse= tk.IntVar()
 MaintimerUse= tk.IntVar()
 
 MainrainUse= tk.IntVar()
-MaindropUse= tk.IntVar()
-Mainesp8266Use= tk.IntVar()
-MaintiltUse= tk.IntVar()
+#MaindropUse= tk.IntVar()
+#Mainesp8266Use= tk.IntVar()
+#MaintiltUse= tk.IntVar()
 
 tk_rollDir=tk.StringVar()
 tk_laneInUse= tk.IntVar()
@@ -1279,7 +1284,7 @@ def decode_message(message):  #decode the nmea message
                         myRobot.perimeter_swapCoilPolarityLeft=message.val5
                         myRobot.perimeter_timeOutSecIfNotInside=message.val6
                         myRobot.trakBlockInnerWheel=message.val7
-                        myRobot.lawnSensorUse=message.val8
+                        #myRobot.lawnSensorUse=message.val8
                         myRobot.imuUse=message.val9
                         myRobot.stopMotorDuringCalib=message.val10
                     if message.pageNr =='6':     
@@ -1323,12 +1328,12 @@ def decode_message(message):  #decode the nmea message
                         myRobot.gpsUse=message.val5
                         myRobot.stuckIfGpsSpeedBelow=message.val6
                         myRobot.gpsSpeedIgnoreTime=message.val7
-                        myRobot.dropUse=message.val8
+                        #myRobot.dropUse=message.val8
                         myRobot.statsOverride=message.val9
-                        myRobot.bluetoothUse=message.val10
+                        #myRobot.bluetoothUse=message.val10 free for other boolean
                     if message.pageNr =='10':    
-                        myRobot.esp8266Use=message.val1
-                        myRobot.esp8266ConfigString=message.val2
+                        #myRobot.esp8266Use=message.val1
+                        #myRobot.esp8266ConfigString=message.val2
                         myRobot.tiltUse=message.val3
                         myRobot.trackingPerimeterTransitionTimeOut=message.val4
                         myRobot.motorMowForceOff=message.val5
@@ -1363,7 +1368,7 @@ def decode_message(message):  #decode the nmea message
                         myRobot.maxDurationDmpAutocalib=message.val1
                         myRobot.mowPatternDurationMax=message.val2
                         myRobot.DistPeriOutStop=message.val3
-                        myRobot.DHT22Use=message.val4
+                        #myRobot.DHT22Use=message.val4
                         myRobot.RaspberryPIUse=message.val5
                         myRobot.sonarToFrontDist=message.val6
                         myRobot.UseBumperDock=message.val7
@@ -1570,21 +1575,21 @@ def ButtonSetMainApply_click():
     myRobot.gpsUse='0'
     if MaingpsUse.get()==1:
         myRobot.gpsUse='1'        
-    myRobot.bluetoothUse='0'
-    if MainbluetoothUse.get()==1:
-        myRobot.bluetoothUse='1'      
+    #myRobot.bluetoothUse='0'
+    #if MainbluetoothUse.get()==1:
+    #    myRobot.bluetoothUse='1'      
     myRobot.bumperUse='0'
     if MainbumperUse.get()==1:
         myRobot.bumperUse='1'        
     myRobot.sonarUse='0'
     if MainsonarUse.get()==1:
         myRobot.sonarUse='1'        
-    myRobot.DHT22Use='0'
-    if MainDHT22Use.get()==1:
-        myRobot.DHT22Use='1'       
-    myRobot.lawnSensorUse='0'
-    if MainlawnSensorUse.get()==1:
-        myRobot.lawnSensorUse='1'
+    #myRobot.DHT22Use='0'
+    #if MainDHT22Use.get()==1:
+    #    myRobot.DHT22Use='1'       
+    #myRobot.lawnSensorUse='0'
+    #if MainlawnSensorUse.get()==1:
+    #    myRobot.lawnSensorUse='1'
     myRobot.timerUse='0'
     if MaintimerUse.get()==1:
         myRobot.timerUse='1'
@@ -1592,15 +1597,15 @@ def ButtonSetMainApply_click():
     myRobot.rainUse='0'
     if MainrainUse.get()==1:
         myRobot.rainUse='1'       
-    myRobot.dropUse='0'
-    if MaindropUse.get()==1:
-        myRobot.dropUse='1'        
-    myRobot.esp8266Use='0'
-    if Mainesp8266Use.get()==1:
-        myRobot.esp8266Use='1'
-    myRobot.tiltUse='0'
-    if MaintiltUse.get()==1:
-        myRobot.tiltUse='1'
+    #myRobot.dropUse='0'
+    #if MaindropUse.get()==1:
+    #    myRobot.dropUse='1'        
+    #myRobot.esp8266Use='0'
+    #if Mainesp8266Use.get()==1:
+    #    myRobot.esp8266Use='1'
+    #myRobot.tiltUse='0'
+    #if MaintiltUse.get()==1:
+    #    myRobot.tiltUse='1'
         
     ButtonSendSettingToDue_click()
 
@@ -1909,36 +1914,36 @@ def refreshMainSettingPage():
     ChkBtngpsUse.deselect()
     if myRobot.gpsUse=='1':
         ChkBtngpsUse.select()
-    ChkBtnbluetoothUse.deselect()
-    if myRobot.bluetoothUse=='1':
-        ChkBtnbluetoothUse.select()
+    #ChkBtnbluetoothUse.deselect()
+    #if myRobot.bluetoothUse=='1':
+    #    ChkBtnbluetoothUse.select()
     ChkBtnbumperUse.deselect()
     if myRobot.bumperUse=='1':
         ChkBtnbumperUse.select()
     ChkBtnsonarUse.deselect()
     if myRobot.sonarUse=='1':
         ChkBtnsonarUse.select()
-    ChkBtnDHT22Use.deselect()
-    if myRobot.DHT22Use=='1':
-        ChkBtnDHT22Use.select()
-    ChkBtnlawnSensorUse.deselect()
-    if myRobot.lawnSensorUse=='1':
-        ChkBtnlawnSensorUse.select()  
+    #ChkBtnDHT22Use.deselect()
+    #if myRobot.DHT22Use=='1':
+    #    ChkBtnDHT22Use.select()
+    #ChkBtnlawnSensorUse.deselect()
+    #if myRobot.lawnSensorUse=='1':
+    #    ChkBtnlawnSensorUse.select()  
     ChkBtntimerUse.deselect()
     if myRobot.timerUse=='1':
         ChkBtntimerUse.select()     
     ChkBtnrainUse.deselect()
     if myRobot.rainUse=='1':
         ChkBtnrainUse.select()      
-    ChkBtndropUse.deselect()
-    if myRobot.dropUse=='1':
-        ChkBtndropUse.select()        
-    ChkBtnesp8266Use.deselect()
-    if myRobot.esp8266Use=='1':
-        ChkBtnesp8266Use.select()
-    ChkBtntiltUse.deselect()
-    if myRobot.tiltUse=='1':
-        ChkBtntiltUse.select()
+    #ChkBtndropUse.deselect()
+    #if myRobot.dropUse=='1':
+    #    ChkBtndropUse.select()        
+    #ChkBtnesp8266Use.deselect()
+    #if myRobot.esp8266Use=='1':
+    #    ChkBtnesp8266Use.select()
+    #ChkBtntiltUse.deselect()
+    #if myRobot.tiltUse=='1':
+    #    ChkBtntiltUse.select()
     
 def refreshPerimeterSettingPage():
     sliderTimeBelowSmag.set(myRobot.perimeter_timedOutIfBelowSmag)
@@ -2188,7 +2193,8 @@ def ButtonSendSettingToDue_click():
                             '',''+str(myRobot.perimeter_swapCoilPolarityLeft)+\
                             '',''+str(myRobot.perimeter_timeOutSecIfNotInside)+\
                             '',''+str(myRobot.trakBlockInnerWheel)+\
-                            '',''+str(myRobot.lawnSensorUse)+\
+                            '',''+str(0)+\
+                            #'',''+str(myRobot.lawnSensorUse)+\
                             '',''+str(myRobot.imuUse)+\
                             '',''+str(myRobot.stopMotorDuringCalib)+'',)
 
@@ -2233,11 +2239,12 @@ def ButtonSendSettingToDue_click():
                             '',''+str(myRobot.gpsUse)+\
                             '',''+str(myRobot.stuckIfGpsSpeedBelow)+\
                             '',''+str(myRobot.gpsSpeedIgnoreTime)+\
-                            '',''+str(myRobot.dropUse)+\
+                            '',''+str(0)+\
                             '',''+str(myRobot.statsOverride)+\
-                            '',''+str(myRobot.bluetoothUse)+'',)
+                            '',''+str(0)+'',)
+                            #free for boolean
     
-    Send_reqSetting_message('All','w','10',''+str(myRobot.esp8266Use)+\
+    Send_reqSetting_message('All','w','10',''+str(0)+\
                             '',''+str(0)+\
                             #old myRobot.esp8266ConfigString
                             '',''+str(myRobot.tiltUse)+\
@@ -2276,7 +2283,8 @@ def ButtonSendSettingToDue_click():
     Send_reqSetting_message('All','w','13',''+str(myRobot.maxDurationDmpAutocalib)+\
                             '',''+str(myRobot.mowPatternDurationMax)+\
                             '',''+str(myRobot.DistPeriOutStop)+\
-                            '',''+str(myRobot.DHT22Use)+\
+                            #'',''+str(myRobot.DHT22Use)+\
+                            '',''+str(0)+\
                             '',''+str(myRobot.RaspberryPIUse)+\
                             '',''+str(myRobot.sonarToFrontDist)+\
                             '',''+str(myRobot.UseBumperDock)+\
@@ -2517,26 +2525,26 @@ ChkBtnimuUse=tk.Checkbutton(tabMain, text="Use IMU",relief=tk.SOLID,variable=Mai
 ChkBtnimuUse.place(x=270,y=40,width=250, height=20)
 ChkBtngpsUse=tk.Checkbutton(tabMain, text="Use GPS",relief=tk.SOLID,variable=MaingpsUse,anchor='nw')
 ChkBtngpsUse.place(x=270,y=70,width=250, height=20)
-ChkBtnbluetoothUse=tk.Checkbutton(tabMain, text="Use Bluetooth",relief=tk.SOLID,variable=MainbluetoothUse,anchor='nw')
-ChkBtnbluetoothUse.place(x=270,y=100,width=250, height=20)
+#ChkBtnbluetoothUse=tk.Checkbutton(tabMain, text="Use Bluetooth",relief=tk.SOLID,variable=MainbluetoothUse,anchor='nw')
+#ChkBtnbluetoothUse.place(x=270,y=100,width=250, height=20)
 ChkBtnbumperUse=tk.Checkbutton(tabMain, text="Use Bumper",relief=tk.SOLID,variable=MainbumperUse,anchor='nw')
 ChkBtnbumperUse.place(x=270,y=130,width=250, height=20)
 ChkBtnsonarUse=tk.Checkbutton(tabMain, text="Use Sonar",relief=tk.SOLID,variable=MainsonarUse,anchor='nw')
 ChkBtnsonarUse.place(x=270,y=160,width=250, height=20)
-ChkBtnDHT22Use=tk.Checkbutton(tabMain, text="Use DHT22",relief=tk.SOLID,variable=MainDHT22Use,anchor='nw')
-ChkBtnDHT22Use.place(x=270,y=190,width=250, height=20)
-ChkBtnlawnSensorUse=tk.Checkbutton(tabMain, text="Use Lawn Sensor",relief=tk.SOLID,variable=MainlawnSensorUse,anchor='nw')
-ChkBtnlawnSensorUse.place(x=530,y=10,width=250, height=20)
+#ChkBtnDHT22Use=tk.Checkbutton(tabMain, text="Use DHT22",relief=tk.SOLID,variable=MainDHT22Use,anchor='nw')
+#ChkBtnDHT22Use.place(x=270,y=190,width=250, height=20)
+#ChkBtnlawnSensorUse=tk.Checkbutton(tabMain, text="Use Lawn Sensor",relief=tk.SOLID,variable=MainlawnSensorUse,anchor='nw')
+#ChkBtnlawnSensorUse.place(x=530,y=10,width=250, height=20)
 ChkBtntimerUse=tk.Checkbutton(tabMain, text="Use Timer",relief=tk.SOLID,variable=MaintimerUse,anchor='nw')
 ChkBtntimerUse.place(x=530,y=40,width=250, height=20)
 ChkBtnrainUse=tk.Checkbutton(tabMain, text="Use Rain Sensor",relief=tk.SOLID,variable=MainrainUse,anchor='nw')
 ChkBtnrainUse.place(x=530,y=70,width=250, height=20)
-ChkBtndropUse=tk.Checkbutton(tabMain, text="Use Drop Sensor",relief=tk.SOLID,variable=MaindropUse,anchor='nw')
-ChkBtndropUse.place(x=530,y=100,width=250, height=20)
-ChkBtnesp8266Use=tk.Checkbutton(tabMain, text="Use Esp8266",relief=tk.SOLID,variable=Mainesp8266Use,anchor='nw')
-ChkBtnesp8266Use.place(x=530,y=130,width=250, height=20)
-ChkBtntiltUse=tk.Checkbutton(tabMain, text="Use Tilt Sensor",relief=tk.SOLID,variable=MaintiltUse,anchor='nw')
-ChkBtntiltUse.place(x=530,y=160,width=250, height=20)
+#ChkBtndropUse=tk.Checkbutton(tabMain, text="Use Drop Sensor",relief=tk.SOLID,variable=MaindropUse,anchor='nw')
+#ChkBtndropUse.place(x=530,y=100,width=250, height=20)
+#ChkBtnesp8266Use=tk.Checkbutton(tabMain, text="Use Esp8266",relief=tk.SOLID,variable=Mainesp8266Use,anchor='nw')
+#ChkBtnesp8266Use.place(x=530,y=130,width=250, height=20)
+#ChkBtntiltUse=tk.Checkbutton(tabMain, text="Use Tilt Sensor",relief=tk.SOLID,variable=MaintiltUse,anchor='nw')
+#ChkBtntiltUse.place(x=530,y=160,width=250, height=20)
 
 ButtonRequestMainSettingFomMower = tk.Button(tabMain)
 ButtonRequestMainSettingFomMower.place(x=10,y=350, height=25, width=150)
@@ -3641,6 +3649,10 @@ GpsPage =tk.Frame(fen1)
 GpsPage.place(x=0, y=0, height=400, width=800)
 
 #tk.Label(GpsPage, text='The gps run as service and write into directory /gpsdata/').place(x=10,y=15)
+map1 = tk.Canvas(GpsPage, bg="blue", height=250, width=600)
+coord = 10, 50, 240, 210
+arc = map1.create_arc(coord, start=0, extent=150, fill="red")
+map1.place(x=5, y=35)
 
 
 txtGpsRecu = tk.Text(GpsPage)
@@ -3649,7 +3661,7 @@ ScrolltxtGpsRecu.pack(side=tk.RIGHT, fill=tk.Y)
 txtGpsRecu.pack(side=tk.LEFT, fill=tk.Y)
 ScrolltxtGpsRecu.config(command=txtGpsRecu.yview)
 txtGpsRecu.config(yscrollcommand=ScrolltxtGpsRecu.set)
-txtGpsRecu.place(x=5,y=35,anchor='nw',width=600, height=300)
+txtGpsRecu.place(x=5,y=320,anchor='nw',width=600, height=80)
 
 
 
@@ -4684,7 +4696,7 @@ if(useMqtt):
 
 
 ButtonAuto_click()
-BtnGpsRecordStop_click()
+#BtnGpsRecordStop_click()
 
 if (streamVideoOnPower):
     BtnStreamVideoStart_click()

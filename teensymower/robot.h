@@ -254,10 +254,8 @@ class Robot
     byte ActualRunningTimer;
     // ----- bluetooth -------------------------------------
     boolean freeboolean;        //use to keep the eeprom integrity
-    boolean bluetoothUse;       // use Bluetooth module?
-    // ----- esp8266 ---------------------------------------
-    boolean esp8266Use;         // use ESP8266 Wifi module?
-    String esp8266ConfigString = "1234";
+    
+   
     // -------- mow pattern -----------------------------
     byte mowPatternCurr;
     const char *mowPatternName();
@@ -514,13 +512,13 @@ class Robot
     unsigned long nextTimeBumper ;
     // --------- drop state ---------------------------
     // bumper state (true = pressed)                                                                                                  // Dropsensor - Absturzsensor vorhanden ?
-    boolean dropUse       ;      // has drops?                                                                                           // Dropsensor - Absturzsensor ZÃ¤hler links
-    int dropLeftCounter ;                                                                                                             // Dropsensor - Absturzsensor
-    boolean dropLeft ;                                                                                                                // Dropsensor - Absturzsensor links betÃ¤tigt ?
-    int dropRightCounter ;                                                                                                            // Dropsensor - Absturzsensor
-    boolean dropRight ;                                                                                                               // Dropsensor - Absturzsensor rechts betÃ¤tigt ?
-    unsigned long nextTimeDrop ;                                                                                                      // Dropsensor - Absturzsensor
-    boolean dropcontact ; // contact 0-openers 1-closers                                                                                 // Dropsensor Kontakt 0 fÃ¼r Ã–ffner - 1 SchlieÃŸer
+    //boolean dropUse       ;      // has drops?                                                                                           // Dropsensor - Absturzsensor ZÃ¤hler links
+    //int dropLeftCounter ;                                                                                                             // Dropsensor - Absturzsensor
+    //boolean dropLeft ;                                                                                                                // Dropsensor - Absturzsensor links betÃ¤tigt ?
+    //int dropRightCounter ;                                                                                                            // Dropsensor - Absturzsensor
+    //boolean dropRight ;                                                                                                               // Dropsensor - Absturzsensor rechts betÃ¤tigt ?
+    //unsigned long nextTimeDrop ;                                                                                                      // Dropsensor - Absturzsensor
+    //boolean dropcontact ; // contact 0-openers 1-closers                                                                                 // Dropsensor Kontakt 0 fÃ¼r Ã–ffner - 1 SchlieÃŸer
     // ------- IMU state --------------------------------
     IMUClass imu;
     boolean imuUse            ;       // use IMU?
@@ -645,16 +643,8 @@ class Robot
     unsigned long nextTimeReadSmoothPeriMag ; //use when wait for sig2
     boolean reduceSpeedNearPerimeter; //Activate the speed reduction near perimeter
     //End add bb
-    //  --------- lawn state ----------------------------
-    boolean lawnSensorUse     ;       // use capacitive Sensor
-    int lawnSensorCounter;
-    boolean lawnSensor;  // lawn capacity sensor state (true = no lawn detected)
-    float lawnSensorFront ;  // front lawn sensor capacity (time)
-    float lawnSensorFrontOld ;
-    float lawnSensorBack ;   // back lawn sensor capacity (time)
-    float lawnSensorBackOld ;
-    unsigned long nextTimeLawnSensor ;
-    unsigned long nextTimeLawnSensorCheck ;
+
+ 
     // --------- rain -----------------------------------
     boolean rain;
     boolean rainUse;
@@ -913,7 +903,7 @@ class Robot
     virtual void checkTimer();
     virtual void checkCurrent();
     virtual void checkBumpers();
-    virtual void checkDrop();                                                                                                             // Dropsensor - Absturzsensor
+   
     virtual void checkBumpersPerimeter();
     virtual void checkPerimeterBoundary();
     virtual void checkStuckOnIsland();

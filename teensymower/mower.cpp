@@ -88,9 +88,7 @@ Mower::Mower() {
   motorMowPID.Kd = 0.01;
   //  ------ bumper -----------------------------------
   bumperUse         = 0;      // has bumpers?
-  //  ------ drop -----------------------------------
-  dropUse          = 0;     // has drops?                                                                                              Dropsensor - Absturzsensor vorhanden ?
-  dropcontact      = 0;     //contact 0-openers 1-closers                                                                              Dropsensor - Kontakt 0-Ã–ffner - 1-SchlieÃŸer betÃ¤tigt gegen GND
+ 
   // ------ rain ------------------------------------
   rainUse          = 0;      // use rain sensor?
 
@@ -146,8 +144,7 @@ Mower::Mower() {
   //perimeter.read2Coil = false;
   areaToGo = 1;//initialise the areatogo to the station area
 
-  // ------ lawn sensor --------------------------------
-  lawnSensorUse     = 0;       // use capacitive Sensor
+  
   // ------  IMU (compass/accel/gyro) ----------------------
   imuUse            = 1;       // use IMU?
   CompassUse = 0;       // activate compass?
@@ -418,10 +415,7 @@ void checkMotorFault() {
     case SEN_BUMPER_RIGHT: return (digitalRead(pinBumperRight)); break;
     case SEN_BUMPER_LEFT: return (digitalRead(pinBumperLeft)); break;
 
-    //drop----------------------------------------------------------------------------------------------------
-    case SEN_DROP_RIGHT: return (digitalRead(pinDropRight)); break;                                                                                     // Dropsensor - Absturzsensor
-    case SEN_DROP_LEFT: return (digitalRead(pinDropLeft)); break;                                                                                       // Dropsensor - Absturzsensor
-
+   
     // sonar---------------------------------------------------------------------------------------------------
 
     case SEN_SONAR_CENTER: return (NewSonarCenter.ping_cm()); break;

@@ -248,12 +248,12 @@ void RemoteControl::sendSettingsMenu(boolean update) {
   if ((robot->stateCurr == STATE_OFF) || (robot->stateCurr == STATE_STATION))  //deactivate the save setting if the mower is not OFF to avoid zombie
   {
     serialPort->print(F("|sz~Save settings|s1~Motor|s2~Mow|s3~Bumper/Button|s4~Sonar|s5~Perimeter|s6~Lawn sensor|s7~IMU|s8~Raspberry"));
-    serialPort->println(F("|s9~Battery|s10~Station|s11~Odometry|s13~Rain Temp Humid|s14~GPS|s15~DROP|s16~ByLane Setting|s17~RFID|i~Timer|s12~Date/time|sx~Factory settings}"));
+    serialPort->println(F("|s9~Battery|s10~Station|s11~Odometry|s13~Rain Temp Humid|s14~GPS|s16~ByLane Setting|s17~RFID|i~Timer|s12~Date/time|sx~Factory settings}"));
   }
   else
   {
     serialPort->print(F("|s1~Motor|s2~Mow|s3~Bumper/Button|s4~Sonar|s5~Perimeter|s6~Lawn sensor|s7~IMU|s8~Raspberry"));
-    serialPort->println(F("|s9~Battery|s10~Station|s11~Odometry|s13~Rain Temp Humid|s14~GPS|s15~DROP|s16~ByLane Setting|s17~RFID|i~Timer|s12~Date/time|sx~Factory settings}"));
+    serialPort->println(F("|s9~Battery|s10~Station|s11~Odometry|s13~Rain Temp Humid|s14~GPS|s16~ByLane Setting|s17~RFID|i~Timer|s12~Date/time|sx~Factory settings}"));
   }
 }
 
@@ -272,7 +272,7 @@ void RemoteControl::processSettingsMenu(String pfodCmd) {
   else if (pfodCmd == "s12") sendDateTimeMenu(false);
   else if (pfodCmd == "s13") sendRainMenu(false);
   else if (pfodCmd == "s14") sendGPSMenu(false);
-  else if (pfodCmd == "s15") sendDropMenu(false);
+  
   else if (pfodCmd == "s16") sendByLaneMenu(false);
   else if (pfodCmd == "s17") sendRFIDMenu(false);
   else if (pfodCmd == "sx") sendFactorySettingsMenu(false);
@@ -547,25 +547,7 @@ void RemoteControl::processBumperMenu(String pfodCmd) {
   sendBumperMenu(true);
 }
 
-void RemoteControl::sendDropMenu(boolean update) {
-  if (update) serialPort->print("{:"); else serialPort->print(F("{.Drop`1000"));
-  serialPort->print(F("|u00~Use "));
-  sendYesNo(robot->dropUse);
-  serialPort->println(F("|u01~Counter l, r "));
-  serialPort->print(robot->dropLeftCounter);
-  serialPort->print(", ");
-  serialPort->print(robot->dropRightCounter);
-  serialPort->println(F("|u02~Value l, r "));
-  serialPort->print(robot->dropLeft);
-  serialPort->print(", ");
-  serialPort->print(robot->dropRight);
-  serialPort->println("}");
-}
 
-void RemoteControl::processDropMenu(String pfodCmd) {
-  if (pfodCmd == "u00") robot->dropUse = !robot->dropUse;
-  sendDropMenu(true);
-}
 
 
 void RemoteControl::sendSonarMenu(boolean update) {
@@ -676,25 +658,7 @@ void RemoteControl::processPerimeterMenu(String pfodCmd) {
   sendPerimeterMenu(true);
 }
 
-/*
-  void RemoteControl::sendLawnSensorMenu(boolean update) {
-  if (update) serialPort->print("{:"); else serialPort->print(F("{.Lawn sensor`1000"));
-  serialPort->print(F("|f00~Use "));
-  sendYesNo(robot->lawnSensorUse);
-  serialPort->print(F("|f01~Counter "));
-  serialPort->print(robot->lawnSensorCounter);
-  serialPort->println(F("|f02~Value f, b"));
-  serialPort->print(robot->lawnSensorFront);
-  serialPort->print(", ");
-  serialPort->print(robot->lawnSensorBack);
-  serialPort->println("}");
-  }
 
-  void RemoteControl::processLawnSensorMenu(String pfodCmd) {
-  if (pfodCmd == "f00") robot->lawnSensorUse = !robot->lawnSensorUse;
-  sendLawnSensorMenu(true);
-  }
-*/
 
 void RemoteControl::sendRainMenu(boolean update) {
   if (update) serialPort->print("{:"); else serialPort->print(F("{.Rain`1000"));
@@ -1880,13 +1844,8 @@ void RemoteControl::run() {
       serialPort->print(",");
       serialPort->print(robot->perimeterCounter);
       serialPort->print(",");
-      serialPort->print(robot->lawnSensorCounter);
-      serialPort->print(",");
       serialPort->print(robot->rainCounter);
-      serialPort->print(",");
-      serialPort->print(robot->dropLeftCounter);
-      serialPort->print(",");
-      serialPort->println(robot->dropRightCounter);
+      
     }
   } else if (pfodState == PFOD_PLOT_SENSORS) {
     if (millis() >= nextPlotTime) {
@@ -2057,7 +2016,7 @@ boolean RemoteControl::readSerial() {
       else if (pfodCmd == "y5") {
         // plot sensor counters
         serialPort->print(F("{=Sensor counters`300|time s`0|state`1|motL`2|motR`3|motM`4|bumL`5|bumR`6"));
-        serialPort->println(F("|son`7|peri`8|lawn`9|rain`10|dropL`11|dropR`12}"));
+        serialPort->println(F("|son`7|peri`8|lawn`9|rain`10}"));
         nextPlotTime = 0;
         pfodState = PFOD_PLOT_SENSOR_COUNTERS;
       }
@@ -2073,7 +2032,7 @@ boolean RemoteControl::readSerial() {
       else if (pfodCmd == "y7") {
         // plot sensor values
         serialPort->print(F("{=Sensors`300|time s`0|state`1|motL`2|motR`3|motM`4|sonL`5|sonC`6"));
-        serialPort->println(F("|sonR`7|peri`8|lawn`9|rain`10|dropL`11|dropR`12}"));
+        serialPort->println(F("|sonR`7|peri`8|lawn`9|rain`10}"));
         nextPlotTime = 0;
         pfodState = PFOD_PLOT_SENSORS;
       }
@@ -2133,7 +2092,7 @@ boolean RemoteControl::readSerial() {
       else if (pfodCmd.startsWith("r")) processCommandMenu(pfodCmd);
       else if (pfodCmd.startsWith("s")) processSettingsMenu(pfodCmd);
       else if (pfodCmd.startsWith("t")) processDateTimeMenu(pfodCmd);
-      else if (pfodCmd.startsWith("u")) processDropMenu(pfodCmd);
+      
       else if (pfodCmd.startsWith("v")) processInfoMenu(pfodCmd);
       else if (pfodCmd.startsWith("w")) processByLaneMenu(pfodCmd);
       else if (pfodCmd.startsWith("x")) processFactorySettingsMenu(pfodCmd);
@@ -2168,7 +2127,7 @@ void RemoteControl::processPI(String RpiCmd, float v1, float v2, float v3) {
   else if (pfodCmd.startsWith("c")) processCompassMenu(pfodCmd);
   else if (pfodCmd.startsWith("d")) processSonarMenu(pfodCmd);
   else if (pfodCmd.startsWith("e")) processPerimeterMenu(pfodCmd);
-  //else if (pfodCmd.startsWith("f")) processLawnSensorMenu(pfodCmd);
+  
   else if (pfodCmd.startsWith("g")) processImuMenu(pfodCmd);
   else if (pfodCmd.startsWith("h")) processRemoteMenu(pfodCmd);
   else if (pfodCmd.startsWith("i")) processTimerMenu(pfodCmd);
@@ -2183,7 +2142,7 @@ void RemoteControl::processPI(String RpiCmd, float v1, float v2, float v3) {
   else if (pfodCmd.startsWith("r")) processCommandMenu(pfodCmd);
   else if (pfodCmd.startsWith("s")) processSettingsMenu(pfodCmd);
   else if (pfodCmd.startsWith("t")) processDateTimeMenu(pfodCmd);
-  else if (pfodCmd.startsWith("u")) processDropMenu(pfodCmd);
+  
   else if (pfodCmd.startsWith("v")) processInfoMenu(pfodCmd);
   else if (pfodCmd.startsWith("w")) processByLaneMenu(pfodCmd);
   else if (pfodCmd.startsWith("x")) processFactorySettingsMenu(pfodCmd);
