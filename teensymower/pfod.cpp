@@ -1028,7 +1028,7 @@ void RemoteControl::sendBatteryMenu(boolean update) {
   serialPort->print(robot->chgCurrent);
   serialPort->print("A");
 
-  sendSlider("j06", F("Charge sense zero"), robot->chgSenseZero, "", 1, 600, 400);
+  //sendSlider("j06", F("Charge sense zero"), robot->chgSenseZero, "", 1, 600, 400);
 
   sendSlider("j10", F("charging starts if Voltage is below"), robot->startChargingIfBelow, "", 0.1, robot->batFull, (robot->batFull * 0.72));
   sendSlider("j11", F("Battery is fully charged if current is below"), robot->batFullCurrent, "", 0.1, robot->batChargingCurrentMax, 0);
@@ -1044,7 +1044,7 @@ void RemoteControl::processBatteryMenu(String pfodCmd) {
   }
   else if (pfodCmd.startsWith("j03")) processSlider(pfodCmd, robot->batSwitchOffIfBelow, 0.1);
   else if (pfodCmd.startsWith("j05")) processSlider(pfodCmd, robot->batFactor, 0.01);
-  else if (pfodCmd.startsWith("j06")) processSlider(pfodCmd, robot->chgSenseZero, 1);
+ // else if (pfodCmd.startsWith("j06")) processSlider(pfodCmd, robot->chgSenseZero, 1);
   else if (pfodCmd.startsWith("j08")) processSlider(pfodCmd, robot->batSenseFactor, 0.01);
   else if (pfodCmd.startsWith("j09")) processSlider(pfodCmd, robot->batChgFactor, 0.01);
   else if (pfodCmd.startsWith("j10")) processSlider(pfodCmd, robot->startChargingIfBelow, 0.1);
