@@ -1167,23 +1167,21 @@ void RpiRemote::readWrite_var() {  //can be use to change the value of 4 variabl
         if (strncmp(received_value[i], "0", 1) == 0) robot->motorRightSwapDir = false;
         else robot->motorRightSwapDir = true;
       }
-      /*
         if (strncmp(variable_name[i], "gpsUse", 20) == 0) {
         if (strncmp(received_value[i], "0", 1) == 0)
         {
-         // robot->gpsUse = false;
+         robot->gpsUse = false;
         //  robot->gpsReady=false;
-         // GpsPort.flush();
-         // GpsPort.end();
+         GpsPort.flush();
+         GpsPort.end();
         }
         else
         {
-         // robot->gpsUse = true;
-         // robot->gps.init();
+         robot->gpsUse = true;
+         robot->gps.init();
 
         }
         }
-      */
     }
   }
   if (readOrWrite == 'r') {
