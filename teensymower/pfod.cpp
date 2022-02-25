@@ -1807,13 +1807,7 @@ void RemoteControl::run() {
       serialPort->print(",");
       serialPort->print(robot->perimeterCounter);
       serialPort->print(",");
-      serialPort->print(robot->lawnSensorCounter);
-      serialPort->print(",");
       serialPort->print(robot->rainCounter);
-      serialPort->print(",");
-      serialPort->print(robot->dropLeftCounter);
-      serialPort->print(",");
-      serialPort->println(robot->dropRightCounter);
     }
   } 
   else if (pfodState == PFOD_PLOT_SENSORS) {

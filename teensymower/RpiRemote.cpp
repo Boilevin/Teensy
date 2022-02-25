@@ -408,7 +408,7 @@ void RpiRemote::receivePiReqSetting (String Setting_page, int nb_page) {
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->batChgFactor;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->"0";  //4
+    lineToSend = lineToSend + "0";  //4
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->batSenseFactor;
     lineToSend = lineToSend + ",";
@@ -470,7 +470,7 @@ void RpiRemote::receivePiReqSetting (String Setting_page, int nb_page) {
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + "0"; // old gpsBaudrate
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->dropUse;
+    lineToSend = lineToSend + "0";
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->statsOverride;
     lineToSend = lineToSend + ",";
@@ -1366,7 +1366,6 @@ void RpiRemote::readWrite_setting() {
         robot->perimeter.swapCoilPolarityLeft = val[4];
         robot->perimeter.timeOutSecIfNotInside = val[5];
         robot->trakBlockInnerWheel = val[6];
-        robot->lawnSensorUse = val[7];
         robot->imuUse = val[8];
         robot->stopMotorDuringCalib = val[9];
       }
@@ -1414,7 +1413,6 @@ void RpiRemote::readWrite_setting() {
         robot->rainUse = val[4]; //old gps
         robot->rainUse = val[5];//old gps
         robot->rainUse = val[6];//old gps
-        robot->dropUse = val[7];
         robot->statsOverride = val[8];
         robot->freeboolean = val[9];
       }

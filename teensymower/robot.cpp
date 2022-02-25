@@ -178,10 +178,6 @@ Robot::Robot() {
   areaInMowing = 1;
   perimeterSpeedCoeff = 1;
 
-  lawnSensorCounter = 0;
-  lawnSensor = false;
-  lawnSensorFront = lawnSensorFrontOld = lawnSensorBack = lawnSensorBackOld = 0;
-
   rain = false;
   rainCounter = 0;
 
@@ -2788,15 +2784,13 @@ void Robot::printInfo(Stream & s) {
       else {
         // sensor counters
         Streamprint(s, "sen %4d %4d %4d ", motorLeftSenseCounter, motorRightSenseCounter, motorMowSenseCounter);
-        Streamprint(s, "bum %4d %4d ", bumperLeftCounter, bumperRightCounter);
-        Streamprint(s, "dro %4d %4d ", dropLeftCounter, dropRightCounter);                                                                      // Dropsensor - Absturzsensor
+        Streamprint(s, "bum %4d %4d ", bumperLeftCounter, bumperRightCounter);                                                                    // Dropsensor - Absturzsensor
         //Streamprint(s, "son %3d ", sonarDistCounter);
         Streamprint(s, "yaw %3d ", (int)(imu.ypr.yaw / PI * 180.0));
         Streamprint(s, "pit %3d ", (int)(imu.ypr.pitch / PI * 180.0));
         Streamprint(s, "rol %3d ", (int)(imu.ypr.roll / PI * 180.0));
         //Streamprint(s, "per %3d ", perimeterLeft);
         if (perimeterUse) Streamprint(s, "per %3d ", perimeterCounter);
-        if (lawnSensorUse) Streamprint(s, "lawn %3d ", lawnSensorCounter);
         //if (gpsUse) Streamprint(s, "gps %2d ", (int)gps.satellites());
       }
       Streamprint(s, "bat %2d.%01d ", (int)batVoltage, (int)((batVoltage * 10) - ((int)batVoltage * 10)) );
