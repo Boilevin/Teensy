@@ -34,7 +34,6 @@ int sigcode_size = 24;
 
 PerimeterClass::PerimeterClass() {
   //useDifferentialPerimeterSignal = true;
-
   //read2Coil=true;
   timedOutIfBelowSmag = 50;
   timeOutSecIfNotInside = 15;
@@ -48,10 +47,9 @@ PerimeterClass::PerimeterClass() {
 
 
 void PerimeterClass::changeArea(byte areaInMowing) {
-
 }
 
-static void PerimeterClass::adc1_isr() {//this is the main adc1 loop executed each 24 microseconds
+void PerimeterClass::adc1_isr() {//this is the main adc1 loop executed each 24 microseconds
   uint16_t adc_val = adc->adc1->readSingle();
   if (buffer_adc_1_count < BUFFER_SIZE) {
     buffer_ADC_1[buffer_adc_1_count++] = adc_val;
@@ -61,12 +59,10 @@ static void PerimeterClass::adc1_isr() {//this is the main adc1 loop executed ea
       buffer_adc_1_count = 0;
     }
   }
-
   asm("DSB");
-
 }
 
-static void PerimeterClass::adc0_isr() { //this is the main adc0 loop executed each 24 microseconds
+void PerimeterClass::adc0_isr() { //this is the main adc0 loop executed each 24 microseconds
   //Serial.println(buffer_adc_0_count);
   uint16_t adc_val = adc->adc0->readSingle();
   if (buffer_adc_0_count < BUFFER_SIZE) {
@@ -79,24 +75,18 @@ static void PerimeterClass::adc0_isr() { //this is the main adc0 loop executed e
               Serial.println(buffer_ADC_0[i]);
             }
       */
-
       delta_time_adc_0 = timed_read_elapsed;
       Perimeter.matchedFilter(0);
       buffer_adc_0_count = 0;
-
     }
   }
-
   asm("DSB");
-
 }
-
 
 void PerimeterClass::begin(byte idx0Pin, byte idx1Pin) {
 
   idxPin[0] = idx0Pin;
   idxPin[1] = idx1Pin;
-
 
   pinMode(idx0Pin, INPUT);
   pinMode(idx1Pin, INPUT);
@@ -135,12 +125,7 @@ void PerimeterClass::begin(byte idx0Pin, byte idx1Pin) {
     buffer_adc_1_count = 0;
     Serial.println("adc1 Timer Interrupt Started");
   }
-
-
-
 }
-
-
 
 int PerimeterClass::getMagnitude(byte idx) {
   return Perimeter.mag[idx];
@@ -149,10 +134,6 @@ int PerimeterClass::getMagnitude(byte idx) {
 int PerimeterClass::getSmoothMagnitude(byte idx) {
   return Perimeter.smoothMag[idx];
 }
-
-
-
-
 
 // perimeter V2 uses a digital matched filter
 void PerimeterClass::matchedFilter(byte idx) {
@@ -163,7 +144,6 @@ void PerimeterClass::matchedFilter(byte idx) {
   else {
     samples = buffer_ADC_1 ;//ADCMan.getSamples(idxPin[idx]);
   }
-
   // Serial.println(buffer_adc_0_count);
   signalMin[idx] = 9999;
   signalMax[idx] = -9999;
@@ -177,25 +157,18 @@ void PerimeterClass::matchedFilter(byte idx) {
     signalMax[idx] = max(signalMax[idx], v);
   }
   //Serial.println(" ");
-
   signalAvg[idx] = signalAvg[idx] / sampleCount;
-
   // magnitude for tracking (fast but inaccurate)
-
   //int16_t sigcode_size = sizeof sigcode_norm;
-
   int8_t *sigcode = sigcode_norm;
   sigcode = sigcode_diff;
   //sampleCount - sigcode_size * subSample= normalement 96  192-24*4
-
   mag[idx] = corrFilter(sigcode, subSample, sigcode_size, samples, sampleCount - sigcode_size * subSample , filterQuality[idx]);
-
   if ((idx == 0) && swapCoilPolarityLeft) mag[idx] *= -1;
   if ((idx == 1) && swapCoilPolarityRight) mag[idx] *= -1;
   // smoothed magnitude used for signal-off detection change from 1 % to 5 % for faster detection and possible use on center big area to avoid in/out transition
   smoothMag[idx] = 0.95 * smoothMag[idx] + 0.05 * ((float)abs(mag[idx]));
   //smoothMag[idx] = 0.99 * smoothMag[idx] + 0.01 * ((float)abs(mag[idx]));
-
   // perimeter inside/outside detection
   if (mag[idx] > 0) {
     signalCounter[idx] = min(signalCounter[idx] + 1, 3);
@@ -205,7 +178,6 @@ void PerimeterClass::matchedFilter(byte idx) {
   if (mag[idx] < 0) {
     lastInsideTime[idx] = millis();
   }
-
   //ADCMan.restartConv(idxPin[idx]);
   if (idx == 0) callCounter++;
 }
@@ -227,13 +199,11 @@ int PerimeterClass::getSignalAvg(byte idx) {
   return Perimeter.signalAvg[idx];
 }
 
-
 float PerimeterClass::getFilterQuality(byte idx) {
   return Perimeter.filterQuality[idx];
 }
 
 boolean PerimeterClass::isInside() {
-
   return (Perimeter.isInside(IDX_LEFT));
   //return (isInside(IDX_LEFT) && isInside(IDX_RIGHT));
 }
@@ -249,7 +219,6 @@ boolean PerimeterClass::isInside(byte idx) {
   }
 }
 
-
 boolean PerimeterClass::signalTimedOut(byte idx) {
   /*
     Serial.print("peri  ");
@@ -258,7 +227,6 @@ boolean PerimeterClass::signalTimedOut(byte idx) {
 
     Serial.println("  ");
   */
-
   if (getSmoothMagnitude(idx) < timedOutIfBelowSmag) return true;
   if (millis() - lastInsideTime[idx] > timeOutSecIfNotInside * 1000) return true;
   return false;
@@ -271,9 +239,7 @@ boolean PerimeterClass::signalTimedOut(byte idx) {
 // subsample is the number of times for each filter coeff to repeat
 // ip[] holds input data (length > nPts + M )
 // nPts is the length of the required output data
-
 int16_t PerimeterClass::corrFilter(int8_t *H, int subsample, int M, int16_t *ip, int16_t nPts, float &quality) {
-
   //erase array
   //memset(myarray, 0, sizeof(myarray));
   /*
@@ -305,16 +271,13 @@ int16_t PerimeterClass::corrFilter(int8_t *H, int subsample, int M, int16_t *ip,
     }
     Serial.println();
   */
-
   int16_t sumMax = 0; // max correlation sum
   int16_t sumMin = 0; // min correlation sum
   int16_t Ms = M * subsample; // number of filter coeffs including subsampling
-
   // compute sum of absolute filter coeffs
   int16_t Hsum = 0;
   for (int16_t i = 0; i < M; i++) Hsum += abs(H[i]);
   Hsum *= subsample;
-
   // compute correlation
   // for each input value
   for (int16_t j = 0; j < nPts; j++)
@@ -341,7 +304,6 @@ int16_t PerimeterClass::corrFilter(int8_t *H, int subsample, int M, int16_t *ip,
   // normalize to 4095
   sumMin = ((float)sumMin) / ((float)(Hsum * 127)) * 4095.0;
   sumMax = ((float)sumMax) / ((float)(Hsum * 127)) * 4095.0;
-
   // compute ratio min/max
   if (sumMax > -sumMin) {
     quality = ((float)sumMax) / ((float) - sumMin);

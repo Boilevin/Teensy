@@ -1,9 +1,22 @@
 /*
   Private-use only! (you need to ask for a commercial-use)
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+  Private-use only! (you need to ask for a commercial-use)
+
 */
-
-
-
 #include "robot.h"
 #include "mower.h"
 #include "imu.h"
@@ -17,15 +30,20 @@
 #include "Watchdog_t4.h"
 WDT_T4<WDT1> wdt;
 
+//teensy 4 datetime library
+#include "InternalTemperature.h"
+#include <TimeLib.h>
+
+//Ina226 part
+#include "INA226.h"
+
 //Setting for Raspberry -----------------------------------
 RpiRemote MyRpi;
 
 //Setting for Screen -----------------------------------
 Screen MyScreen;
 
-//Ina226 part
-#include "INA226.h"
-
+//Setting for INA -----------------------------------
 INA226 ChargeIna226;
 INA226 MotLeftIna226;
 INA226 MotRightIna226;
@@ -39,26 +57,21 @@ float shuntvoltagel = 0;
 float shuntvoltager = 0;
 //end Ina226
 
-//teensy 4 datetime library
-#include "InternalTemperature.h"
-#include <TimeLib.h>
-time_t getTeensy3Time()
-{
-  return Teensy3Clock.get();
-}
-
-
-
-NewPing NewSonarLeft(pinSonarLeftTrigger, pinSonarLeftEcho, 110);
-NewPing NewSonarRight(pinSonarRightTrigger, pinSonarRightEcho, 110);
-
-
 #define MAGIC 52  //value 52 is only use to know if the eeprom is OK : 52 is save and read at first byte of memory location
 #define ADDR_USER_SETTINGS 2000 //New adress to avoid issue if Azurit1.09 is already instaled
 #define ADDR_ERR_COUNTERS 500 //same adress as azurit
 //carrefull that the  ADDR 600 is used by the IMU calibration
 #define ADDR_ROBOT_STATS 800
 #define ADDR_RFID_LIST 3000 //start adress to rfid list value
+
+time_t getTeensy3Time()
+{
+  return Teensy3Clock.get();
+}
+
+
+NewPing NewSonarLeft(pinSonarLeftTrigger, pinSonarLeftEcho, 110);
+NewPing NewSonarRight(pinSonarRightTrigger, pinSonarRightEcho, 110);
 
 
 const char* stateNames[] = {"OFF", "RC", "FORW", "ROLL", "REV", "CIRC", "ERR", "PFND", "PTRK", "PROL", "PREV", "STAT", "CHARG", "STCHK", "STREV",
@@ -70,13 +83,14 @@ const char* stateNames[] = {"OFF", "RC", "FORW", "ROLL", "REV", "CIRC", "ERR", "
                             "STOPTOFASTSTART", "CALIBMOTORSPEED", "ACCELFRWRD"
                            };
 
+
 const char* statusNames[] = {"WAIT", "NORMALMOWING", "SPIRALEMOWING", "BACKTOSTATION", "TRACKTOSTART", "MANUAL", "REMOTE", "ERROR", "STATION", "TESTING", "SIGWAIT" , "WIREMOWING"
                             };
 
 
 const char* mowPatternNames[] = {"RAND", "LANE",  "WIRE" , "ZIGZAG"};
 const char* consoleModeNames[] = {"sen_counters", "sen_values", "perimeter", "off", "Tracking"};
-char* rfidToDoNames[] = {"NOTHING", "RTS", "FAST_START", "NEW_AREA", "SPEED", "AREA1", "AREA2", "AREA3"};
+const char* rfidToDoNames[] = {"NOTHING", "RTS", "FAST_START", "NEW_AREA", "SPEED", "AREA1", "AREA2", "AREA3"};
 
 //for debug only
 unsigned long StartReadAt;
@@ -84,10 +98,7 @@ unsigned long EndReadAt;
 unsigned long ReadDuration;
 
 
-
-
 Robot::Robot() {
-
   name = "Generic";
   developerActive = false;
   rc.setRobot(this);
@@ -99,7 +110,6 @@ Robot::Robot() {
   stateTime = 0;
   idleTimeSec = 0;
   statsMowTimeTotalStart = false;
-
 
   odometryLeft = odometryRight = 0;
   PeriOdoIslandDiff = 0;
@@ -162,7 +172,6 @@ Robot::Robot() {
   imuRollHeading = 0;
   imuRollDir = LEFT;
   rollDir = LEFT;
-
 
   perimeterMag = 0;
   perimeterInside = false;
@@ -258,22 +267,23 @@ Robot::Robot() {
   ConsoleToPfod = false;
 }
 
-
 const char* Robot::stateName() {
   return stateNames[stateCurr];
 }
+
 const char* Robot::statusName() {
   return statusNames[statusCurr];
 }
-char* Robot::statusNameList(byte statusIndex) {
+
+const char* Robot::statusNameList(byte statusIndex) {
   return statusNames[statusIndex];
 }
 
-char* Robot::rfidToDoName() {
+const char* Robot::rfidToDoName() {
   return rfidToDoNames[rfidToDoCurr];
 }
 
-char* Robot::rfidToDoNameList(byte rfidToDoIndex) {
+const char* Robot::rfidToDoNameList(byte rfidToDoIndex) {
   return rfidToDoNames[rfidToDoIndex];
 }
 
@@ -298,7 +308,6 @@ void Robot::setDefaultTime() {
   timer[0].startTime.hour = 9;
   timer[0].stopTime.hour = 11;
 }
-
 
 
 // check timer
@@ -355,9 +364,7 @@ void Robot::checkTimer() {
               Serial.print(F(" Distance before start "));
               Serial.println(whereToStart);
 
-
               setNextState(STATE_STATION_REV, 0);
-
             }
           }
         }
@@ -372,41 +379,9 @@ void Robot::checkTimer() {
             setNextState(STATE_OFF, 0);
           }
         }
-
       }
     }
   }
-}
-
-void Robot::loadSaveRobotStats(boolean readflag) {
-
-  int addr = ADDR_ROBOT_STATS;
-
-  if (readflag) {
-    ShowMessageln(F("Load Robot Stats"));
-  }
-  else {
-    ShowMessageln(F("Save Robot Stats"));
-  }
-
-  short magic = 0;
-  if (!readflag) magic = MAGIC;
-  eereadwrite(readflag, addr, magic); // magic
-  if ((readflag) && (magic != MAGIC)) {
-    ShowMessageln(F("PLEASE CHECK IF YOUR ROBOT STATS ARE CORRECT"));
-  }
-  eereadwrite(readflag, addr, statsMowTimeMinutesTrip);
-  eereadwrite(readflag, addr, statsMowTimeMinutesTotal);
-  eereadwrite(readflag, addr, statsBatteryChargingCounterTotal);
-  eereadwrite(readflag, addr, statsBatteryChargingCapacityTrip);
-  eereadwrite(readflag, addr, statsBatteryChargingCapacityTotal);
-  eereadwrite(readflag, addr, statsBatteryChargingCapacityAverage);
-  // <----------------------------new robot stats to save goes here!----------------
-  ShowMessage(F("Robot Stats address Start = "));
-  ShowMessageln(ADDR_ROBOT_STATS);
-  ShowMessage(F("Robot Stats address Stop = "));
-  ShowMessageln(addr);
-
 }
 
 
@@ -453,7 +428,9 @@ void Robot::receiveGPSTime() {
       }
     }
   }
-}// check if mower is stuck ToDo: take HDOP into consideration if gpsSpeed is reliable
+}
+
+// check if mower is stuck ToDo: take HDOP into consideration if gpsSpeed is reliable
 void Robot::checkIfStuck() {
   if (millis() < nextTimeCheckIfStuck) return;
   nextTimeCheckIfStuck = millis() + 300;
@@ -471,7 +448,6 @@ void Robot::checkIfStuck() {
         && ((motorLeftRpmCurr && motorRightRpmCurr) != 0) && (millis() > stateStartTime + gpsSpeedIgnoreTime) ) {
       robotIsStuckCounter++;
     }
-
     else {                         // if mower gets unstuck it resets errorCounterMax to zero and reenabling motorMow
       robotIsStuckCounter = 0;    // resets temporary counter to zero
       if ( (errorCounter[ERR_STUCK] == 0) && (stateCurr != STATE_OFF) && (stateCurr != STATE_MANUAL) && (stateCurr != STATE_STATION)
@@ -528,19 +504,18 @@ void Robot::processGPSData()
   gpsY = (float)gps.distance_between(gpsLat, nlon,   gpsLat, gpsLon);
 }
 
+
 boolean Robot::search_rfid_list(unsigned long TagNr) {
-
-  boolean tag_exist_in_list = false;
-  ptr = head;
-  if (ptr != NULL) {
-
-
+boolean tag_exist_in_list = false;
+ptr = head;
+ if (ptr != NULL) {
     for (ptr = head; ptr->next != NULL; ptr = ptr->next) {
       if (ptr->TagNr == TagNr) tag_exist_in_list = true;
     }
   }
   return tag_exist_in_list;
 }
+
 
 void Robot::rfidTagTraitement(unsigned long TagNr, byte statusCurr) {
   boolean tagAndStatus_exist_in_list = false;
@@ -566,6 +541,7 @@ void Robot::rfidTagTraitement(unsigned long TagNr, byte statusCurr) {
       case NOTHING:
         ShowMessageln(F("nothing to do ???"));
         break;
+
       case RTS:
         ShowMessage("Fast return tag : Turning ");
         ShowMessage(ptr->TagAngle1);
@@ -575,6 +551,7 @@ void Robot::rfidTagTraitement(unsigned long TagNr, byte statusCurr) {
         motorSpeedMaxPwm = ptr->TagSpeed;
         setNextState(STATE_PERI_STOP_TOROLL, 0);
         break;
+
       case FAST_START:
         ShowMessage("Faster start tag. Turning ");
         ShowMessage(ptr->TagAngle1);
@@ -585,15 +562,16 @@ void Robot::rfidTagTraitement(unsigned long TagNr, byte statusCurr) {
           motorSpeedMaxPwm = ptr->TagSpeed;
           setNextState(STATE_PERI_STOP_TO_FAST_START, 0);
         }
-        else
-        {
+        else {
           ShowMessageln("Fast start is only valid to change mowing area");
         }
         break;
+
       case NEW_AREA:
         ShowMessageln("Not use better to use AREA1,2 or 3");
         //not use
         break;
+
       case AREA1:
         line01 = "#SENDER," + String(area1_ip) + ",A1";
         Serial1.println(line01);
@@ -618,6 +596,7 @@ void Robot::rfidTagTraitement(unsigned long TagNr, byte statusCurr) {
           //ButtonStopArea3_click()
         }
         break;
+
       case AREA2:
         //send data to ESP32 to start AREA2 sender and stop AREA1 one
         line01 = "#SENDER," + String(area1_ip) + ",A0";
@@ -658,15 +637,14 @@ void Robot::rfidTagTraitement(unsigned long TagNr, byte statusCurr) {
         ShowMessage("Change speed for ");
         ShowMessage(newtagDistance1);
         ShowMessageln(" centimeters");
-
         break;
     }
   }
-  else
-  {
+  else {
     ShowMessageln(F("Tag and Status not match"));
   }
 }
+
 
 void Robot::insert_rfid_list(unsigned long TagNr, byte TagMowerStatus, byte TagToDo, int TagSpeed, float TagAngle1, int TagDist1, float TagAngle2, int TagDist2) {
   struct rfid_list *node = (struct rfid_list*) malloc(sizeof(*node));//allocation dynamique de la memoire
@@ -674,7 +652,6 @@ void Robot::insert_rfid_list(unsigned long TagNr, byte TagMowerStatus, byte TagT
     ShowMessageln(F("New Rfid tag list insert error "));
     return;
   }
-
   node->TagNr = TagNr;
   node->TagMowerStatus = TagMowerStatus;
   node->TagToDo = TagToDo;
@@ -690,6 +667,8 @@ void Robot::insert_rfid_list(unsigned long TagNr, byte TagMowerStatus, byte TagT
   ShowMessage(F("NEW RFID LIST COUNT = "));
   ShowMessageln(rfidListElementCount);
 }
+
+
 void Robot::delete_rfid_list(unsigned long TagNr, byte TagMowerStatus, int pos_into_list) {
   struct rfid_list *supp_element = NULL;
   ShowMessage(F("Delete element Nr: "));
@@ -698,8 +677,6 @@ void Robot::delete_rfid_list(unsigned long TagNr, byte TagMowerStatus, int pos_i
   for (int i = 1; i < pos_into_list; ++i) {
     ptr = ptr->next; // move just before the one to delete
   }
-
-
   supp_element = ptr->next; //  the one to delete
   ptr->next = ptr->next->next; //  rewrite the pointer of element before the supress one to the next next one
   // if(ptr->next == NULL)
@@ -712,8 +689,8 @@ void Robot::delete_rfid_list(unsigned long TagNr, byte TagMowerStatus, int pos_i
   ShowMessageln(rfidListElementCount);
 }
 
-void Robot::sort_rfid_list() {
 
+void Robot::sort_rfid_list() {
   struct rfid_list *p = NULL;
   struct rfid_list PR ;
   struct rfid_list *temp = (struct rfid_list*) malloc(sizeof(rfid_list));
@@ -721,7 +698,6 @@ void Robot::sort_rfid_list() {
   if (ptr != NULL) {
     for (temp = head; temp->next != NULL; temp = temp->next) {
       for (p = temp->next; p != NULL; p = p->next) {
-
         if (p->TagNr < temp->TagNr) {
           PR.TagNr = p->TagNr;
           PR.TagMowerStatus = p->TagMowerStatus;
@@ -742,7 +718,6 @@ void Robot::sort_rfid_list() {
           p->TagAngle2 = temp->TagAngle2;
           p->TagDist2 = temp->TagDist2;
 
-
           //temp->TagNr = PR.TagNr;
           temp->TagNr = PR.TagNr;
           temp->TagMowerStatus = PR.TagMowerStatus;
@@ -752,27 +727,17 @@ void Robot::sort_rfid_list() {
           temp->TagDist1 = PR.TagDist1;
           temp->TagAngle2 = PR.TagAngle2;
           temp->TagDist2 = PR.TagDist2;
-
-
         }
       }
     }
-
-
-
   }
-
 }
-
-
-
 
 
 void Robot::print_rfid_list() {
   ShowMessageln("RFID LIST :");
   ptr = head;
   //struct rfid_list *ptr = head;
-
   // rfid todo list
   //enum { NOTHING, RTS, FAST_START, NEW_AREA, SPEED, AREA1, AREA2, AREA3 };
   while (ptr != NULL) {  //parcours jusqu au dernier
@@ -793,8 +758,8 @@ void Robot::print_rfid_list() {
     ShowMessageln(ptr->TagDist2);
     ptr = ptr->next;
   }
-
 }
+
 
 void Robot::saveRfidList() {
   boolean readflag = false;
@@ -852,7 +817,6 @@ void Robot::loadRfidList() {
     eereadwrite(readflag, addr, PR.TagAngle2);
     eereadwrite(readflag, addr, PR.TagDist2);
     insert_rfid_list(PR.TagNr, PR.TagMowerStatus, PR.TagToDo, PR.TagSpeed, PR.TagAngle1, PR.TagDist1, PR.TagAngle2, PR.TagDist2);
-
   }
   ShowMessage(F("RFID LIST address Start="));
   ShowMessageln(ADDR_RFID_LIST);
@@ -864,7 +828,6 @@ void Robot::loadRfidList() {
 
 
 void Robot::loadSaveErrorCounters(boolean readflag) {
-
   if (readflag) ShowMessageln(F("Load ErrorCounters"));
   else ShowMessageln(F("Save ErrorCounters"));
   int addr = ADDR_ERR_COUNTERS;
@@ -883,26 +846,21 @@ void Robot::loadSaveErrorCounters(boolean readflag) {
   ShowMessageln(ADDR_ERR_COUNTERS);
   ShowMessage(F("ErrorCounters address Stop="));
   ShowMessageln(addr);
-
 }
 
+
 void Robot::loadSaveUserSettings(boolean readflag) {
-
-
   int addr = ADDR_USER_SETTINGS;
   short magic = 0;
   if (!readflag) magic = MAGIC;
   eereadwrite(readflag, addr, magic); // magic
-
   if ((readflag) && (magic != MAGIC)) {
-
     ShowMessageln(F("EEPROM USERDATA: NO EEPROM USER DATA"));
     ShowMessageln(F("PLEASE CHECK AND SAVE YOUR SETTINGS"));
     addErrorCounter(ERR_EEPROM_DATA);
     setNextState(STATE_ERROR, 0);
     return;
   }
-
   eereadwrite(readflag, addr, developerActive);
   eereadwrite(readflag, addr, motorAccel);
   eereadwrite(readflag, addr, motorSpeedMaxRpm);
@@ -992,8 +950,7 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, statsOverride);
   eereadwrite(readflag, addr, reduceSpeedNearPerimeter);
   eereadwrite(readflag, addr, autoAdjustSlopeSpeed);
-  eereadwriteString(readflag, addr, esp8266ConfigString);//string not used
-  esp8266ConfigString="1234";                             // not use but initialised for pi use
+  eereadwriteString(readflag, addr, esp8266ConfigString);
   eereadwrite(readflag, addr, tiltUse);
   eereadwrite(readflag, addr, trackingPerimeterTransitionTimeOut);
   eereadwrite(readflag, addr, motorMowForceOff);
@@ -1036,12 +993,9 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, rfidUse);
   eereadwrite(readflag, addr, compassRollSpeedCoeff);
   eereadwrite(readflag, addr, gpsUse);
-  if(gpsUse >1) gpsUse = 0; //avoid memory error
   eereadwrite(readflag, addr, stuckIfGpsSpeedBelow);
   eereadwrite(readflag, addr, gpsSpeedIgnoreTime);
   eereadwrite(readflag, addr, useMqtt);
-
-
   if (readflag)
   {
     ShowMessage(F("UserSettings are read from EEprom Address : "));
@@ -1050,24 +1004,16 @@ void Robot::loadSaveUserSettings(boolean readflag) {
     ShowMessageln(addr);
     motorInitialSpeedMaxPwm = motorSpeedMaxPwm; //the Pi can change the speed so store the initial value to restore after PFND for example
   }
-  else
-  {
+  else {
     ShowMessage(F("UserSettings are saved from EEprom Address : "));
     ShowMessage(ADDR_USER_SETTINGS);
     ShowMessage(F(" To "));
     ShowMessageln(addr);
   }
-
-}
-
-void Robot::loadUserSettings() {
-  //return; // use in one shot to reset all the usersetting if acces on console is not possible
-  loadSaveUserSettings(true);
 }
 
 
 void Robot::printSettingSerial() {
-
   // ------- wheel motors ---------------------------------------------------------
   ShowMessageln("---------- wheel motors -----------");
   ShowMessage  ("motorAccel                 : ");
@@ -1132,8 +1078,6 @@ void Robot::printSettingSerial() {
   ShowMessage  ("autoAdjustSlopeSpeed       : ");
   ShowMessageln(autoAdjustSlopeSpeed);
 
-
-
   //watchdogReset();
   delayWithWatchdog (500);
   // ------ mower motor -----------------------------------
@@ -1150,7 +1094,6 @@ void Robot::printSettingSerial() {
   ShowMessageln(motorMowPowerMax);
   ShowMessage  ("motorMowSenseScale       : ");
   ShowMessageln(motorMowSenseScale);
-
   //watchdogReset();
   // ------ bumper ------------------------------------
   ShowMessageln("---------- bumper -----------------");
@@ -1173,7 +1116,6 @@ void Robot::printSettingSerial() {
   ShowMessageln("----------  Temperature ---");
   ShowMessage  ("MaxTemperature     : ");
   ShowMessageln(maxTemperature);
-
   //watchdogReset();
 
   // ------ sonar -----------------------------------
@@ -1265,6 +1207,7 @@ void Robot::printSettingSerial() {
   ShowMessage  (F("maxLenghtByLane           : "));
   ShowMessageln(maxLenghtByLane);
   //watchdogReset();
+
   // ------ lawn sensor ----------------------------
   ShowMessageln(F("---------- lawn sensor---------"));
   ShowMessage  (F("lawnSensorUse            : "));
@@ -1295,6 +1238,7 @@ void Robot::printSettingSerial() {
   ShowMessageln(compassRollSpeedCoeff);
   delayWithWatchdog (500);
   //watchdogReset();
+
   // ------ model R/C ------------------------------
   ShowMessageln(F("---------- model R/C ---------"));
   ShowMessage  (F("remoteUse                   : "));
@@ -1336,6 +1280,7 @@ void Robot::printSettingSerial() {
   ShowMessage  (F("chgNull              : "));
   ShowMessageln(chgNull);
   //watchdogReset();
+
   // ------  charging station -----------------------------------------------------
   ShowMessageln(F("---------- charging station ----------------------------------"));
   ShowMessage  (F("stationRevDist     : "));
@@ -1352,9 +1297,7 @@ void Robot::printSettingSerial() {
   ShowMessageln(dockingSpeed);
   ShowMessage  (F("autoResetActive    : "));
   ShowMessageln(autoResetActive);
-
   //watchdogReset();
-
 
   // ------ odometry --------------------------------------------------------------
   ShowMessageln(F("---------- odometry ------------------------------------------"));
@@ -1365,21 +1308,21 @@ void Robot::printSettingSerial() {
   ShowMessage  (F("odometryWheelBaseCm        : "));
   ShowMessageln( odometryWheelBaseCm);
 
-
   // ----- RFID ----------------------------------------------------------------------
   ShowMessageln(F("---------- RFID ----------- "));
   ShowMessage  (F("rfidUse         : "));
   ShowMessageln(rfidUse);
   //watchdogReset();
+
   // ----- RASPBERRY PI --------------
   ShowMessageln(F("---------- RASPBERRY PI------ "));
   ShowMessage  (F("RaspberryPIUse  : "));
   ShowMessageln(RaspberryPIUse);
+
   // ----- MQTT --------------
   ShowMessageln(F("---------- MQTT        ------ "));
   ShowMessage  (F("useMqtt  : "));
   ShowMessageln(useMqtt);
-
 
   // ----- GPS ----------------------------------------------------------------------
   ShowMessageln(F("---------- GPS -----------------------------------------------"));
@@ -1390,17 +1333,12 @@ void Robot::printSettingSerial() {
   ShowMessage  (F("gpsSpeedIgnoreTime                         : "));
   ShowMessageln(gpsSpeedIgnoreTime);
 
-
-
-
-
   // ----- other ----------------------------------------------------
   ShowMessageln(F("---------- other ------------"));
   ShowMessage  (F("buttonUse              : "));
   ShowMessageln(buttonUse);
   ShowMessage  (F("mowPatternDurationMax  : "));
   ShowMessageln(mowPatternDurationMax);
-
   //watchdogReset();
 
   // ----- user-defined switch ----------------------------------------
@@ -1412,15 +1350,13 @@ void Robot::printSettingSerial() {
   ShowMessage  (F("userSwitch3       : "));
   ShowMessageln(userSwitch3);
   //watchdogReset();
+
   // ----- timer --------------------------------------------------------------------
   ShowMessageln(F("---------- timer ----------- "));
   ShowMessage  (F("timerUse       : "));
   ShowMessageln(timerUse);
-
-
-
-
   //watchdogReset();
+
   // -------robot stats--------------------------------------------------------------
   ShowMessageln(F("---------- robot stats ---------------------------------------"));
   ShowMessage  (F("statsMowTimeMinutesTrip                    : "));
@@ -1437,15 +1373,46 @@ void Robot::printSettingSerial() {
   ShowMessageln(statsBatteryChargingCapacityAverage);
   //watchdogReset();
   //return;
-
-
 }
 
 
 void Robot::saveUserSettings() {
   ShowMessageln(F("START TO SAVE USER SETTINGS PLEASE WAIT"));
   loadSaveUserSettings(false);
+}
 
+
+void Robot::loadSaveRobotStats(boolean readflag) {
+  int addr = ADDR_ROBOT_STATS;
+  if (readflag) {
+    ShowMessageln(F("Load Robot Stats"));
+  }
+  else {
+    ShowMessageln(F("Save Robot Stats"));
+  }
+  short magic = 0;
+  if (!readflag) magic = MAGIC;
+  eereadwrite(readflag, addr, magic); // magic
+  if ((readflag) && (magic != MAGIC)) {
+    ShowMessageln(F("PLEASE CHECK IF YOUR ROBOT STATS ARE CORRECT"));
+  }
+  eereadwrite(readflag, addr, statsMowTimeMinutesTrip);
+  eereadwrite(readflag, addr, statsMowTimeMinutesTotal);
+  eereadwrite(readflag, addr, statsBatteryChargingCounterTotal);
+  eereadwrite(readflag, addr, statsBatteryChargingCapacityTrip);
+  eereadwrite(readflag, addr, statsBatteryChargingCapacityTotal);
+  eereadwrite(readflag, addr, statsBatteryChargingCapacityAverage);
+  // <----------------------------new robot stats to save goes here!----------------
+  ShowMessage(F("Robot Stats address Start = "));
+  ShowMessageln(ADDR_ROBOT_STATS);
+  ShowMessage(F("Robot Stats address Stop = "));
+  ShowMessageln(addr);
+}
+
+
+void Robot::loadUserSettings() {
+  //return; // use in one shot to reset all the usersetting if acces on console is not possible
+  loadSaveUserSettings(true);
 }
 
 
@@ -1455,12 +1422,13 @@ void Robot::deleteUserSettings() {
   eewrite(addr, (short)0); // magic
 }
 
+
 void Robot::deleteRobotStats() {
-  statsMowTimeMinutesTrip = statsMowTimeMinutesTotal = statsBatteryChargingCounterTotal =
-                              statsBatteryChargingCapacityTotal = statsBatteryChargingCapacityTrip = 0;
+  statsMowTimeMinutesTrip = statsMowTimeMinutesTotal = statsBatteryChargingCounterTotal = statsBatteryChargingCapacityTotal = statsBatteryChargingCapacityTrip = 0;
   loadSaveRobotStats(false);
   ShowMessageln(F("ALL ROBOT STATS ARE DELETED"));
 }
+
 
 void Robot::addErrorCounter(byte errType) {
   // increase error counters (both temporary and maximum error counters)
@@ -1468,12 +1436,14 @@ void Robot::addErrorCounter(byte errType) {
   if (errorCounterMax[errType] < 255) errorCounterMax[errType]++;
 }
 
+
 void Robot::resetErrorCounters() {
   ShowMessageln(F("resetErrorCounters"));
   for (int i = 0; i < ERR_ENUM_COUNT; i++) errorCounter[i] = errorCounterMax[i] = 0;
   loadSaveErrorCounters(false);
   resetMotorFault();
 }
+
 
 void Robot::resetMotorFault() {
   /*
@@ -1562,7 +1532,6 @@ void Robot::resetMotorFault() {
 */
 
 
-
 void Robot::checkErrorCounter() {
   if (millis() >= nextTimeErrorCounterReset) {
     // reset all temporary error counters after 30 seconds (maximum error counters still continue to count)
@@ -1588,15 +1557,13 @@ void Robot::autoReboot() {
     ShowMessageln(F("Due reset after 1 secondes, send a command to Pi for restart also"));
     MyRpi.sendCommandToPi("RestartPi");
   }
-  else
-  {
+  else {
     ShowMessageln(F("Due reset after 1 secondes"));
   }
   delay(1000);
   //watchdogReset();
   delay(30000); // this IS USED to force watchdog to reset due.
 }
-
 
 
 // ---- RC (interrupt) --------------------------------------------------------------
@@ -1616,7 +1583,6 @@ int Robot::rcValue(int ppmTime) {
 // - ensures that the motor is not switched to 100% too fast (motorMowAccel)
 // - ensures that the motor voltage is not higher than motorMowSpeedMaxPwm
 void Robot::setMotorMowPWM(int pwm, boolean useAccel) {
-
   unsigned long TaC = millis() - lastSetMotorMowSpeedTime;    // sampling time in millis
   lastSetMotorMowSpeedTime = millis();
   if (TaC > 1000) TaC = 1;
@@ -1639,7 +1605,6 @@ void Robot::setMotorPWM(int pwmLeft, int pwmRight, boolean useAccel) {
   int TaC = int(millis() - lastSetMotorSpeedTime);    // sampling time in millis
   lastSetMotorSpeedTime = millis();
   if (TaC > 1000) TaC = 1;
-
   if (stateCurr != STATE_OFF) {
     /*
       ShowMessage(stateNames[stateCurr]);
@@ -1653,7 +1618,6 @@ void Robot::setMotorPWM(int pwmLeft, int pwmRight, boolean useAccel) {
       ShowMessage (pwmLeft);
       ShowMessage(" pwmRight ");
       ShowMessage (pwmRight);
-
 
       ShowMessage(" OdoRight ");
       ShowMessage (odometryRight);
@@ -1669,7 +1633,6 @@ void Robot::setMotorPWM(int pwmLeft, int pwmRight, boolean useAccel) {
       ShowMessageln (motorRightPWMCurr);
     */
   }
-
   // ----- driver protection (avoids driver explosion) ----------
   if ( ((pwmLeft < 0) && (motorLeftPWMCurr > 0)) || ((pwmLeft > 0) && (motorLeftPWMCurr < 0)) ) { // slowing before reverse
     if (developerActive) {
@@ -1695,8 +1658,6 @@ void Robot::setMotorPWM(int pwmLeft, int pwmRight, boolean useAccel) {
       if (motorRightZeroTimeout != 0) pwmRight = motorRightPWMCurr - motorRightPWMCurr * ((float)TaC) / 200.0; // reduce speed
     }
   }
-
-
   if (useAccel) {
     // http://phrogz.net/js/framerate-independent-low-pass-filter.html
     // smoothed += elapsedTime * ( newValue - smoothed ) / smoothing;
@@ -1704,7 +1665,6 @@ void Robot::setMotorPWM(int pwmLeft, int pwmRight, boolean useAccel) {
     else motorLeftChange = 500; // we are in breaking mode
     if ((abs(pwmRight) - abs(motorRightPWMCurr)) > 0) motorRightChange = motorAccel;
     else motorRightChange = 500;
-
 
     motorLeftPWMCurr += int(TaC) * (pwmLeft - motorLeftPWMCurr) / motorLeftChange;
     motorRightPWMCurr +=  int(TaC) * (pwmRight - motorRightPWMCurr) / motorRightChange;
@@ -1727,12 +1687,9 @@ void Robot::setMotorPWM(int pwmLeft, int pwmRight, boolean useAccel) {
       ShowMessageln ("motorLeftPWMCurr 2555555555555555555555555555555555555555");
     }
     if (motorRightPWMCurr > 255) motorRightPWMCurr = 255;
-
-
   }
   /*
-    else
-    {
+    else {
     motorLeftPWMCurr = pwmLeft;
     motorRightPWMCurr = pwmRight;
     }
@@ -1754,9 +1711,7 @@ void Robot::setMotorPWM(int pwmLeft, int pwmRight, boolean useAccel) {
       ShowMessage(" / ");
       ShowMessageln (motorLeftPWMCurr);
     */
-
   }
-
   if (motorLeftSwapDir)  // swap pin polarity?
     setActuator(ACT_MOTOR_LEFT, -motorLeftPWMCurr);
   else
@@ -1765,9 +1720,7 @@ void Robot::setMotorPWM(int pwmLeft, int pwmRight, boolean useAccel) {
     setActuator(ACT_MOTOR_RIGHT, -motorRightPWMCurr);
   else
     setActuator(ACT_MOTOR_RIGHT, motorRightPWMCurr);
-
 }
-
 
 
 void Robot::OdoRampCompute() { //execute only one time when a new state execution
@@ -1777,7 +1730,6 @@ void Robot::OdoRampCompute() { //execute only one time when a new state executio
   //bber400
   motorSpeedRpmMedian.clear();
 
-
   stateStartOdometryLeft = odometryLeft;
   stateStartOdometryRight = odometryRight;
   lastStartOdometryRight = odometryRight;
@@ -1786,12 +1738,13 @@ void Robot::OdoRampCompute() { //execute only one time when a new state executio
   motorRightPID.reset();
   PwmRightSpeed = min(motorSpeedMaxPwm, max(-motorSpeedMaxPwm, map(motorRightSpeedRpmSet, -motorSpeedMaxRpm, motorSpeedMaxRpm, -motorSpeedMaxPwm, motorSpeedMaxPwm)));
   PwmLeftSpeed = min(motorSpeedMaxPwm, max(-motorSpeedMaxPwm, map(motorLeftSpeedRpmSet, -motorSpeedMaxRpm, motorSpeedMaxRpm, -motorSpeedMaxPwm, motorSpeedMaxPwm)));
-  //try to find when we need to brake the wheel (depend of the distance)
 
+  //try to find when we need to brake the wheel (depend of the distance)
   int  distToMoveLeft;
   int  distToMoveRight;
   distToMoveLeft = abs(stateStartOdometryLeft - stateEndOdometryLeft);
   distToMoveRight = abs(stateStartOdometryRight - stateEndOdometryRight);
+
   //left wheel
   if (distToMoveLeft >= odometryTicksPerRevolution)  {
     OdoStartBrakeLeft =  odometryTicksPerRevolution / 2; //si plus d'1 tour on freine dans la moitie du dernier tour
@@ -1809,14 +1762,12 @@ void Robot::OdoRampCompute() { //execute only one time when a new state executio
         SpeedOdoMaxLeft = map(distToMoveLeft / 2, odometryTicksPerRevolution / 2, 0, PwmLeftSpeed, SpeedOdoMax);
       }
     }
-    else
-    { //need 1 ramp
+    else { //need 1 ramp
       OdoStartBrakeLeft = distToMoveLeft ; //on freine sur toute la distance a parcourir
       if (PwmLeftSpeed <= 0) SpeedOdoMaxLeft = map(distToMoveLeft , odometryTicksPerRevolution / 2, 0, PwmLeftSpeed, -SpeedOdoMax); //valeur de vitesse max en fonction de la distance a parcourir
       else SpeedOdoMaxLeft = map(distToMoveLeft , odometryTicksPerRevolution / 2, 0, PwmLeftSpeed, SpeedOdoMax);
     }
   }
-
   //right wheel
   if (distToMoveRight >= odometryTicksPerRevolution) { //more than 1 rev
     OdoStartBrakeRight =  odometryTicksPerRevolution / 2;
@@ -1832,29 +1783,23 @@ void Robot::OdoRampCompute() { //execute only one time when a new state executio
         SpeedOdoMaxRight = map(distToMoveRight / 2, odometryTicksPerRevolution / 2, 0, PwmRightSpeed, SpeedOdoMax);
       }
     }
-    else
-    {
+    else {
       OdoStartBrakeRight = distToMoveRight ; //on freine sur toute la distance a parcourir
       if (PwmRightSpeed <= 0) SpeedOdoMaxRight = map(distToMoveRight , odometryTicksPerRevolution / 2, 0, PwmRightSpeed, -SpeedOdoMax); //valeur de vitesse max en fonction de la distance a parcourir
       else SpeedOdoMaxRight = map(distToMoveRight , odometryTicksPerRevolution / 2, 0, PwmRightSpeed, SpeedOdoMax);
     }
   }
-
-
   //compute the approximative moving time in millis()
   //Need to compute in 2 times to avoid overflow  !!!!!
-
   movingTimeLeft = 1000 * distToMoveLeft / motorTickPerSecond ;
   movingTimeLeft = movingTimeLeft * motorSpeedMaxPwm / abs(SpeedOdoMaxLeft);
   //bber500
   if (movingTimeLeft < 4000 ) movingTimeLeft = 4000;
-
   //for small mouvement need to increase duration
   movingTimeRight = 1000 * distToMoveRight / motorTickPerSecond ;
   movingTimeRight = movingTimeRight * motorSpeedMaxPwm / abs(SpeedOdoMaxRight);
   //bber500 reduce movement shock
   if (movingTimeRight < 4000 ) movingTimeRight = 4000;
-
   //for small mouvement need to reduce the accel duration
   if (movingTimeLeft >= motorOdoAccel) accelDurationLeft = motorOdoAccel;
   else   accelDurationLeft =  movingTimeLeft / 2;
@@ -1863,8 +1808,7 @@ void Robot::OdoRampCompute() { //execute only one time when a new state executio
   if (statusCurr == TESTING) {  //avoid maxduration stop when use test Odo with Pfod
     MaxOdoStateDuration = 30000 + max(movingTimeRight, movingTimeLeft); //add 30 secondes to the max moving duration of the 2 wheels
   }
-  else
-  {
+  else {
     MaxOdoStateDuration = 3000 + max(movingTimeRight, movingTimeLeft); //add 3 secondes to the max moving duration of the 2 wheels
   }
   //check to set the correct heading
@@ -1875,7 +1819,6 @@ void Robot::OdoRampCompute() { //execute only one time when a new state executio
   if (statusCurr == REMOTE) {   //possible heading change
     imuDriveHeading = remoteDriveHeading / PI * 180;
   }
-
   /*
     ShowMessage(" **************** compute  at  ");
     ShowMessageln(millis());
@@ -1906,11 +1849,6 @@ void Robot::OdoRampCompute() { //execute only one time when a new state executio
     ShowMessage("  SpeedOdoMaxRight ");
     ShowMessageln(SpeedOdoMaxRight);
 
-
-
-
-
-
     ShowMessage("OdoStartBrakeLeft ");
     ShowMessage(OdoStartBrakeLeft);
     ShowMessage("Ticks OdoStartBrakeRight ");
@@ -1919,13 +1857,10 @@ void Robot::OdoRampCompute() { //execute only one time when a new state executio
     ShowMessage(MaxOdoStateDuration);
     ShowMessageln(" ms");
   */
-
 }
 
 
-
 void Robot::motorControlOdo() {
-
   // call to reach a ODO cible on left AND right wheel so they don't stop at the same time accel and slow are used to smooth the movement of the mower
   //Stop motor independently when the cible is reach
   //
@@ -1958,7 +1893,6 @@ void Robot::motorControlOdo() {
   nextTimeMotorOdoControl = millis() + 15;
 
   //LEFT WHEEL
-
   leftSpeed = PwmLeftSpeed ; //Set first to Normal speed and stay like this if not change  by accel or brake so limit the compute time
   if (motorLeftSpeedRpmSet > 0) { //forward left wheel --------------------------------------------------------------------------
     if ((UseAccelLeft) && (millis() - stateStartTime < accelDurationLeft)) { //Accel mode for duration
@@ -1974,7 +1908,6 @@ void Robot::motorControlOdo() {
     if (leftSpeed > SpeedOdoMaxLeft) leftSpeed = SpeedOdoMaxLeft;
     if (leftSpeed < SpeedOdoMin) leftSpeed = SpeedOdoMin; //Minimum speed to be sure the mower is always moving before stop
   }
-
   if (motorLeftSpeedRpmSet < 0) { //reverse left wheel ----------------------------------------------------------------------------
     if ((UseAccelLeft) && (millis() - stateStartTime < accelDurationLeft)) { //Accel mode for duration
       //Sinus accel
@@ -1992,7 +1925,6 @@ void Robot::motorControlOdo() {
 
   //  RIGHT WHEEL
   rightSpeed = PwmRightSpeed ; //Normal speed
-
   if (motorRightSpeedRpmSet > 0) { //forward Right wheel -----------------------------------------------------------------------------
     // ShowMessage(" FR rotate ");
     if (UseAccelRight && (millis() - stateStartTime < accelDurationRight)) { //Accel mode for duration
@@ -2019,12 +1951,9 @@ void Robot::motorControlOdo() {
       angleCorresp = map(abs(stateEndOdometryRight - odometryRight), OdoStartBrakeRight, 0, 89, 10);
       rightSpeed = PwmRightSpeed * sin(radians(angleCorresp));
     }
-
     if (rightSpeed < SpeedOdoMaxRight) rightSpeed = SpeedOdoMaxRight;
     if (abs(rightSpeed) < SpeedOdoMin) rightSpeed = -SpeedOdoMin;
-
   }
-
   //DRIVE IN STRAIGHT LINE
   if (stateCurr == STATE_FORWARD_ODO || (stateCurr == STATE_PERI_FIND) || (stateCurr == STATE_DRIVE1_TO_NEWAREA) || (stateCurr == STATE_DRIVE2_TO_NEWAREA))  { //PID compute to accel or brake the wheel to drive straight
     motorRightPID.Kp = motorLeftPID.Kp;
@@ -2044,7 +1973,6 @@ void Robot::motorControlOdo() {
           yawCibleNeg = yawOppositeLane1RollLeft;
           // ImuPidCibleNeg = imu.rotate360(yawOppositeLane1RollLeft);
         }
-
       }
       if (laneUseNr == 2) {   //from 45 to 135 deg
         yawCiblePos = yawSet2;
@@ -2070,7 +1998,6 @@ void Robot::motorControlOdo() {
           //  ImuPidCibleNeg = imu.rotate360(yawOppositeLane3RollLeft);
         }
       }
-
       if ((imu.ypr.yaw / PI * 180) > 0 ) imuDriveHeading = yawCiblePos;
       else imuDriveHeading = yawCibleNeg;
       imuDirPID.x = imu.distance180(YawActualDeg, imuDriveHeading);
@@ -2082,14 +2009,13 @@ void Robot::motorControlOdo() {
 
       if ((millis() - stateStartTime) < 1000) { // acceleration and more influence of PID vs speed
         //bber402
-
         rightSpeed =  rightSpeed - (66 - (millis() - stateStartTime) / 30);
         leftSpeed =  leftSpeed - (66 - (millis() - stateStartTime) / 30);
         if (rightSpeed < 0 ) rightSpeed = 0;
         if (leftSpeed < 0 ) leftSpeed = 0;
       }
-      else //adjust rpm speed only after 1 seconde
-      {
+      else {
+      //adjust rpm speed only after 1 seconde
         //bber400 //adjust RPM speed
         //PID version
         motorRightPID.x = motorRightRpmCurr;
@@ -2102,7 +2028,6 @@ void Robot::motorControlOdo() {
         motorRpmCoeff = (100 + motorRightPID.y) / 100;
         if (motorRpmCoeff < 0.80) motorRpmCoeff = 0.80;
         if (motorRpmCoeff > 1.20) motorRpmCoeff = 1.20;
-
         /*
                 //median version
                 //add median on current RPM
@@ -2125,13 +2050,8 @@ void Robot::motorControlOdo() {
       if ((sonarSpeedCoeff != 1) || (!autoAdjustSlopeSpeed)) { //do not change speed if sonar is activate
         motorRpmCoeff = 1;
       }
-
       rightSpeed =  (motorRpmCoeff  * rightSpeed) + imuDirPID.y / 2;
       leftSpeed =  (motorRpmCoeff  * leftSpeed) - imuDirPID.y / 2;
-
-
-
-
       //not use ??------------------------------------------------------------try to find the yaw with the odometry-------------------------------------
       if (((millis() - stateStartTime) > 2000) && (millis() >= nextTimePidCompute)) { //compute  the yaw with the odometry only after 2 sec
         float odoTheta;
@@ -2155,24 +2075,18 @@ void Robot::motorControlOdo() {
         */
       }
       //----------------------------------------------------------------------------------------------------------------------------------------------------------------
-
     }
-    else
-      //// NORMAL MOWING OR PERIFIND
-    {
-      if (imuUse) /// use the IMU for straight line
-      {
+    else { //// NORMAL MOWING OR PERIFIND
+      if (imuUse) { /// use the IMU for straight line
         YawActualDeg = imu.ypr.yaw / PI * 180;
         // if(abs(YawActualDeg) >90) YawMedianDeg = imu.rotate360(YawActualDeg);
         // else YawMedianDeg= YawActualDeg+90;
-
         imuDirPID.x = imu.distance180(YawActualDeg, imuDriveHeading);
         imuDirPID.w = 0;
         imuDirPID.y_min = -motorSpeedMaxPwm / 2;
         imuDirPID.y_max = motorSpeedMaxPwm / 2;
         imuDirPID.max_output = motorSpeedMaxPwm / 2;
         imuDirPID.compute();
-
         //bber400 //adjust RPM speed
         //PID version
         motorRightPID.x = motorRightRpmCurr;
@@ -2185,18 +2099,13 @@ void Robot::motorControlOdo() {
         motorRpmCoeff = (100 + motorRightPID.y) / 100;
         if (motorRpmCoeff < 0.80) motorRpmCoeff = 0.80;
         if (motorRpmCoeff > 1.20) motorRpmCoeff = 1.20;
-
         if ((sonarSpeedCoeff != 1) || (!autoAdjustSlopeSpeed)) { //do not change speed if sonar is activate
           motorRpmCoeff = 1;
         }
-
         rightSpeed =  (motorRpmCoeff  * rightSpeed) + imuDirPID.y / 2;
         leftSpeed =  (motorRpmCoeff  * leftSpeed) - imuDirPID.y / 2;
-
-
       }
-      else   /// use only the odometry  for straight line
-      {
+      else { /// use only the odometry  for straight line
         if (millis() >= nextTimePidCompute) { //to go in straight line need to compute only each 200 milliseconde and add the dif to one wheel
           nextTimePidCompute = millis() + 200;
           //stateStartOdometryLeft = stateStartOdometryLeft + ((odometryRight - stateStartOdometryRight) - (odometryLeft - stateStartOdometryLeft)); // very important change the odo to retrieve the line to avoid drift
@@ -2212,26 +2121,20 @@ void Robot::motorControlOdo() {
       }
     }
 
-    //bber200
-
     //bber200 reduce perimeter speed only if both perimeter and sonar are actif
     if (perimeterSpeedCoeff == 1) {
       rightSpeed = rightSpeed * sonarSpeedCoeff;
       leftSpeed = leftSpeed * sonarSpeedCoeff;
     }
-    else
-    {
+    else {
       rightSpeed = rightSpeed * perimeterSpeedCoeff;
       leftSpeed = leftSpeed * perimeterSpeedCoeff;
     }
-
     if (rightSpeed > 255) rightSpeed = 255;
     if (leftSpeed > 255) leftSpeed = 255;
     if (rightSpeed < 0) rightSpeed = 0;
     if (leftSpeed < 0) leftSpeed = 0;
-
   }
-
   if (stateCurr != STATE_OFF) {
     /*
       if (perimeterSpeedCoeff != 1) {
@@ -2281,38 +2184,26 @@ void Robot::motorControlOdo() {
         ShowMessageln(imu.ypr.yaw);
     */
   }
-
-
   setMotorPWM(leftSpeed, rightSpeed, false );
 }
 
 
-
-
-
-
 // PID controller: track perimeter
 void Robot::motorControlPerimeter() {
-
   if (millis() < nextTimeMotorPerimeterControl) return;
   nextTimeMotorPerimeterControl = millis() + 15; //bb read the perimeter each 15 ms
   //never stop the PID compute while turning for the new transition
   //use the PerimeterMag as cible to smooth the tracking
   //Value reference perimeterMagMaxValue , maybe need to be calculate in mower setting up procedure
-
   perimeterPID.x = 5 * (double(perimeterMag) / perimeterMagMaxValue);
-
   if (perimeterInside)  perimeterPID.w = -0.5;
   else     perimeterPID.w = 0.5;
-
   perimeterPID.y_min = -ActualSpeedPeriPWM ;
   perimeterPID.y_max = ActualSpeedPeriPWM ;
   perimeterPID.max_output = ActualSpeedPeriPWM ;
   perimeterPID.compute();
-
   if ((millis() > stateStartTime + 10000) && (millis() > perimeterLastTransitionTime + trackingPerimeterTransitionTimeOut)) {
     // robot is wheel-spinning while tracking => roll to get ground again
-
     if (trakBlockInnerWheel == 0) {
       if (perimeterInside) {
         rightSpeedperi = max(-ActualSpeedPeriPWM, min(ActualSpeedPeriPWM, ActualSpeedPeriPWM / 1.5  + perimeterPID.y));
@@ -2357,26 +2248,20 @@ void Robot::motorControlPerimeter() {
     else {
       setMotorPWM( rightSpeedperi, leftSpeedperi,  false);
     }
-
     lastTimeForgetWire = millis();
-
     if (millis() > perimeterLastTransitionTime + trackingErrorTimeOut) {
       if (perimeterInside) {
         ShowMessageln("Tracking Fail and we are inside, So start to find again the perimeter");
         //   periFindDriveHeading = imu.ypr.yaw;
         setNextState(STATE_PERI_FIND, 0);
       }
-      else
-      {
+      else {
         ShowMessageln("Tracking Fail and we are outside, So start to roll to find again the perimeter");
         setNextState(STATE_PERI_OUT_ROLL_TOTRACK, rollDir);
       }
-
     }
     return;
   }
-
-
   if ((millis() - lastTimeForgetWire ) < trackingPerimeterTransitionTimeOut) {
     //PeriCoeffAccel move gently from 3 to 1 and so perimeterPID.y/PeriCoeffAccel increase during 3 secondes
     PeriCoeffAccel = (3000.00 - (millis() - lastTimeForgetWire)) / 1000.00 ;
@@ -2389,7 +2274,6 @@ void Robot::motorControlPerimeter() {
       if (rightSpeedperi < 0) rightSpeedperi = 0;
       if (leftSpeedperi < 0) leftSpeedperi = 0;
     }
-
     if (consoleMode == CONSOLE_TRACKING) {
       ShowMessage("SLOW;");
       ShowMessage(millis());
@@ -2409,8 +2293,7 @@ void Robot::motorControlPerimeter() {
       ShowMessageln(perimeterLastTransitionTime);
     }
   }
-  else
-  {
+  else {
     rightSpeedperi = max(0, min(ActualSpeedPeriPWM, ActualSpeedPeriPWM / 1.5   + perimeterPID.y));
     leftSpeedperi = max(0, min(ActualSpeedPeriPWM, ActualSpeedPeriPWM / 1.5  - perimeterPID.y));
 
@@ -2433,7 +2316,6 @@ void Robot::motorControlPerimeter() {
       ShowMessageln(perimeterLastTransitionTime);
     }
   }
-
   //bb2
   if ((millis() - stateStartTime ) < 2000) { //at the start of the tracking accelerate slowly during 2 secondes
     leftSpeedperi = leftSpeedperi - (66 - (millis() - stateStartTime) / 30);
@@ -2449,15 +2331,12 @@ void Robot::motorControlPerimeter() {
 
   if (abs(perimeterMag) < perimeterMagMaxValue / 4) { //250 can be replace by timedOutIfBelowSmag to be tested
     perimeterLastTransitionTime = millis(); //initialise perimeterLastTransitionTime if perfect sthraith line
-
   }
 }
 
 
-
 // check for odometry sensor faults
 void Robot::checkOdometryFaults() {
-
   boolean leftErr = false;
   boolean rightErr = false;
   if ((stateCurr == STATE_FORWARD) &&  (millis() - stateStartTime > 8000) ) {
@@ -2486,14 +2365,13 @@ void Robot::checkOdometryFaults() {
     addErrorCounter(ERR_ODOMETRY_RIGHT);
     setNextState(STATE_ERROR, 0);
   }
-
 }
+
 
 void Robot::motorControl() {
   if (millis() < nextTimeMotorControl) return;
   nextTimeMotorControl = millis() + 200;  // 10 at the original
   //static unsigned long nextMotorControlOutputTime = 0;
-
   // Regelbereich entspricht maximaler PWM am Antriebsrad (motorSpeedMaxPwm), um auch an Steigungen hÃ¶chstes Drehmoment fÃ¼r die Solldrehzahl zu gewÃ¤hrleisten
   motorLeftPID.w = motorLeftSpeedRpmSet;               // SOLL
   motorRightPID.w = motorRightSpeedRpmSet;             // SOLL
@@ -2517,7 +2395,6 @@ void Robot::motorControl() {
   int leftSpeed = motorLeftPWMCurr + motorLeftPID.y;
   if (motorLeftSpeedRpmSet >= 0) leftSpeed = min( max(0, leftSpeed), motorSpeedMaxPwm);
   if (motorLeftSpeedRpmSet < 0) leftSpeed = max(-motorSpeedMaxPwm, min(0, leftSpeed));
-
   // Regelbereich entspricht maximaler PWM am Antriebsrad (motorSpeedMaxPwm), um auch an Steigungen hÃ¶chstes Drehmoment fÃ¼r die Solldrehzahl zu gewÃ¤hrleisten
   motorRightPID.Kp = motorLeftPID.Kp;
   motorRightPID.Ki = motorLeftPID.Ki;
@@ -2548,10 +2425,7 @@ void Robot::motorControl() {
       ShowMessageln(leftSpeed);
     }
   */
-
   setMotorPWM( leftSpeed, rightSpeed, false );
-
-
 }
 
 
@@ -2571,7 +2445,6 @@ void Robot::motorMowControl() {
         //filter on speed reduce to keep the mow speed high for longuer duration
         motorMowPwmCoeff = int((0.1) * motorMowPwmCoeff + (0.9) * prevcoeff);// use only 10% of the new value
       }
-
       if (motorMowPwmCoeff > 100) motorMowPwmCoeff = 100;
       if (motorMowEnable) {
         motorMowSpeedPWMSet = motorMowSpeedMinPwm + ((double)(motorMowSpeedMaxPwm - motorMowSpeedMinPwm)) * (((double)motorMowPwmCoeff) / 100.0);
@@ -2582,18 +2455,17 @@ void Robot::motorMowControl() {
       motorMowPowerMedian.clear();
     }
   }
-  else
-  {
+  else {
     motorMowSpeedPWMSet = 0;
   }
   if (stateCurr == STATE_ERROR) {
     setMotorMowPWM(0, false); //stop immediatly on error (tilt etc....)
   }
-  else
-  {
+  else {
     setMotorMowPWM(motorMowSpeedPWMSet, true);
   }
 }
+
 
 void Robot::resetIdleTime() {
   if (idleTimeSec == BATTERY_SW_OFF) { // battery switched off?
@@ -2602,6 +2474,7 @@ void Robot::resetIdleTime() {
   }
   idleTimeSec = 0;
 }
+
 
 void Robot::setBeeper(int totalDuration, int OnDuration, int OffDuration, int frequenceOn, int frequenceOff ) { // Set the variable for the beeper
   endBeepTime = millis() + totalDuration ;
@@ -2641,7 +2514,6 @@ void Robot::beeper() {  //beeper avoid to use the delay() fonction to not freeze
 
 // set user-defined switches
 void Robot::setUserSwitches() {
-
   setActuator(ACT_USER_SW1, userSwitch1);
   setActuator(ACT_USER_SW2, userSwitch2);
   setActuator(ACT_USER_SW3, userSwitch3);
@@ -2656,6 +2528,8 @@ void Robot::setUserSwitches() {
   setActuator(ACT_RED_LED, userRedLed);
   }
 */
+
+
 void Robot::setUserOut() {
   if (invert_userOut) {
     setActuator(ACT_USER_OUT1, !userOut1);
@@ -2684,35 +2558,29 @@ void Robot::OdoRightCountInt() {
     if (robot.motorRightPWMCurr > 0 ) robot.odometryRight++; else robot.odometryRight--;
   }
   asm("dsb");
-
-
 }
+
+
 void Robot::OdoLeftCountInt() {
   Pulse01 = micros() - Pulse02;
   if (Pulse01 > 10  ) { // debounce for 120uS
     Pulse02 = micros();
     if (robot.motorLeftPWMCurr > 0 ) robot.odometryLeft++; else robot.odometryLeft--;
   }
-  asm("dsb");
-
+  asm("dsb"); //What is this????
 }
 
-void Robot::myCallback() {
 
+void Robot::myCallback() {
   robot.ShowMessageln("warning Watchdog detect that loops take too long duration ");
   robot.ShowMessageln("Tennsy can automaticly reboot if issue is not reset ");
   // try to stop everything
   robot.setNextState(STATE_OFF, 0);
   return;
-
 }
 
 
-
-
-
-// initialise odometry interrupt
-
+// ROBOT SETUP --------------------------------
 void Robot::setup()  {
   setDefaultTime();
   //  mower.h start before the robot setup
@@ -2720,32 +2588,24 @@ void Robot::setup()  {
   Serial.print(millis());
   Serial.println(" ++++++++++++");
 
-
   if (ODOMETRY_ONLY_RISING)
   {
     attachInterrupt(digitalPinToInterrupt(pinOdometryRight), OdoRightCountInt, RISING);
     attachInterrupt(digitalPinToInterrupt(pinOdometryLeft), OdoLeftCountInt, RISING);
   }
-  else
-  {
+  else {
     attachInterrupt(digitalPinToInterrupt(pinOdometryRight), OdoRightCountInt, CHANGE);
     attachInterrupt(digitalPinToInterrupt(pinOdometryLeft), OdoLeftCountInt, CHANGE);
   }
-
-
-
-
   //initialise PFOD com
   rc.initSerial(&Bluetooth, BLUETOOTH_BAUDRATE);
 
   if (RaspberryPIUse) MyRpi.init();
 
-
   //------------------------  SCREEN parts  ----------------------------------------
   if (Enable_Screen) {
     MyScreen.init();
   }
-
 
   //initialise the date time part
   Serial.println("Initialise date time library ");
@@ -2753,11 +2613,10 @@ void Robot::setup()  {
 
   if (timeStatus() != timeSet) {
     Serial.println("Unable to sync with the RTC");
-  } else {
+  }
+  else {
     Serial.println("RTC has set the system time");
   }
-
-
 
   //init of timer for factory setting
   for (int i = 0; i < MAX_TIMERS; i++) {
@@ -2775,6 +2634,7 @@ void Robot::setup()  {
     timer[i].startLaneMaxlengh = 0;
     timer[i].rfidBeacon = 0;
   }
+
   ActualRunningTimer = 99;
   setMotorPWM(0, 0, false);
   loadSaveErrorCounters(true);
@@ -2787,8 +2647,7 @@ void Robot::setup()  {
   if (imuUse) {
     imu.begin();
   }
-  else
-  {
+  else {
     Serial.println(" IMU is not activate ");
   }
 
@@ -2804,12 +2663,12 @@ void Robot::setup()  {
     setNextState(STATE_FORWARD_ODO, 0);
   }
 
-
   stateStartTime = millis();
   //void Robot::setBeeper(int totalDuration, byte OnDuration, byte OffDuration, byte frequenceOn, byte frequenceOff ) { // Set the variable for the beeper
-
   setBeeper(3000, 500, 250, 2000, 200);//beep for 3 sec
+
   gps.init();
+
   Serial.println(F("START"));
   Serial.print(F("Mower "));
   Serial.println(VER);
@@ -2821,7 +2680,6 @@ void Robot::setup()  {
   Serial.println(F("  v to change console output (sensor counters, values, perimeter etc.)"));
   Serial.println(consoleModeNames[consoleMode]);
   Serial.println ();
-
 
   Serial.println ("Starting Ina226 current sensor ");
   MotLeftIna226.begin(0x41);
@@ -2859,13 +2717,10 @@ void Robot::setup()  {
     powerboard_I2c_line_Ok = false;
   }
 
-
   if (powerboard_I2c_line_Ok)
   {
     Serial.println ("Ina226 Begin OK ");
     // Configure INA226
-
-
     ChargeIna226.configure(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
     MotLeftIna226.configure(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
     MotRightIna226.configure(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
@@ -2886,17 +2741,13 @@ void Robot::setup()  {
 
     Serial.println ("Ina226 Calibration OK ");
   }
-  else
-  {
+  else {
     Serial.println ("************** WARNING **************");
     Serial.println ("INA226 powerboard connection is not OK");
   }
-
-
   // watchdog part
   //if wdt is not reset during the trigger duration a myCallback function start.
   // if after timeout wdt is always not reset tennsy reboot
-
   Serial.println("Watchdog configuration start ");
   WDT_timings_t config;
   config.trigger = 10; /* in seconds, 0->128 */
@@ -2904,12 +2755,8 @@ void Robot::setup()  {
   config.callback = myCallback;
   wdt.begin(config);
   Serial.println("Watchdog configuration Finish ");
-
-
   nextTimeInfo = millis();
   Serial.println("Setup finish");
-
-
 }
 
 
@@ -2930,34 +2777,24 @@ void Robot::receivePiPfodCommand (String RpiCmd, float v1, float v2, float v3) {
 }
 
 
-
-
-
-
 void Robot::printInfo(Stream & s) {
-
   if ((consoleMode == CONSOLE_OFF) || (consoleMode == CONSOLE_TRACKING)) {
-
+    //???
   }
-  else
-  {
-
+  else {
     Streamprint(s, "t%6u ", (millis() - stateStartTime) / 1000);
     Streamprint(s, "Loops%7u ", loopsPerSec);
-
     Streamprint(s, "v%1d ", consoleMode);
-
     Streamprint(s, "%4s ", stateNames[stateCurr]);
 
     if (consoleMode == CONSOLE_PERIMETER) {
-
       Streamprint(s, "sig min %4d max %4d avg %4d mag %5d qty %3d",
                   (int)perimeter.getSignalMin(0), (int)perimeter.getSignalMax(0), (int)perimeter.getSignalAvg(0),
                   perimeterMag, (int)(perimeter.getFilterQuality(0) * 100.0));
       Streamprint(s, "  in %2d  cnt %4d  on %1d\r\n",
                   (int)perimeterInside, perimeterCounter, (int)(!perimeter.signalTimedOut(0)) );
-    } else {
-
+    }
+    else {
       Streamprint(s, "odo %4d %4d ", (int)odometryLeft, (int)odometryRight);
       Streamprint(s, "spd %4d %4d %4d ", (int)motorLeftSpeedRpmSet, (int)motorRightSpeedRpmSet, (int)motorMowPwmCoeff);
       if (consoleMode == CONSOLE_SENSOR_VALUES) {
@@ -2971,7 +2808,8 @@ void Robot::printInfo(Stream & s) {
         Streamprint(s, "rol %3d ", (int)(imu.ypr.roll / PI * 180.0));
         if (perimeterUse) Streamprint(s, "per %3d ", (int)perimeterInside);
         if (lawnSensorUse) Streamprint(s, "lawn %3d %3d ", (int)lawnSensorFront, (int)lawnSensorBack);
-      } else {
+      }
+      else {
         // sensor counters
         Streamprint(s, "sen %4d %4d %4d ", motorLeftSenseCounter, motorRightSenseCounter, motorMowSenseCounter);
         Streamprint(s, "bum %4d %4d ", bumperLeftCounter, bumperRightCounter);
@@ -2986,18 +2824,14 @@ void Robot::printInfo(Stream & s) {
         //if (gpsUse) Streamprint(s, "gps %2d ", (int)gps.satellites());
       }
       Streamprint(s, "bat %2d.%01d ", (int)batVoltage, (int)((batVoltage * 10) - ((int)batVoltage * 10)) );
-      Streamprint(s, "chg %2d.%01d %2d.%01d ",
-                  (int)chgVoltage, (int)((chgVoltage * 10) - ((int)chgVoltage * 10)),
-                  (int)chgCurrent, (int)((abs(chgCurrent) * 10) - ((int)abs(chgCurrent) * 10))
-                 );
+      Streamprint(s, "chg %2d.%01d %2d.%01d ", (int)chgVoltage, (int)((chgVoltage * 10) - ((int)chgVoltage * 10)), (int)chgCurrent, (int)((abs(chgCurrent) * 10) - ((int)abs(chgCurrent) * 10)) );
       //Streamprint(s, "imu%3d ", imu.getCallCounter());
       //   Streamprint(s, "adc%3d ", ADCMan.getCapturedChannels());
       Streamprint(s, "%s\r\n", name.c_str());
-
     }
   }
-
 }
+
 
 void Robot::printMenu() {
   Serial.println(" ");
@@ -3016,6 +2850,7 @@ void Robot::printMenu() {
   Serial.println(" ");
 }
 
+
 void Robot::delayWithWatchdog(int ms) {
   unsigned long endtime = millis() + ms;
   while (millis() < endtime) {
@@ -3023,6 +2858,7 @@ void Robot::delayWithWatchdog(int ms) {
     //watchdogReset();
   }
 }
+
 
 void Robot::delayInfo(int ms) {
   unsigned long endtime = millis() + ms;
@@ -3042,7 +2878,6 @@ void Robot::delayInfo(int ms) {
 void Robot::testMotors() {
   motorLeftPWMCurr = 0; motorRightPWMCurr = 0;
   setMotorPWM(motorLeftPWMCurr, motorRightPWMCurr, false);
-
   ShowMessageln(F("testing left motor (forward) half speed..."));
   delay(100);
   motorLeftPWMCurr = motorSpeedMaxPwm / 2; motorRightPWMCurr = 0;
@@ -3050,7 +2885,6 @@ void Robot::testMotors() {
   delayInfo(5000);
   motorLeftPWMCurr = 0; motorRightPWMCurr = 0;
   setMotorPWM(motorLeftPWMCurr, motorRightPWMCurr, false);
-
   ShowMessageln(F("testing left motor (reverse) full speed..."));
   delay(100);
   motorLeftPWMCurr = -motorSpeedMaxPwm; motorRightPWMCurr = 0;
@@ -3058,7 +2892,6 @@ void Robot::testMotors() {
   delayInfo(5000);
   motorLeftPWMCurr = 0; motorRightPWMCurr = 0;
   setMotorPWM(motorLeftPWMCurr, motorRightPWMCurr, false);
-
   ShowMessageln(F("testing right motor (forward) half speed..."));
   delay(100);
   motorLeftPWMCurr = 0; motorRightPWMCurr = motorSpeedMaxPwm / 2;
@@ -3066,7 +2899,6 @@ void Robot::testMotors() {
   delayInfo(5000);
   motorLeftPWMCurr = 0; motorRightPWMCurr = 0;
   setMotorPWM(motorLeftPWMCurr, motorRightPWMCurr, false);
-
   ShowMessageln(F("testing right motor (reverse) full speed..."));
   delay(100);
   motorLeftPWMCurr = 0; motorRightPWMCurr = -motorSpeedMaxPwm;
@@ -3076,10 +2908,10 @@ void Robot::testMotors() {
   setMotorPWM(motorLeftPWMCurr, motorRightPWMCurr, false);
 }
 
+
 void Robot::menu() {
   char ch;
   printMenu();
-
   while (true) {
     //watchdogReset();
     resetIdleTime();
@@ -3090,6 +2922,7 @@ void Robot::menu() {
         case '0':
           nextTimeInfo = millis();
           return;
+
         case '1':
           testMotors();
           printMenu();
@@ -3100,6 +2933,7 @@ void Robot::menu() {
           imuUse = false;
           printMenu();
           break;
+
         case '6':
           //       imu.deleteCompassCalib();
           CompassUse = false;
@@ -3110,21 +2944,25 @@ void Robot::menu() {
           saveUserSettings();
           printMenu();
           break;
+
         case 'l':
           printSettingSerial();
           deleteUserSettings();
           printMenu();
           break;
+
         case 'r':
           printSettingSerial();
           deleteRobotStats();
           printMenu();
           break;
+
         case 'x':
           printSettingSerial();
           ShowMessageln(F("DONE"));
           printMenu();
           break;
+
         case 'e':
           resetErrorCounters();
           setNextState(STATE_OFF, 0);
@@ -3139,8 +2977,6 @@ void Robot::menu() {
 
 
 void Robot::readSerial() {
-
-
   if ((!RaspberryPIUse) && (Serial.available() > 0)) {  //do not read console if raspberry connected
     char ch = (char)Serial.read();
     //resetIdleTime();
@@ -3149,51 +2985,56 @@ void Robot::readSerial() {
         // press '0' for OFF
         setNextState(STATE_OFF, 0);
         break;
+
       case '1':
         // press '1' for Automode
         //motorMowEnable = true;
-
         setNextState(STATE_ACCEL_FRWRD, 0);
         break;
+
       case 'd':
         menu(); // menu
         break;
 
       case 'h':
-
         setNextState(STATE_PERI_FIND, 0); // press 'h' to drive home
         break;
+
       case 'l':
         bumperLeft = true; // press 'l' to simulate left bumper
         bumperLeftCounter++;
         break;
+
       case 'q':
         yawCiblePos = 90;
         setNextState(STATE_ROLL_TO_FIND_YAW, 0); // press 'h' to drive home
         break;
+
       case 'r':
         //setBeeper(400, 50, 50, 200, 0 );//error
         break;
+
       case 's':
         //imu.calibComStartStop();
         break;
+
       case 't':
         setNextState(STATE_PERI_TRACK, 0); // press 't' to track perimeter
         break;
+
       case 'u':
         setNextState(STATE_ACCEL_FRWRD, RIGHT);
         break;
+
       case 'v':
         //bb
         consoleMode = (consoleMode + 1) % 5;
         ShowMessageln(consoleModeNames[consoleMode]);
         break;
-
-
     }
   }
-
 }
+
 
 void Robot::checkButton() {
   if ( (!buttonUse) || (millis() < nextTimeButtonCheck) ) return;
@@ -3212,8 +3053,7 @@ void Robot::checkButton() {
       if (buttonCounter >= 3) buttonCounter = 3;
       //resetIdleTime();
     }
-    else
-    {
+    else {
       // ON/OFF button released
       ShowMessage(F("Button Release counter : "));
       ShowMessageln(buttonCounter);
@@ -3247,14 +3087,10 @@ void Robot::checkButton() {
             setActuator(ACT_CHGRELAY, 0);
             setNextState(STATE_STATION_REV, 0);
           }
-
           else {
             setNextState(STATE_ACCEL_FRWRD, 0);
             return;
           }
-
-
-
         }
         else if (buttonCounter == 2) {
           // start normal with random mowing
@@ -3267,13 +3103,10 @@ void Robot::checkButton() {
             setActuator(ACT_CHGRELAY, 0);
             setNextState(STATE_STATION_REV, 0);
           }
-
           else {
             setNextState(STATE_ACCEL_FRWRD, 0);
             return;
           }
-
-
         }
         else if (buttonCounter == 3) {
           if (stateCurr == STATE_STATION) return;
@@ -3292,7 +3125,6 @@ void Robot::checkButton() {
       }
       buttonCounter = 0;
     }
-
   }
 }
 
@@ -3303,68 +3135,37 @@ void Robot::newTagFind() {
     ShowMessage("Find a tag : ");
     ShowMessageln(rfidTagFind);
     unsigned long rfidTagFind_long = hstol(rfidTagFind);
-
-    //bber200
-
-    if (rfidUse) {
-
-      if (search_rfid_list(rfidTagFind_long)) {
-        rfidTagTraitement(rfidTagFind_long, statusCurr);
-      }
-      else
-      {
+      //bber200
+      if (rfidUse) {
+            if (search_rfid_list(rfidTagFind_long)) {
+              rfidTagTraitement(rfidTagFind_long, statusCurr);
+            }
+            else {
         ShowMessage("Auto insert Wait tag : ");
         ShowMessageln(rfidTagFind);
         insert_rfid_list(rfidTagFind_long , 0, 0, 100, 1, 1, 1, 1);
         sort_rfid_list();
-
       }
-
-
-
     }
   }
 }
 
+
 void Robot::pfodSetDateTime(byte hr1, byte min1, byte sec1, byte day1, byte month1, short year1) {
-
-
   //mkTime(
   setTime(hr1, min1, sec1, day1, month1, year1); // Another way to set;
   Teensy3Clock.set(now()); // set the internal teensy RTC
   Serial.println(now());
-
-  //setTime(hr,min,sec,day,month,yr); // Another way to set;
-  //setTime(PfodDate);
-
-
-
-  /*makeTime(tm);
-
-    Convert normal date & time to a time_t number. The time_t number is returned. The tm input is a TimeElements variable type, which has these fields:
-
-    tm.Second  Seconds   0 to 59
-    tm.Minute  Minutes   0 to 59
-    tm.Hour    Hours     0 to 23
-    tm.Wday    Week Day  0 to 6  (not needed for mktime)
-    tm.Day     Day       1 to 31
-    tm.Month   Month     1 to 12
-    tm.Year    Year      0 to 99 (offset from 1970)
-  */
-
-
-
-
   Serial.print("Date change : ");
   Serial.println(Teensy3Clock.get());
 }
+
 
 void Robot::readSensors() {
   if (millis() >= nextTimeMotorSense) {
     nextTimeMotorSense = millis() +  50;
     double accel = 0.10;  //filter percent
     unsigned long readingDuration;
-
     if (powerboard_I2c_line_Ok) {
       motorRightPower = MotRightIna226.readBusPower() ;
       motorLeftPower  = MotLeftIna226.readBusPower() ;
@@ -3389,33 +3190,26 @@ void Robot::readSensors() {
     }
     //Mow2_Power = 0 ;
     //Mow3_Power = 0 ;
-
     motorMowPower   = max(Mow1_Power, Mow2_Power);
     motorMowPower   = max(motorMowPower, Mow3_Power);
 
     motorRightPower = motorRightPower * (1.0 - accel) + ((double)motorRightPower) * accel;
     motorLeftPower = motorLeftPower * (1.0 - accel) + ((double)motorLeftPower) * accel;
     motorMowPower = motorMowPower * (1.0 - accel) + ((double)motorMowPower) * accel;
-
-
-
-
   }
 
   if ((stateCurr != STATE_STATION) && (stateCurr != STATE_STATION_CHARGING) && (perimeterUse) && (millis() >= nextTimePerimeter)) {
     nextTimePerimeter = millis() +  15;
+    perimeterMag = perimeter.getMagnitude(0);
+    perimeterMedian.add(perimeterMag);
 
     if (perimeter.read2Coil) {
       perimeterMagRight = perimeter.getMagnitude(1);
     }
-
-    perimeterMag = perimeter.getMagnitude(0);
-    perimeterMedian.add(perimeterMag);
     if (perimeterMedian.isFull()) {
       perimeterNoise = perimeterMedian.getHighest() - perimeterMedian.getLowest();
       perimeterMedian.clear();
     }
-
 
     if ((perimeter.isInside(0) != perimeterInside)) {
       perimeterCounter++;
@@ -3425,15 +3219,12 @@ void Robot::readSensors() {
 
     if ((!perimeterInside) && (perimeterTriggerTime == 0)) {
       // set perimeter trigger time
-
-      //bber2
-      //use smooth to avoid big area transition, in the middle of the area with noise the mag can change from + to -
+      //bber2 use smooth to avoid big area transition, in the middle of the area with noise the mag can change from + to -
       smoothPeriMag = perimeter.getSmoothMagnitude(0);
       if (smoothPeriMag > perimeterTriggerMinSmag) {
         perimeterTriggerTime = millis();
       }
-      else
-      {
+      else {
         if (millis() >= nextTimePrintConsole) {
           nextTimePrintConsole = millis() + 1000;
           if ((developerActive) && (stateCurr == STATE_FORWARD_ODO)) {
@@ -3441,7 +3232,6 @@ void Robot::readSensors() {
           }
         }
       }
-
     }
     /*
       Serial.print("sig timeout ---> ");
@@ -3466,7 +3256,6 @@ void Robot::readSensors() {
       }
       }
     */
-
   }
 
   if ((bumperUse) && (millis() >= nextTimeBumper)) {
@@ -3483,7 +3272,6 @@ void Robot::readSensors() {
       bumperRightCounter++;
       bumperRight = true;
     }
-
   }
 
   if (millis() >= nextTimeRTC) {
@@ -3495,11 +3283,7 @@ void Robot::readSensors() {
     datetime.time.hour = hour();
     datetime.time.minute = minute();
     datetime.date.dayOfWeek = getDayOfWeek(month(), day(), year(), 0);
-
   }
-
-
-
 
   if (millis() >= nextTimeBattery) {
     // read battery
@@ -3516,6 +3300,7 @@ void Robot::readSensors() {
       // charging
       batCapacity += (chgCurrent / 36.0);
     }
+
     if (powerboard_I2c_line_Ok) {
       chgvolt = ChargeIna226.readBusVoltage() ;
       curramp = ChargeIna226.readBusPower(); //  ?? sense don't work
@@ -3526,15 +3311,13 @@ void Robot::readSensors() {
         ShowMessageln(readingDuration);
       }
     }
+
     if (chgvolt != 0) {
       curramp = curramp / chgvolt;
     }
-    else
-    {
+    else {
       curramp = 0;
     }
-
-
 
     double accel = 0.05;  //filter percent
 
@@ -3542,8 +3325,7 @@ void Robot::readSensors() {
     if (abs(chgVoltage - chgvolt) > 8)   chgVoltage = chgvolt; else chgVoltage = (1.0 - accel) * chgVoltage + accel * chgvolt;
     if (abs(chgCurrent - curramp) > 0.4) chgCurrent = curramp; else chgCurrent = (1.0 - accel) * chgCurrent + accel * curramp; //Deaktiviert fÃ¼r Ladestromsensor berechnung
     //bber30 tracking not ok because reduce the speed loop with this but can check the chgvoltage
-
-    /*
+  /*
        ShowMessage("batVoltage ");
        ShowMessage(batVoltage);
        ShowMessage("/chgVoltage ");
@@ -3569,14 +3351,12 @@ void Robot::setDefaults() {
   motorMowEnable = false;
 }
 
+
 // set state machine new state
 // called *ONCE* to set to a *NEW* state
-
-
 void Robot::setNextState(byte stateNew, byte dir) {
   stateTime = millis() - stateStartTime; //last state duration
   if (stateNew == stateCurr) return;
-
   // evaluate new state
   stateNext = stateNew;
   rollDir = dir;
@@ -3594,9 +3374,7 @@ void Robot::setNextState(byte stateNew, byte dir) {
       motorLeftSpeedRpmSet = motorSpeedMaxRpm; //use RPM instead of PWM to straight line
       motorRightSpeedRpmSet = motorSpeedMaxRpm;
       statsMowTimeTotalStart = true;
-
       break;
-
 
     case STATE_FORWARD_ODO:
       if (statusCurr != NORMAL_MOWING) {
@@ -3611,18 +3389,14 @@ void Robot::setNextState(byte stateNew, byte dir) {
       motorRightSpeedRpmSet = motorSpeedMaxRpm ;
       motorLeftSpeedRpmSet = motorSpeedMaxRpm ;
       //bber60
-
       stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * 30000);// set a very large distance 300 ml for random mowing
       stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * 30000);
       if ((mowPatternCurr == MOW_LANES) && (!justChangeLaneDir)) { //it s a not new lane so limit the forward distance
         stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * actualLenghtByLane * 100); //limit the lenght
         stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * actualLenghtByLane * 100);
       }
-
       OdoRampCompute();
-
       statsMowTimeTotalStart = true;
-
       break;
 
     case STATE_ESCAPE_LANE:
@@ -3639,19 +3413,14 @@ void Robot::setNextState(byte stateNew, byte dir) {
         stateEndOdometryRight = odometryRight + (odometryTicksPerCm * odometryWheelBaseCm * 2) ;
         stateEndOdometryLeft = odometryLeft + (odometryTicksPerCm * odometryWheelBaseCm * 1.5 ) ;
       }
-      else
-      {
+      else {
         motorLeftSpeedRpmSet = motorSpeedMaxRpm ;
         motorRightSpeedRpmSet = motorSpeedMaxRpm / 2 ;
         stateEndOdometryRight = odometryRight + (odometryTicksPerCm * odometryWheelBaseCm * 1.5 ) ;
         stateEndOdometryLeft = odometryLeft + (odometryTicksPerCm * odometryWheelBaseCm * 2) ;
       }
-
-
       OdoRampCompute();
-
       break;
-
 
     case STATE_STATION_REV: //when start in auto mode the mower first reverse to leave the station
       statusCurr = TRACK_TO_START;
@@ -3679,8 +3448,7 @@ void Robot::setNextState(byte stateNew, byte dir) {
         motorRightSpeedRpmSet = -motorSpeedMaxRpm / 2 ;
         motorLeftSpeedRpmSet = motorSpeedMaxRpm / 2 ;
       }
-      else
-      {
+      else {
         Tempovar = -36000 / AngleRotate; //need a value*100 for integer division later
         motorRightSpeedRpmSet = motorSpeedMaxRpm / 2 ;
         motorLeftSpeedRpmSet = -motorSpeedMaxRpm / 2 ;
@@ -3689,11 +3457,9 @@ void Robot::setNextState(byte stateNew, byte dir) {
       stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
       stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
       OdoRampCompute();
-
       break;
 
     case STATE_STATION_FORW: //when start in auto after mower  roll this state accel the 2 wheel before forward
-
       justChangeLaneDir = true;
       UseAccelLeft = 1;
       UseAccelRight = 1;
@@ -3704,7 +3470,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
       stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * 60) ;
       OdoRampCompute();
       //motorMowEnable = true;
-
       break;
 
     case STATE_STATION_CHECK:
@@ -3728,8 +3493,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
       stateEndOdometryRight = odometryRight + (odometryTicksPerCm * stationCheckDist);
       stateEndOdometryLeft = odometryLeft + (odometryTicksPerCm * stationCheckDist);
       OdoRampCompute();
-
-
       break;
 
     //not use actually
@@ -3738,7 +3501,8 @@ void Robot::setNextState(byte stateNew, byte dir) {
       if (dir == RIGHT) {
         motorLeftSpeedRpmSet = motorSpeedMaxRpm / 2;
         motorRightSpeedRpmSet = -motorLeftSpeedRpmSet;
-      } else {
+      } 
+      else {
         motorRightSpeedRpmSet = motorSpeedMaxRpm / 2;
         motorLeftSpeedRpmSet = -motorRightSpeedRpmSet;
       }
@@ -3754,6 +3518,7 @@ void Robot::setNextState(byte stateNew, byte dir) {
       stateEndOdometryLeft = odometryLeft - (odometryTicksPerCm * DistPeriObstacleRev);
       OdoRampCompute();
       break;
+
     case STATE_PERI_OBSTACLE_ROLL:
       AngleRotate = 45;
       UseAccelLeft = 1;
@@ -3785,7 +3550,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
       stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriObstacleForw);//50cm
       stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriObstacleForw);
       OdoRampCompute();
-
       break;
 
     case STATE_PERI_OBSTACLE_AVOID:
@@ -3804,9 +3568,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
       stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriObstacleAvoid);
       stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriObstacleAvoid);
       OdoRampCompute();
-
-
-
       break;
 
     case STATE_PERI_REV:  //when obstacle in perifind
@@ -3819,7 +3580,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
       stateEndOdometryLeft = odometryLeft - 1440;
       OdoRampCompute();
       break;
-
 
     case STATE_PERI_OUT_STOP: //in auto mode and forward slow down before stop and reverse
       //-------------------------------Verify if it's time to change mowing pattern
@@ -3837,9 +3597,7 @@ void Robot::setNextState(byte stateNew, byte dir) {
       stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriOutStop);
       stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriOutStop);
       OdoRampCompute();
-
       break;
-
 
     case STATE_SONAR_TRIG: //in auto mode and forward slow down before stop and reverse different than stop because reduce speed during a long time and not immediatly
       justChangeLaneDir = !justChangeLaneDir;
@@ -3852,11 +3610,9 @@ void Robot::setNextState(byte stateNew, byte dir) {
       stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * distToObstacle);
       stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * distToObstacle);
       OdoRampCompute();
-
       break;
 
     case STATE_STOP_TO_FIND_YAW:
-
       UseAccelLeft = 0;
       UseBrakeLeft = 1;
       UseAccelRight = 0;
@@ -3865,11 +3621,9 @@ void Robot::setNextState(byte stateNew, byte dir) {
       stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriOutStop);
       stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriOutStop);
       OdoRampCompute();
-
       break;
 
     case STATE_STOP_ON_BUMPER:
-
       UseAccelLeft = 0;
       UseBrakeLeft = 1;
       UseAccelRight = 0;
@@ -3879,7 +3633,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
       stateEndOdometryRight = odometryRight;// + (int)(odometryTicksPerCm / 6);
       stateEndOdometryLeft = odometryLeft;// + (int)(odometryTicksPerCm / 6);
       OdoRampCompute();
-
       break;
 
     case STATE_PERI_STOP_TOTRACK:
@@ -3909,9 +3662,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
       OdoRampCompute();
       break;
 
-
-
-
     case STATE_PERI_STOP_TOROLL:
       //imu.run(); //31/08/19 In peritrack the imu is stop so try to add this to start it now and avoid imu tilt error (occur once per week or less) ??????
       if (statusCurr == TRACK_TO_START) {
@@ -3931,7 +3681,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
       break;
 
     case STATE_PERI_STOP_TO_FAST_START:
-
       UseAccelLeft = 0;
       UseBrakeLeft = 1;
       UseAccelRight = 0;
@@ -3951,7 +3700,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
         perimeterUse = false; //disable the perimeter use to leave the area
         ShowMessageln("Stop to read the perimeter wire");
         rollDir = LEFT;
-
       }
       UseAccelLeft = 0;
       UseBrakeLeft = 1;
@@ -4018,11 +3766,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
       Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later  HERE IT CAN BE NEGATIVE WHEN ROLL LEFT
       stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
       stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-
-
-
-
-
       OdoRampCompute();
       break;
 
@@ -4037,8 +3780,8 @@ void Robot::setNextState(byte stateNew, byte dir) {
       stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * newtagDistance1);
       stateEndOdometryLeft = odometryLeft +  (int)(odometryTicksPerCm * newtagDistance1) ;
       OdoRampCompute();
-
       break;
+
     case STATE_DRIVE2_TO_NEWAREA:
       UseAccelLeft = 1;
       UseBrakeLeft = 0;
@@ -4077,7 +3820,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
       stateEndOdometryRight = odometryRight;//+ (odometryTicksPerCm * 10);
       stateEndOdometryLeft = odometryLeft;//+ (odometryTicksPerCm * 10);
       OdoRampCompute();
-
       break;
 
     case STATE_ROLL_TONEXTTAG:  // when find a tag the mower roll to leave the wire and go again in peirfind with new heading
@@ -4098,7 +3840,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
       motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
       stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
       stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-
       OdoRampCompute();
       break;
 
@@ -4109,9 +3850,7 @@ void Robot::setNextState(byte stateNew, byte dir) {
       endTimeCalibration = millis() + maxDurationDmpAutocalib * 1000;  //max duration calibration
       compassYawMedian.clear();
       accelGyroYawMedian.clear();
-
       break;
-
 
     case STATE_STOP_CALIBRATE:
       UseAccelLeft = 0;
@@ -4123,8 +3862,8 @@ void Robot::setNextState(byte stateNew, byte dir) {
         motorRightSpeedRpmSet = -motorSpeedMaxRpm;
         stateEndOdometryRight = odometryRight - (int)(odometryTicksPerCm / 2 );
         stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm / 2 );
-
-      } else {
+      } 
+      else {
         motorLeftSpeedRpmSet = -motorSpeedMaxRpm ;
         motorRightSpeedRpmSet = motorSpeedMaxRpm;
         stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm / 2 ) ;
@@ -4146,7 +3885,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
       stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * 20);  //brake in 20CM
       OdoRampCompute();
       break;
-
 
     case STATE_ROTATE_RIGHT_360:
       spiraleNbTurn = 0;
@@ -4179,7 +3917,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
       stateEndOdometryRight = odometryRight +  (odometryTicksPerCm * odometryWheelBaseCm / 2);
       stateEndOdometryLeft = odometryLeft +  (odometryTicksPerCm * odometryWheelBaseCm / 2);
       OdoRampCompute();
-
       break;
 
     case STATE_MOW_SPIRALE:
@@ -4211,7 +3948,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
       Tmp1 = 2.00 * (R + float(odometryWheelBaseCm));
       motorRightSpeedRpmSet = (int) (motorLeftSpeedRpmSet * Tmp / Tmp1) ;
 
-
       stateEndOdometryRight = odometryRight +  (odometryTicksPerCm * DistToDriveRight);
       stateEndOdometryLeft = odometryLeft +  (odometryTicksPerCm * DistToDriveLeft);
       /*
@@ -4233,12 +3969,8 @@ void Robot::setNextState(byte stateNew, byte dir) {
             ShowMessageln(spiraleNbTurn);
 
       */
-
-
-
       OdoRampCompute();
       spiraleNbTurn = spiraleNbTurn + 1;
-
       break;
 
     case STATE_PERI_OUT_REV: //in normal mowing reverse after the wire trigger
@@ -4248,8 +3980,7 @@ void Robot::setNextState(byte stateNew, byte dir) {
         PrevStateOdoDepassLeft = odometryLeft - stateEndOdometryLeft;
         PrevStateOdoDepassRight = odometryRight - stateEndOdometryRight;
       }
-      else
-      {
+      else {
         PrevStateOdoDepassLeft = 0;
         PrevStateOdoDepassRight = 0;
       }
@@ -4260,8 +3991,7 @@ void Robot::setNextState(byte stateNew, byte dir) {
         if (mowPatternCurr == MOW_LANES)   UseBrakeRight = 1;
         else UseBrakeRight = 0;
       }
-      else
-      {
+      else {
         UseAccelLeft = 1;
         if (mowPatternCurr == MOW_LANES)  UseBrakeLeft = 1;
         else UseBrakeLeft = 0;
@@ -4281,9 +4011,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
             ShowMessage(" / ");
             ShowMessageln(odometryRight);
       */
-
-
-
       OdoRampCompute();
       break;
 
@@ -4303,8 +4030,8 @@ void Robot::setNextState(byte stateNew, byte dir) {
         Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
         stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
         stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-
-      } else {
+      } 
+      else {
         // if (mowPatternCurr == MOW_ZIGZAG) AngleRotate = imu.scale180(imuDriveHeading - 135); //need limit value to valib the rebon
         UseAccelLeft = 0;
         UseBrakeLeft = 1;
@@ -4317,9 +4044,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
         stateEndOdometryRight = odometryRight + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) ;
         stateEndOdometryLeft = odometryLeft - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) ;
       }
-
-
-
       OdoRampCompute();
       break;
 
@@ -4348,8 +4072,8 @@ void Robot::setNextState(byte stateNew, byte dir) {
         motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
         stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
         stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-
-      } else {
+      }
+      else {
         UseAccelLeft = 1;
         UseBrakeLeft = 1;
         UseAccelRight = 1;
@@ -4358,11 +4082,10 @@ void Robot::setNextState(byte stateNew, byte dir) {
         motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.5;
         stateEndOdometryRight = odometryRight + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) ;
         stateEndOdometryLeft = odometryLeft - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-
-
       }
       OdoRampCompute();
       break;
+
     case STATE_PERI_OUT_ROLL_TOTRACK:  //roll left or right in normal mode
       AngleRotate = 180;
       UseAccelLeft = 1;
@@ -4381,8 +4104,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
       }
       stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
       stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-
-
       OdoRampCompute();
       break;
 
@@ -4396,7 +4117,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
         motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
         stateEndOdometryRight = odometryRight - (int)(odometryTicksPerCm * 5); //stop on 5 cm
         stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * 5);
-
       }
       else {
         motorLeftSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
@@ -4404,17 +4124,16 @@ void Robot::setNextState(byte stateNew, byte dir) {
         stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * 5); //stop on 5 cm
         stateEndOdometryLeft = odometryLeft - (int)(odometryTicksPerCm * 5);
       }
-
       OdoRampCompute();
       break;
+
     case STATE_PERI_OUT_FORW:  //Accel after roll so the 2 wheel have the same speed when reach the forward state
 
       if ((mowPatternCurr == MOW_LANES) || (mowPatternCurr == MOW_ZIGZAG)) {
         PrevStateOdoDepassLeft = odometryLeft - stateEndOdometryLeft;
         PrevStateOdoDepassRight = odometryRight - stateEndOdometryRight;
       }
-      else
-      {
+      else {
         PrevStateOdoDepassLeft = 0;
         PrevStateOdoDepassRight = 0;
       }
@@ -4422,12 +4141,11 @@ void Robot::setNextState(byte stateNew, byte dir) {
         if ((mowPatternCurr == MOW_LANES) || (mowPatternCurr == MOW_ZIGZAG))   UseAccelLeft = 1;
         else  UseAccelLeft = 0;
         UseAccelRight = 1;
-      } else {
-
+      } 
+      else {
         if ((mowPatternCurr == MOW_LANES) || (mowPatternCurr == MOW_ZIGZAG))   UseAccelRight = 1;
         else  UseAccelRight = 0;
         UseAccelLeft = 1;
-
       }
       UseBrakeLeft = 0;
       UseBrakeRight = 0;
@@ -4435,12 +4153,9 @@ void Robot::setNextState(byte stateNew, byte dir) {
       stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriOutForw) - PrevStateOdoDepassRight;
       stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriOutForw) - PrevStateOdoDepassLeft;
       OdoRampCompute();
-
       break;
 
-
     case STATE_PERI_OUT_LANE_ROLL1: //roll left or right in normal mode for 135 deg
-
       PrevStateOdoDepassLeft = odometryLeft - stateEndOdometryLeft;
       PrevStateOdoDepassRight = odometryRight - stateEndOdometryRight;
       AngleRotate = 135;
@@ -4454,7 +4169,8 @@ void Robot::setNextState(byte stateNew, byte dir) {
         motorRightSpeedRpmSet = -motorSpeedMaxRpm;
         stateEndOdometryRight =  odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassRight ;
         stateEndOdometryLeft =  odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassLeft ;
-      } else {
+      }
+      else {
         motorLeftSpeedRpmSet = -motorSpeedMaxRpm;
         motorRightSpeedRpmSet = motorSpeedMaxRpm;
         stateEndOdometryRight = odometryRight + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassRight;
@@ -4471,7 +4187,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
       UseAccelLeft = 1;
       UseAccelRight = 1;
       motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm;
-
       //************************************same as spirale in by lane mowing*******************************
       if (highGrassDetect) {
         Tempovar = DistBetweenLane / 2;
@@ -4481,15 +4196,12 @@ void Robot::setNextState(byte stateNew, byte dir) {
       }
       else Tempovar = DistBetweenLane;
       //****************************************************************************************************
-
       stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * Tempovar) - PrevStateOdoDepassRight; //forward for  distance between lane
       stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * Tempovar) - PrevStateOdoDepassLeft;
-
       OdoRampCompute();
       break;
 
     case STATE_PERI_OUT_LANE_ROLL2: //roll left or right in normal mode
-
       PrevStateOdoDepassLeft = odometryLeft - stateEndOdometryLeft;
       PrevStateOdoDepassRight = odometryRight - stateEndOdometryRight;
       AngleRotate = 45;
@@ -4504,7 +4216,8 @@ void Robot::setNextState(byte stateNew, byte dir) {
         motorRightSpeedRpmSet = -motorSpeedMaxRpm;
         stateEndOdometryRight =  odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassRight ;
         stateEndOdometryLeft =  odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassLeft ;
-      } else {
+      }
+      else {
         motorLeftSpeedRpmSet = -motorSpeedMaxRpm;
         motorRightSpeedRpmSet = motorSpeedMaxRpm;
         stateEndOdometryRight = odometryRight + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassRight;
@@ -4536,6 +4249,7 @@ void Robot::setNextState(byte stateNew, byte dir) {
         stateEndTime = millis() + motorReverseTime + motorZeroSettleTime;
       */
       break;
+
     case STATE_ROLL:  // when hit obstacle in forward mode
       AngleRotate = random(50, 180);
       Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
@@ -4548,8 +4262,8 @@ void Robot::setNextState(byte stateNew, byte dir) {
         motorRightSpeedRpmSet = -motorSpeedMaxRpm;
         stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
         stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-
-      } else {
+      }
+      else {
         UseAccelLeft = 0;
         UseBrakeLeft = 1;
         UseAccelRight = 1;
@@ -4562,9 +4276,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
       OdoRampCompute();
       break;
 
-
-
-
     case STATE_TEST_COMPASS:  // to test the imu
       statusCurr = TESTING;
       if (RaspberryPIUse) MyRpi.SendStatusToPi();
@@ -4576,14 +4287,8 @@ void Robot::setNextState(byte stateNew, byte dir) {
       motorRightSpeedRpmSet = -motorSpeedMaxRpm * compassRollSpeedCoeff / 100;
       stateEndOdometryRight = odometryRight - (int)(odometryTicksPerCm * 2 * PI * odometryWheelBaseCm );
       stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * 2 *  PI * odometryWheelBaseCm );
-
-
-
       OdoRampCompute();
-
-
       break;
-
 
     case STATE_CALIB_MOTOR_SPEED:
       statusCurr = TESTING;
@@ -4593,7 +4298,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
       UseAccelRight = 1;
       UseBrakeRight = 1;
       OdoRampCompute();
-
       break;
 
     case STATE_TEST_MOTOR:
@@ -4604,9 +4308,7 @@ void Robot::setNextState(byte stateNew, byte dir) {
       UseAccelRight = 1;
       UseBrakeRight = 1;
       OdoRampCompute();
-
       break;
-
 
     case STATE_ROLL_TO_FIND_YAW:  // roll slowly 720 deg until find the positive yaw, state will be changed by the IMU
       if (stopMotorDuringCalib) motorMowEnable = false;//stop the mow motor
@@ -4642,16 +4344,11 @@ void Robot::setNextState(byte stateNew, byte dir) {
               stateEndOdometryLeft = odometryLeft - (int)(odometryTicksPerCm *  4 * PI * odometryWheelBaseCm );
             }
       */
-
       OdoRampCompute();
       break;
 
-
-
-
     case STATE_ROLL_WAIT:
       ///use to make test with o in console but never call in normal mode
-
       //roll slowly 360 deg to find the yaw state is stopped by the IMU
       UseAccelLeft = 1;
       UseBrakeLeft = 1;
@@ -4661,18 +4358,20 @@ void Robot::setNextState(byte stateNew, byte dir) {
       motorRightSpeedRpmSet = -motorSpeedMaxRpm / 2;
       stateEndOdometryRight = odometryRight - (int)(odometryTicksPerCm *  2 * PI * odometryWheelBaseCm );
       stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm *  2 * PI * odometryWheelBaseCm );
-
       OdoRampCompute();
       break;
+
     case STATE_MANUAL:
       statusCurr = MANUAL;
       if (RaspberryPIUse) MyRpi.SendStatusToPi();
       break;
+
     case STATE_REMOTE:
       statusCurr = REMOTE;
       if (RaspberryPIUse) MyRpi.SendStatusToPi();
       motorMowEnable = false;
       break;
+
     case STATE_STATION: //stop immediatly
       areaInMowing = 1;
       //ignoreRfidTag = false;
@@ -4694,7 +4393,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
       statsMowTimeTotalStart = false;  // stop stats mowTime counter
       //bber30
       loadSaveRobotStats(false);        //save robot stats
-
       break;
 
     case STATE_STATION_CHARGING:
@@ -4740,7 +4438,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
       loadSaveRobotStats(false);      //save robot stats
       break;
 
-
     case STATE_PERI_FIND:
       //Don't Use accel when start from forward_odo because the 2 wheels are already running
       //if status is change in pfod need to refresh it in PI
@@ -4767,11 +4464,8 @@ void Robot::setNextState(byte stateNew, byte dir) {
       stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * 30000);//300 ml
       stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * 30000);
       OdoRampCompute();
-
-
       motorMowEnable = false;
       break;
-
 
     case STATE_PERI_TRACK:
       //motorMowEnable = false;     // FIXME: should be an option?
@@ -4786,7 +4480,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
 
     case STATE_WAIT_AND_REPEAT:
       //ShowMessageln("WAIT AND REPEAT  ");
-
       break;
 
     //bber202
@@ -4805,14 +4498,11 @@ void Robot::setNextState(byte stateNew, byte dir) {
       stateEndOdometryRight = odometryRight + int(odometryTicksPerRevolution / 4) ;
       stateEndOdometryLeft = odometryLeft + int(odometryTicksPerRevolution / 4) ;
       OdoRampCompute();
-
       break;
-
   }  // end switch
 
   sonarObstacleTimeout = 0;
   // state has changed
-
   stateStartTime = millis();
 
   stateNext = stateNew;
@@ -4825,28 +4515,13 @@ void Robot::setNextState(byte stateNew, byte dir) {
   ShowMessage (F(statusNames[statusCurr]));
   ShowMessage (" / ");
   ShowMessageln (F(stateNames[stateCurr]));
-
-
-
-
-
-
-
   //ShowMessage (" Dir ");
   //ShowMessage (rollDir);
   //ShowMessage (" State changed at ");
   //ShowMessage (stateStartTime);
   //ShowMessage (" From state ");
   //ShowMessageln (F(stateNames[stateLast]));
-
 }
-
-
-
-
-
-
-
 
 
 void Robot::ShowMessage(String message) {
@@ -4855,6 +4530,8 @@ void Robot::ShowMessage(String message) {
     Bluetooth.print (message);
   }
 }
+
+
 void Robot::ShowMessageln(String message) {
   Serial.println(message);
   if (ConsoleToPfod) {
@@ -4862,12 +4539,15 @@ void Robot::ShowMessageln(String message) {
   }
 }
 
+
 void Robot::ShowMessage(float value) {
   Serial.print (value);
   if (ConsoleToPfod) {
     Bluetooth.print (value);
   }
 }
+
+
 void Robot::ShowMessageln(float value) {
   Serial.println(value);
   if (ConsoleToPfod) {
@@ -4876,10 +4556,7 @@ void Robot::ShowMessageln(float value) {
 }
 
 // check battery voltage and decide what to do
-
-
 void Robot::checkBattery() {
-
   if ((millis() < nextTimeCheckBattery) || (millis() < 30000)) return; //  wait 30 sec after the initial power on before first check to avoid read bad battery voltage
   nextTimeCheckBattery = millis() + 1000; //if change need to adjust the line idleTimeSec= idleTimeSec+1;
 
@@ -4908,8 +4585,6 @@ void Robot::checkBattery() {
       //periFindDriveHeading = imu.ypr.yaw;
       setNextState(STATE_PERI_FIND, 0);
     }
-
-
     // if robot is OFF or Error  we can start to count before shutdown
     if ( (stateCurr == STATE_OFF) || (stateCurr == STATE_ERROR)) {
       /*
@@ -4928,8 +4603,7 @@ void Robot::checkBattery() {
             MyRpi.sendCommandToPi("PowerOffPi");
             delayWithWatchdog(30000);//wait 30Sec  until pi is OFF or the USB native power again the due and the undervoltage never switch OFF
           }
-          else
-          {
+          else {
             ShowMessageln(F("PCB power OFF immediatly"));
           }
           setBeeper(3000, 3000, 0, 2000, 0);
@@ -4941,8 +4615,7 @@ void Robot::checkBattery() {
         }
       }
     }
-    else
-    {
+    else {
       resetIdleTime();
     }
   }
@@ -4953,7 +4626,6 @@ void Robot::checkBattery() {
 void Robot::checkRobotStats() {
   if (millis() < nextTimeRobotStats) return;
   nextTimeRobotStats = millis() + 60000;
-
   //----------------stats mow time------------------------------------------------------
   statsMowTimeHoursTotal = double(statsMowTimeMinutesTotal) / 60;
   if (statsMowTimeTotalStart) {
@@ -4963,9 +4635,7 @@ void Robot::checkRobotStats() {
   }
   else if (statsMowTimeMinutesTripCounter != 0) {
     statsMowTimeMinutesTripCounter = 0;
-
   }
-
   //---------------stats Battery---------------------------------------------------------
   if ((stateCurr == STATE_STATION_CHARGING) && (stateTime >= 60000)) { // count only if mower is charged longer then 60sec
     statsBatteryChargingCounter++; // temporary counter
@@ -4985,23 +4655,18 @@ void Robot::checkRobotStats() {
   */
   if (statsBatteryChargingCapacityTotal <= 0 || statsBatteryChargingCounterTotal == 0) statsBatteryChargingCapacityAverage = 0; // make sure that there is no dividing by zero
   else statsBatteryChargingCapacityAverage = statsBatteryChargingCapacityTotal / statsBatteryChargingCounterTotal;
-
   //----------------new stats goes here------------------------------------------------------
   //mowPatternJustChange;
   mowPatternDuration++;
-
-
 }
 
 
 void Robot::reverseOrBidir(byte aRollDir) {
-
   if (stateCurr == STATE_PERI_OUT_ROLL_TOINSIDE) {
     ShowMessageln("Bumper hit ! try roll in other dir");
     setNextState(STATE_WAIT_AND_REPEAT, aRollDir);
     return;
   }
-
   if (mowPatternCurr == MOW_LANES) setNextState(STATE_STOP_ON_BUMPER, rollDir);
   else  setNextState(STATE_STOP_ON_BUMPER, aRollDir);
 }
@@ -5027,7 +4692,6 @@ void Robot::checkCurrent() {
       }
     }
   }
-
   // if (motorMowPower >= motorMowPowerMax)
   if ((motorMowEnable) && (motorMowPower >= motorMowPowerMax))
   {
@@ -5035,8 +4699,7 @@ void Robot::checkCurrent() {
     ShowMessage("Warning  motorMowPower >= motorMowPowerMax and Counter time is ");
     ShowMessageln(motorMowSenseCounter);
   }
-  else
-  {
+  else {
     errorCounterMax[ERR_MOW_SENSE] = 0;
     motorMowSenseCounter = 0;
     if ((lastTimeMotorMowStuck != 0) && (millis() >= lastTimeMotorMowStuck + 60000)) { // wait 60 seconds before switching on again
@@ -5055,7 +4718,6 @@ void Robot::checkCurrent() {
     addErrorCounter(ERR_MOW_SENSE);
     lastTimeMotorMowStuck = millis();
   }
-
   //**************drive motor***********************
   //bb add test current in manual mode and stop immediatly
   if (statusCurr == MANUAL) {
@@ -5064,21 +4726,16 @@ void Robot::checkCurrent() {
       ShowMessageln(motorLeftPower);
       setMotorPWM( 0, 0, false );
       setNextState(STATE_OFF, 0);
-
     }
     if (motorRightPower >= 0.8 * motorPowerMax) {
       ShowMessage("Motor Right power is 80 % of the max, value --> ");
       ShowMessageln(motorRightPower);
       setMotorPWM( 0, 0, false );
       setNextState(STATE_OFF, 0);
-
     }
   }
-
-
   // here in auto mode
   if (millis() > stateStartTime + motorPowerIgnoreTime) {
-
     //Motor right****************************************************************
     //First react test to 80 % powerMax
     if (motorRightPower >= 0.8 * motorPowerMax)
@@ -5095,15 +4752,13 @@ void Robot::checkCurrent() {
           setNextState(STATE_STATION_CHECK, rollDir);
           return;
         }
-        else
-        {
+        else {
           if (mowPatternCurr == MOW_LANES) reverseOrBidir(rollDir);
           else reverseOrBidir(LEFT);
         }
       }
     }
-    else
-    {
+    else {
       setBeeper(0, 0, 0, 0, 0);
       motorRightSenseCounter = 0; // the sense is OK reset all the counter
     }
@@ -5115,14 +4770,10 @@ void Robot::checkCurrent() {
       //setNextState(STATE_ERROR, 0);
       ShowMessage("Warning: Motor Right power over 100% , Max possible 10 time in 1 seconde. Actual count --> ");
       ShowMessageln(motorRightSenseCounter);
-
     }
-
-
     //Motor left****************************************************************
     //First react test to 80 % powerMax
-    if (motorLeftPower >= 0.8 * motorPowerMax)
-    {
+    if (motorLeftPower >= 0.8 * motorPowerMax) {
       motorLeftSenseCounter++;
       setBeeper(1000, 1000, 0, 2000, 0);
       setMotorPWM( 0, 0, false );
@@ -5135,15 +4786,13 @@ void Robot::checkCurrent() {
           setNextState(STATE_STATION_CHECK, rollDir);
           return;
         }
-        else
-        {
+        else {
           if (mowPatternCurr == MOW_LANES) reverseOrBidir(rollDir);
           else reverseOrBidir(RIGHT);
         }
       }
     }
-    else
-    {
+    else {
       setBeeper(0, 0, 0, 0, 0);
       motorLeftSenseCounter = 0; // the sense is OK reset the counter
     }
@@ -5171,15 +4820,39 @@ void Robot::checkCurrent() {
       setMotorPWM( 0, 0, false );
       setNextState(STATE_ERROR, 0);
     }
-
   } //motorpower ignore time
-
 }
+
+
+// Dropsensor - Absturzsensor
+// check drop
+void Robot::checkDrop() {  //the drop is used as a contact in front of the robot to detect the charging station
+  if ((millis() < 3000) || (!dropUse)) return;
+  if ((dropLeft || dropRight)) {
+    if (statusCurr == MANUAL) {
+      ShowMessageln("Drop trigger in Manual mode ?????????");
+      setNextState(STATE_OFF, 0); //the drop stop all in manual mode
+    }
+    else {
+      spiraleNbTurn = 0;
+      highGrassDetect = false;
+      motorLeftRpmCurr = motorRightRpmCurr = 0 ;
+      motorLeftPWMCurr = motorRightPWMCurr = 0;
+      setMotorPWM( 0, 0, false );
+      if (dropLeft) {
+        reverseOrBidir(RIGHT);
+      }
+      else {
+        reverseOrBidir(LEFT);
+      }
+    }
+  }
+}
+
 
 // check bumpers
 void Robot::checkBumpers() {
   if ((millis() < 3000) || (!bumperUse)) return;
-
   /*
     if (stateCurr=STATE_PERI_OUT_ROLL_TOINSIDE){
     if (bumperLeft) {
@@ -5204,14 +4877,12 @@ void Robot::checkBumpers() {
     }
 
   */
-
   if ((bumperLeft || bumperRight)) {
     if (statusCurr == MANUAL) {
       ShowMessageln("Bumper trigger in Manual mode ?????????");
       setNextState(STATE_OFF, 0); //the bumper stop all in manual mode
     }
-    else
-    {
+    else {
       spiraleNbTurn = 0;
       highGrassDetect = false;
       motorLeftRpmCurr = motorRightRpmCurr = 0 ;
@@ -5220,38 +4891,15 @@ void Robot::checkBumpers() {
       if (bumperLeft) {
         ShowMessageln("Bumper left trigger");
         reverseOrBidir(LEFT);
-      } else {
+      }
+      else {
         ShowMessageln("Bumper right trigger");
         reverseOrBidir(RIGHT);
       }
     }
-
   }
 }
 
-// check drop
-void Robot::checkDrop() {  //the drop is used as a contact in front of the robot to detect the charging station
-  if ((millis() < 3000) || (!dropUse)) return;
-  if ((dropLeft || dropRight)) {
-    if (statusCurr == MANUAL) {
-      ShowMessageln("Drop trigger in Manual mode ?????????");
-      setNextState(STATE_OFF, 0); //the drop stop all in manual mode
-    }
-    else
-    {
-      spiraleNbTurn = 0;
-      highGrassDetect = false;
-      motorLeftRpmCurr = motorRightRpmCurr = 0 ;
-      motorLeftPWMCurr = motorRightPWMCurr = 0;
-      setMotorPWM( 0, 0, false );
-      if (dropLeft) {
-        reverseOrBidir(RIGHT);
-      } else {
-        reverseOrBidir(LEFT);
-      }
-    }
-  }
-}                                                                                                                                   // Dropsensor - Absturzsensor
 
 // check bumpers while tracking perimeter
 void Robot::checkBumpersPerimeter() {
@@ -5278,6 +4926,7 @@ void Robot::checkBumpersPerimeter() {
   }
 }
 
+
 //bber401
 void Robot::checkStuckOnIsland() {
   //6 * is a test value
@@ -5300,10 +4949,11 @@ void Robot::checkStuckOnIsland() {
   }
 }
 
+
 // check perimeter as a boundary
 void Robot::checkPerimeterBoundary() {
-
-  if ((millis() >= nextTimeRotationChange) && (stateCurr == STATE_FORWARD_ODO) && (mowPatternCurr != MOW_LANES)) {// change only when in straight line and random mode
+  // change only when in straight line and random mode
+  if ((millis() >= nextTimeRotationChange) && (stateCurr == STATE_FORWARD_ODO) && (mowPatternCurr != MOW_LANES)) {
     nextTimeRotationChange = millis() + 600000;  // in random change each 10 minutes
     if (rollDir == LEFT) rollDir = RIGHT; //invert the next rotate
     else rollDir = LEFT;
@@ -5321,14 +4971,11 @@ void Robot::checkPerimeterBoundary() {
         perimeterSpeedCoeff = 0.7;
         nextTimeCheckperimeterSpeedCoeff = millis() + 500; //avoid speed coeff increase when mower go accross the wire
       }
-      else
-      {
+      else {
         nextTimeCheckperimeterSpeedCoeff = millis() + 15;
       }
       if (perimeterSpeedCoeff > 1) perimeterSpeedCoeff = 1;
     }
-
-
     if (perimeterTriggerTime != 0) {
       if (millis() >= perimeterTriggerTime) {
         perimeterTriggerTime = 0;
@@ -5354,7 +5001,6 @@ void Robot::checkPerimeterBoundary() {
     }
   }
 
-
   if (stateCurr == STATE_SONAR_TRIG) {  //wire is detected during the sonar braking need to stop immediatly
     if (perimeterTriggerTime != 0) {
       if (millis() >= perimeterTriggerTime) {
@@ -5373,16 +5019,10 @@ void Robot::checkPerimeterBoundary() {
         setMotorPWM( 0, 0, false );
         setNextState(STATE_PERI_OUT_REV, rollDir);
         return;
-
       }
     }
   }
-
 }
-
-
-
-
 
 
 void Robot::checkRain() {
@@ -5399,6 +5039,8 @@ void Robot::checkRain() {
     }
   }
 }
+
+
 void Robot::checkSonarPeriTrack() {
   if (!sonarUse) return;
   /*
@@ -5430,17 +5072,18 @@ void Robot::checkSonarPeriTrack() {
     nextTimeCheckSonar = millis() + 3000;  //wait before next reading
     ActualSpeedPeriPWM = MaxSpeedperiPwm * dockingSpeed / 100;
     trakBlockInnerWheel = 1; //don't want that a wheel reverse just before station check   /bber30
-
-
     }
   */
 }
+
 
 // check sonar
 void Robot::checkSonar() {
   if (!sonarUse) return;
   if (millis() < nextTimeCheckSonar) return;
   nextTimeCheckSonar = millis() + 100;
+  if (stateCurr == STATE_OFF) return; //avoid the mower move when testing
+
   sonarSpeedCoeff = 1;
 
   if (sonarRightUse) sonarDistRight = NewSonarRight.ping_cm();
@@ -5448,16 +5091,12 @@ void Robot::checkSonar() {
   if (sonarLeftUse) sonarDistLeft = NewSonarLeft.ping_cm();
   else sonarDistLeft = NO_ECHO ;
 
-
-  if (stateCurr == STATE_OFF) return; //avoid the mower move when testing
-
   if (sonarDistRight < 25 || sonarDistRight > 90) sonarDistRight = NO_ECHO; // Object is too close to the sensor JSN SR04T can't read <20 CM . Sensor value is useless
   if (sonarDistLeft < 25 || sonarDistLeft  > 90) sonarDistLeft = NO_ECHO;
 
   if (((sonarDistRight != NO_ECHO) && (sonarDistRight < sonarTriggerBelow)) ||  ((sonarDistLeft != NO_ECHO) && (sonarDistLeft < sonarTriggerBelow))  ) {
     setBeeper(1000, 100, 100, 2000, 50);//beep for 3 sec
     nextTimeCheckSonar = millis() + 1500;  //wait before next reading
-
     // **************************if sonar during spirale reinit spirale variable*****************
     spiraleNbTurn = 0;
     halfLaneNb = 0;
@@ -5465,7 +5104,6 @@ void Robot::checkSonar() {
     // *********************************************************************************
     if ((stateCurr == STATE_FORWARD_ODO) || (stateCurr == STATE_PERI_FIND) || (stateCurr == STATE_MOW_SPIRALE)) {
       //avoid the mower move when testing
-
       if ((sonarDistRight != NO_ECHO) && (sonarDistRight < sonarTriggerBelow)) {  //right
         if (!sonarLikeBumper) {
           sonarSpeedCoeff = 0.70;
@@ -5496,12 +5134,7 @@ void Robot::checkSonar() {
       }
     }
   }
-
 }
-
-
-
-
 
 
 // check IMU (tilt)
@@ -5522,24 +5155,18 @@ void Robot::checkTilt() {
       ShowMessageln(pitchAngle);
       addErrorCounter(ERR_IMU_TILT);
       //bber500
-
-
       ShowMessageln("Motor mow STOP start again after 1 minute");
       motorMowEnable = false;
       lastTimeMotorMowStuck = millis();
       reverseOrBidir(rollDir);
-
     }
     }
   */
 }
 
 
-
-
 // calculate map position by odometry sensors
 void Robot::calcOdometry() {
-
   if ((millis() < nextTimeOdometry) || (stateCurr == STATE_OFF)) return;
   nextTimeOdometry = millis() + 100; //bb 300 at the original but test less
   static int lastOdoLeft = 0;
@@ -5557,7 +5184,6 @@ void Robot::calcOdometry() {
   //odometryTheta += wheel_theta;
   odometryTheta = scalePI(odometryTheta - wheel_theta);
 
-
   motorLeftRpmCurr  = double ((( ((double)ticksLeft) / ((double)odometryTicksPerRevolution)) / ((double)(millis() - lastMotorRpmTime))) * 60000.0);
   motorRightRpmCurr = double ((( ((double)ticksRight) / ((double)odometryTicksPerRevolution)) / ((double)(millis() - lastMotorRpmTime))) * 60000.0);
   lastMotorRpmTime = millis();
@@ -5567,15 +5193,14 @@ void Robot::calcOdometry() {
     odometryX += avg_cm * sin(prevYawCalcOdo);
     odometryY += avg_cm * cos(prevYawCalcOdo);
     //prevYawCalcOdo = imu.ypr.yaw;
-
-  } else {
+  }
+  else {
     // FIXME: theta should be old theta, not new theta?
     odometryX += avg_cm * sin(odometryTheta);
     odometryY += avg_cm * cos(odometryTheta);
   }
-
-
 }
+
 
 void Robot::ResetWatchdog() {
   wdt.feed();
@@ -5600,19 +5225,16 @@ void Robot::readAllTemperature() {
       setNextState(STATE_ERROR, 0);
       return;
     }
-
   }
 }
+
+
 void Robot::checkTimeout() {
   if (stateTime > motorForwTimeMax) {
     ShowMessageln("Timeout on state mower run for a too long duration ???????????????????????");
     setNextState(STATE_PERI_OUT_STOP, !rollDir); // toggle roll dir
   }
 }
-
-
-
-
 
 
 void Robot::loop()  {
@@ -5623,10 +5245,7 @@ void Robot::loop()  {
     next_time_refresh_mqtt = millis() + 3000;
     String line01 = "#RMSTA," + String(statusNames[statusCurr]) + "," + String(stateNames[stateCurr]) + "," + String(temperatureTeensy) + "," + String(batVoltage) + "," + String(loopsPerSec)  ;
     Serial1.println(line01);
-
-
   }
-
   if (RaspberryPIUse) {
     MyRpi.run();
     if ((millis() > 10000) && (!MyrpiStatusSync)) { // on initial powerON DUE start faster than PI , so need to send again the status to refresh
@@ -5637,10 +5256,7 @@ void Robot::loop()  {
   else {
     readSerial();
   }
-
-
   rc.readSerial();// see the readserial function into pfod.cpp
-
   readSensors();
   readAllTemperature();
   // checkRobotStats();
@@ -5654,7 +5270,6 @@ void Robot::loop()  {
     checkTimer();
   }
   beeper();
-
   // IMU MANAGEMENT
   //if (stateCurr != STATE_PERI_TRACK) {
   if ((stateCurr != STATE_STATION_CHARGING) & (stateCurr != STATE_STATION) & (stateCurr != STATE_PERI_TRACK)) {
@@ -5674,12 +5289,10 @@ void Robot::loop()  {
       }
     }
   }
-
   if (gpsUse) {
     gps.feed();
     processGPSData();
   }
-
   if ((Enable_Screen) && (millis() >= nextTimeScreen))   { // warning : refresh screen take 40 ms
     nextTimeScreen = millis() + 250;
     StartReadAt = millis();
@@ -5701,16 +5314,11 @@ void Robot::loop()  {
     if (statusCurr == IN_STATION) {
       MyScreen.refreshStationScreen();
     }
-
     EndReadAt = millis();
     ReadDuration = EndReadAt - StartReadAt;
     //ShowMessage("Screen Duration ");
     //ShowMessageln(ReadDuration);
-
-
-
   }
-
 
   if (millis() >= nextTimeInfo) {
     if ((millis() - nextTimeInfo > 250)) {
@@ -5731,12 +5339,9 @@ void Robot::loop()  {
   if (millis() >= nextTimePfodLoop) {
     nextTimePfodLoop = millis() + 100;
     rc.run();
-
   }
-
   // state machine - things to do *PERMANENTLY* for current state
   // robot state machine
-
   switch (stateCurr) {
 
     case STATE_ERROR:
@@ -5762,10 +5367,7 @@ void Robot::loop()  {
       //bber13
       motorMowEnable = false; //to stop mow motor in OFF mode by pressing OFF again (the one shot OFF is bypass)
       checkSonar();  // only for test never use or the mower can't stay into the station
-
       checkBattery();
-
-
       break;
 
     case STATE_REMOTE:
@@ -5779,8 +5381,6 @@ void Robot::loop()  {
       motorRightSpeedRpmSet = max(-motorSpeedMaxRpm, min(motorSpeedMaxRpm, motorRightSpeedRpmSet));
       motorMowSpeedPWMSet = ((double)motorMowSpeedMaxPwm) * (((double)remoteMow) / 100.0);
       motorControl();
-
-
       break;
 
     case STATE_MANUAL:
@@ -5792,32 +5392,19 @@ void Robot::loop()  {
 
     case STATE_FORWARD:
       // driving forward
-
-
       checkRain();
       checkCurrent();
       checkBumpers();
-      checkDrop();                                                                                                                            // Dropsensor - Absturzsensor
+      checkDrop();   // Dropsensor - Absturzsensor
       // checkSonar();
       //checkLawn();
       checkTimeout();
       motorControl();
       break;
 
-
-
-
-
-
-
     case STATE_FORWARD_ODO:
       // driving forward with odometry control
-
-
-
       motorControlOdo();
-
-
       //manage the imu////////////////////////////////////////////////////////////
       if (imuUse ) {
         //when findedYaw = 999 it's mean that the lane is changed and the imu need to be adjusted to the compass
@@ -5825,17 +5412,14 @@ void Robot::loop()  {
           setNextState(STATE_STOP_TO_FIND_YAW, rollDir);
           return;
         }
-
         //-----------here and before reverse the mower is stop so mark a pause to autocalibrate DMP-----------
         if ((millis() > nextTimeToDmpAutoCalibration) && (mowPatternCurr == MOW_LANES) && (imu.ypr.yaw > 0) && ((millis() - stateStartTime) > 4000) && ((millis() - stateStartTime) < 5000)  ) {
           setNextState(STATE_STOP_TO_FIND_YAW, rollDir);
           return;
-
         }
       }
       //-----------------------------------------------------------------------------
       ////////////////////////////////////////////////////////////////////////////
-
       //the normal state traitement alternatively the lenght is 300ml or 10 ml for example
       if ((odometryRight > stateEndOdometryRight) || (odometryLeft > stateEndOdometryLeft))
       {
@@ -5849,35 +5433,26 @@ void Robot::loop()  {
           setNextState(STATE_PERI_OUT_STOP, rollDir);
         }
       }
-
       //-----------here need to start to mow in spirale or half lane lenght-----------
       if (highGrassDetect) {
-
         if ((mowPatternCurr == MOW_LANES)) {
-
           //if (halfLaneNb == 0) setNextState(STATE_ESCAPE_LANE, rollDir); //don't work need to check
           //if (halfLaneNb == 0) setNextState(STATE_STOP_BEFORE_SPIRALE, rollDir);
           setNextState(STATE_STOP_BEFORE_SPIRALE, rollDir);
-
         }
-        else
-        {
+        else {
           setNextState(STATE_STOP_BEFORE_SPIRALE, rollDir);
         }
         return;
       }
-
-
       checkRain();
       checkCurrent();
       checkBumpers();
       checkDrop();                                                                                                                            // Dropsensor - Absturzsensor
       checkSonar();
-
       //checkLawn();
       checkTimeout();
       checkBattery();
-
       break;
 
     case STATE_ESCAPE_LANE:
@@ -5887,7 +5462,6 @@ void Robot::loop()  {
       checkBumpers();
       checkDrop();                                                                                                                            // Dropsensor - Absturzsensor
       //checkSonar();
-
       if (millis() > (stateStartTime + MaxOdoStateDuration)) {
         if (developerActive) {
           ShowMessageln ("Warning can t escape_lane in time ");
@@ -5939,7 +5513,6 @@ void Robot::loop()  {
         }
         setNextState(STATE_PERI_OBSTACLE_ROLL, RIGHT);
       }
-
       break;
 
     case STATE_PERI_OBSTACLE_ROLL:
@@ -5959,7 +5532,6 @@ void Robot::loop()  {
       checkBumpersPerimeter();
       break;
 
-
     case STATE_PERI_OBSTACLE_FORW:
       //forward
       motorControlOdo();
@@ -5975,7 +5547,6 @@ void Robot::loop()  {
       checkCurrent();
       checkBumpersPerimeter();
       break;
-
 
     case STATE_PERI_OBSTACLE_AVOID:
       //circle arc
@@ -5995,12 +5566,9 @@ void Robot::loop()  {
       checkBumpersPerimeter();
       break;
 
-
     case STATE_REVERSE:
       motorControlOdo();
-
-      //if ((odometryRight <= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft) ) {
-
+        //if ((odometryRight <= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft) ) {
       if (rollDir == RIGHT) {
         if ((odometryRight <= stateEndOdometryRight) && (moveLeftFinish) ) {
           if (motorLeftPWMCurr == 0 ) { //wait until the left motor completly stop because rotation is inverted
@@ -6022,13 +5590,10 @@ void Robot::loop()  {
         }
         setNextState(STATE_ROLL, rollDir);//if the motor can't rech the odocible in slope
       }
-
-
       break;
 
     case STATE_ROLL:
       motorControlOdo();
-
       //if ((odometryRight <= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft) ) {
       if (rollDir == RIGHT) {
         if ((moveRightFinish) && (odometryLeft >= stateEndOdometryLeft) ) {
@@ -6050,33 +5615,25 @@ void Robot::loop()  {
         }
         setNextState(STATE_FORWARD_ODO, rollDir);
       }
-
       break;
-
 
     case STATE_ROLL_TONEXTTAG:
       motorControlOdo();
-
       if ((moveRightFinish) && (odometryLeft >= stateEndOdometryLeft) ) {
         if (motorRightPWMCurr == 0 ) { //wait until the left motor completly stop because rotation is inverted
-
           setNextState(STATE_PERI_FIND, rollDir);
         }
       }
-
-
       if (millis() > (stateStartTime + MaxOdoStateDuration)) {
         if (developerActive) {
           ShowMessageln ("Warning can t roll in time ");
         }
         setNextState(STATE_PERI_FIND, rollDir);//if the motor can't rech the odocible in slope
       }
-
       break;
 
     case STATE_ROLL1_TO_NEWAREA:
       motorControlOdo();
-
       if ((moveRightFinish) && (moveLeftFinish) ) {
         if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0) { //wait until the left motor completly stop because rotation is inverted
           setNextState(STATE_DRIVE1_TO_NEWAREA, rollDir);
@@ -6092,13 +5649,11 @@ void Robot::loop()  {
 
     case STATE_ROLL2_TO_NEWAREA:
       motorControlOdo();
-
       if ((moveRightFinish) && (moveLeftFinish) ) {
         if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0 ) { //wait until the left motor completly stop because rotation is inverted
           setNextState(STATE_DRIVE2_TO_NEWAREA, rollDir);
         }
       }
-
       if (millis() > (stateStartTime + MaxOdoStateDuration)) {
         if (developerActive) {
           ShowMessageln ("Warning can t roll in time ");
@@ -6133,11 +5688,8 @@ void Robot::loop()  {
       }
       break;
 
-
-
     case STATE_STOP_TO_NEWAREA:
       motorControlOdo();
-
       if ((moveRightFinish) && (moveLeftFinish) ) {
         if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)  { //wait until the 2 motors completly stop because rotation is inverted
           if (stateLast == STATE_DRIVE1_TO_NEWAREA) {  //2 possibility
@@ -6159,13 +5711,10 @@ void Robot::loop()  {
           setNextState(STATE_WAIT_FOR_SIG2, rollDir);
         }
       }
-
-
       break;
 
     case STATE_WAIT_FOR_SIG2:
       motorControlOdo();
-
       if ((moveRightFinish) && (moveLeftFinish) ) {
         if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)  { //wait until the 2 motors completly stop because rotation is inverted
           if (millis() >= nextTimeReadSmoothPeriMag) {
@@ -6179,8 +5728,7 @@ void Robot::loop()  {
                 statusCurr = BACK_TO_STATION; //if we are in the area1 it is to go to station
                 periFindDriveHeading = imu.ypr.yaw;
               }
-              else
-              {
+              else {
                 areaInMowing = areaToGo;
                 statusCurr = TRACK_TO_START;
               }
@@ -6195,15 +5743,11 @@ void Robot::loop()  {
         ShowMessageln ("Warning can t find the signal for area2 ");
         setNextState(STATE_ERROR, rollDir);
       }
-
       break;
-
 
     case STATE_TEST_COMPASS:
       motorControlOdo();
-
       YawActualDeg = (imu.ypr.yaw / PI * 180);
-
       if ((imu.distance180(YawActualDeg, yawToFind)) < 30) { //reduce speed to be sure stop
         PwmLeftSpeed = SpeedOdoMin / 2;
         PwmRightSpeed = -SpeedOdoMin / 2;
@@ -6212,8 +5756,6 @@ void Robot::loop()  {
         PwmLeftSpeed = SpeedOdoMin;
         PwmRightSpeed = -SpeedOdoMin;
       }
-
-
       if ((YawActualDeg >= yawToFind - 1) && (YawActualDeg <= yawToFind + 1))  {
         ShowMessage(" OdometryLeft ");
         ShowMessage(odometryLeft);
@@ -6222,18 +5764,15 @@ void Robot::loop()  {
         ShowMessage(" Find YAW ****************************************  ");
         ShowMessageln((imu.ypr.yaw / PI * 180));
         setNextState(STATE_OFF, rollDir);
-
       }
       if (millis() > (stateStartTime + MaxOdoStateDuration)) {
         ShowMessageln ("Warning can t TestCompass in time ");
         setNextState(STATE_OFF, rollDir);
       }
-
       break;
 
     case STATE_CALIB_MOTOR_SPEED:
       motorControlOdo();
-
       if ((moveRightFinish) && (moveLeftFinish) ) {
         if ((motorRightPWMCurr == 0 ) && (motorLeftPWMCurr == 0 )) {
           ShowMessageln("Calibration finish ");
@@ -6260,12 +5799,10 @@ void Robot::loop()  {
         ShowMessageln ("Warning can t TestMotor in time please check your Odometry or speed setting ");
         setNextState(STATE_OFF, rollDir);
       }
-
       break;
 
     case STATE_TEST_MOTOR:
       motorControlOdo();
-
       if ((moveRightFinish) && (moveLeftFinish) ) {
         if ((motorRightPWMCurr == 0 ) && (motorLeftPWMCurr == 0 )) {
           ShowMessageln("Test finish ");
@@ -6282,14 +5819,10 @@ void Robot::loop()  {
       }
       break;
 
-
-
-
     case STATE_ROLL_TO_FIND_YAW:
       boolean finish_4rev;
       finish_4rev = false;
       motorControlOdo();
-
       //bber400
       if ((imuUse) && (millis() >= nextTimeImuLoop)) {
         nextTimeImuLoop = millis() + 50;
@@ -6303,16 +5836,14 @@ void Robot::loop()  {
           return;
         }
       }
-      else //without compass
-      {
+      //without compass
+      else {
         if ((yawToFind - 2 < (imu.ypr.yaw / PI * 180)) && (yawToFind + 2 > (imu.ypr.yaw / PI * 180)))  { //at +-2 degres
           findedYaw = (imu.ypr.yaw / PI * 180);
           setNextState(STATE_STOP_CALIBRATE, rollDir);
           return;
         }
       }
-
-
       //it's not ok
       if ((actualRollDirToCalibrate == RIGHT) && ((odometryRight <= stateEndOdometryRight) || (odometryLeft >= stateEndOdometryLeft))) finish_4rev = true;
       if ((actualRollDirToCalibrate == LEFT) && ((odometryRight >= stateEndOdometryRight) || (odometryLeft <= stateEndOdometryLeft))) finish_4rev = true;
@@ -6334,8 +5865,6 @@ void Robot::loop()  {
         else setNextState(STATE_PERI_OUT_REV, rollDir);
         return;
       }
-
-
       break;
 
     //not use actually
@@ -6345,17 +5874,13 @@ void Robot::loop()  {
       motorControl();
       break;
 
-
     //not use actually
     case STATE_PERI_REV:  //obstacle in perifind
       // perimeter tracking reverse
       //bb
       ShowMessageln(odometryRight);
-
       if ((odometryRight <= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft))  setNextState(STATE_PERI_ROLL, rollDir);
       motorControlOdo();
-
-
       break;
 
     case STATE_PERI_FIND:
@@ -6365,7 +5890,6 @@ void Robot::loop()  {
         setNextState(STATE_PERI_STOP_TOTRACK, 0);
         return;
       }
-
       checkSonar();
       checkBumpersPerimeter();
       checkCurrent();
@@ -6380,7 +5904,6 @@ void Robot::loop()  {
       if (statusCurr == BACK_TO_STATION) {
         checkStuckOnIsland();
       }
-
       if (ActualSpeedPeriPWM != MaxSpeedperiPwm) {
         if (totalDistDrive > whereToResetSpeed) {
           ShowMessage("Distance OK, time to reset the initial Speed : ");
@@ -6388,14 +5911,12 @@ void Robot::loop()  {
           ActualSpeedPeriPWM = MaxSpeedperiPwm;
         }
       }
-
       //********************************* if start by timer
       if (statusCurr == TRACK_TO_START) {
         //bber11
         //areaToGo need to be use here to avoid start mowing before reach the rfid tag in area1
         // if ((areaToGo == areaInMowing) && (startByTimer) && (totalDistDrive > whereToStart * 100)) {
         //bber35
-
         if ((areaToGo == areaInMowing) && (totalDistDrive >= whereToStart * 100)) {
           startByTimer = false;
           ShowMessage("Distance OK, time to start mowing into new area ");
@@ -6405,11 +5926,7 @@ void Robot::loop()  {
           setNextState(STATE_PERI_STOP_TOROLL, rollDir);
           return;
         }
-
-
       }
-
-
       motorControlPerimeter();
       break;
 
@@ -6421,13 +5938,11 @@ void Robot::loop()  {
             setNextState(STATE_STATION_CHARGING, 0);
             return;
           }
-          else
-          {
+          else {
             if (millis() - stateStartTime > 10000) checkTimer(); //only check timer after 10 second to avoid restart before charging and check non stop after but real only 60 sec
           }
         }
-        else
-        {
+        else {
           ShowMessageln("We are in station but ChargeVoltage is lost ??? ");
           setNextState(STATE_OFF, 0);
           return;
@@ -6436,7 +5951,6 @@ void Robot::loop()  {
       else {
         if (millis() - stateStartTime > 10000) checkTimer(); //only check timer after 10 second to avoid restart before charging
       }
-
       break;
 
     case STATE_STATION_CHARGING:
@@ -6457,21 +5971,15 @@ void Robot::loop()  {
             ShowMessageln("Time to Restart PI and Due");
             autoReboot();
           }
-
-
           setNextState(STATE_STATION, 0);
           return;
         }
       }
-
-
       break;
 
     case STATE_STOP_ON_BUMPER:
       motorControlOdo();
-
       if ((moveRightFinish) && (moveLeftFinish) ) {
-
         if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)  { //wait until the 2 motors completly stop because rotation is inverted
           if (statusCurr == BACK_TO_STATION) {
             setNextState(STATE_PERI_OBSTACLE_REV, rollDir);
@@ -6496,7 +6004,6 @@ void Robot::loop()  {
       checkCurrent();
       checkBumpers();
       if ((moveRightFinish) && (moveLeftFinish) ) {
-
         if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)  { //wait until the 2 motors completly stop because rotation is inverted
           setNextState(STATE_PERI_OUT_REV, rollDir);
         }
@@ -6509,13 +6016,10 @@ void Robot::loop()  {
       }
       break;
 
-
     case STATE_SONAR_TRIG:
       motorControlOdo();
-
       if ((moveRightFinish) && (moveLeftFinish) ) {
         setBeeper(0, 0, 0, 0, 0);
-
         if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)  { //wait until the 2 motors completly stop because rotation is inverted
           //bber10
           if (stateLast == STATE_PERI_FIND) {
@@ -6525,7 +6029,6 @@ void Robot::loop()  {
             setNextState(STATE_PERI_OUT_REV, rollDir);
           }
           return;
-
         }
       }
       if (millis() > (stateStartTime + MaxOdoStateDuration)) {
@@ -6544,10 +6047,8 @@ void Robot::loop()  {
       checkBumpers();
       break;
 
-
     case STATE_STOP_TO_FIND_YAW:
       motorControlOdo();
-
       if ((moveRightFinish) && (moveLeftFinish) ) {
         if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)  { //wait until the 2 motors completly stop because rotation is inverted
           if (laneUseNr == 1) yawToFind = yawSet1 ;
@@ -6556,8 +6057,7 @@ void Robot::loop()  {
           if (CompassUse) {
             setNextState(STATE_ROLL_TO_FIND_YAW, rollDir);
           }
-          else
-          {
+          else {
             findedYaw = (imu.ypr.yaw / PI * 180);
             setNextState(STATE_STOP_CALIBRATE, rollDir);
           }
@@ -6573,8 +6073,7 @@ void Robot::loop()  {
         if (CompassUse) {
           setNextState(STATE_ROLL_TO_FIND_YAW, rollDir);//if the motor can't rech the odocible in slope
         }
-        else
-        {
+        else {
           findedYaw = (imu.ypr.yaw / PI * 180);
           setNextState(STATE_STOP_CALIBRATE, rollDir);
         }
@@ -6583,9 +6082,7 @@ void Robot::loop()  {
 
     case STATE_PERI_STOP_TOROLL:
       motorControlOdo();
-
       if ((moveRightFinish) && (moveLeftFinish) ) {
-
         if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)  { //wait until the 2 motors completly stop because rotation is inverted
           if (statusCurr == TRACK_TO_START) setNextState(STATE_STATION_ROLL, rollDir);
           else setNextState(STATE_ROLL_TONEXTTAG, rollDir);
@@ -6602,7 +6099,6 @@ void Robot::loop()  {
 
     case STATE_PERI_STOP_TO_FAST_START:
       motorControlOdo();
-
       if ((moveRightFinish) && (moveLeftFinish) ) {
         if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)  { //wait until the 2 motors completly stop because rotation is inverted
           setNextState(STATE_ROLL_TONEXTTAG, rollDir);
@@ -6613,13 +6109,11 @@ void Robot::loop()  {
           ShowMessageln ("Warning can t stop to track in time ");
         }
         setNextState(STATE_ROLL_TONEXTTAG, rollDir);
-
       }
       break;
 
     case STATE_PERI_STOP_TO_NEWAREA:
       motorControlOdo();
-
       if ((moveRightFinish) && (moveLeftFinish) ) {
         if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)  { //wait until the 2 motors completly stop because rotation is inverted
           setNextState(STATE_ROLL1_TO_NEWAREA, rollDir);
@@ -6629,7 +6123,6 @@ void Robot::loop()  {
         if (developerActive) {
           ShowMessageln ("Warning can t stop  in time ");
         }
-
         setNextState(STATE_ROLL1_TO_NEWAREA, rollDir);
       }
       break;
@@ -6641,7 +6134,6 @@ void Robot::loop()  {
         if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)  { //wait until the 2 motors completly stop because rotation is inverted
           setNextState(STATE_PERI_OUT_ROLL_TOTRACK, rollDir);
         }
-
       }
       if (millis() > (stateStartTime + MaxOdoStateDuration)) {
         if (developerActive) {
@@ -6664,8 +6156,7 @@ void Robot::loop()  {
           if (CompassUse) {
             imu.CompassGyroOffset = distancePI( scalePI(accelGyroYawMedian.getMedian() -  imu.CompassGyroOffset), compassYawMedian.getMedian()); //change the Gyro offset according to Compass Yaw
           }
-          else
-          {
+          else {
             imu.CompassGyroOffset = 0;
           }
           ShowMessageln("Drift is OK");
@@ -6675,8 +6166,7 @@ void Robot::loop()  {
           if (perimeterInside) {
             setNextState(STATE_ACCEL_FRWRD, rollDir); //if not outside continue in forward
           }
-          else
-          {
+          else {
             setNextState(STATE_PERI_OUT_REV, rollDir);
           }
           return;
@@ -6686,7 +6176,6 @@ void Robot::loop()  {
           compassYawMedian.clear();
           accelGyroYawMedian.clear();
         }
-
       }
       if (millis() > endTimeCalibration) { //we have wait enought and the result is not OK start to mow in random mode or make a total calibration
         mowPatternCurr = MOW_RANDOM;
@@ -6701,19 +6190,14 @@ void Robot::loop()  {
           }
           setNextState(STATE_ACCEL_FRWRD, rollDir);
         }
-        else
-        {
+        else {
           setNextState(STATE_PERI_OUT_REV, rollDir);
         }
-
-
       }
-
       break;
 
     case STATE_STOP_CALIBRATE:
       motorControlOdo();
-
       if ((moveRightFinish) && (moveLeftFinish) ) {
         if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)  { //wait until the 2 motors completly stop because rotation is inverted
           setNextState(STATE_AUTO_CALIBRATE, rollDir);
@@ -6729,7 +6213,6 @@ void Robot::loop()  {
 
     case STATE_STOP_BEFORE_SPIRALE:
       motorControlOdo();
-
       if ((moveRightFinish) && (moveLeftFinish) ) {
         if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)  { //wait until the 2 motors completly stop because rotation is inverted
           setNextState(STATE_ROTATE_RIGHT_360, rollDir);
@@ -6746,7 +6229,6 @@ void Robot::loop()  {
     case STATE_ROTATE_RIGHT_360:
       motorControlOdo();
       checkCurrent();
-
       if ((moveRightFinish) && (moveLeftFinish) ) {
         if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)  { //wait until the 2 motors completly stop because rotation is inverted
           setNextState(STATE_MOW_SPIRALE, rollDir);
@@ -6758,8 +6240,8 @@ void Robot::loop()  {
         }
         setNextState(STATE_MOW_SPIRALE, rollDir);
       }
-
       break;
+
     case STATE_NEXT_SPIRE:
       motorControlOdo();
       checkCurrent();
@@ -6772,18 +6254,16 @@ void Robot::loop()  {
         }
         setNextState(STATE_MOW_SPIRALE, rollDir);//if the motor can't rech the odocible in slope
       }
-
       break;
+
     case STATE_MOW_SPIRALE:
       motorControlOdo();
       checkCurrent();
       checkBumpers();
       //checkDrop();                                                                                                                            // Dropsensor - Absturzsensor
       checkSonar();
-
       //checkLawn();
       checkTimeout();
-
       //*************************************end of the spirale ***********************************************
       if ((spiraleNbTurn >= 8) || (!highGrassDetect)) {
         spiraleNbTurn = 0;
@@ -6796,22 +6276,17 @@ void Robot::loop()  {
         if (!perimeterInside) {
           setNextState(STATE_STOP_ON_BUMPER, rollDir);
         }
-        else
-        {
+        else {
           setNextState(STATE_NEXT_SPIRE, rollDir);
         }
         return;
       }
-
-
       if (millis() > (stateStartTime + MaxOdoStateDuration)) {
         if (developerActive) {
           ShowMessageln ("Warning can t MOW_SPIRALE in time ");
         }
         setNextState(STATE_NEXT_SPIRE, rollDir);//if the motor can't rech the odocible in slope
       }
-
-
       break;
 
     case STATE_PERI_OUT_REV:
@@ -6823,64 +6298,38 @@ void Robot::loop()  {
             ShowMessageln(odometryRight);
             delay(50);
       */
-
-      if (mowPatternCurr == MOW_LANES) {  //  *************************LANE***************************************
+     //  *************************LANE***************************************
+      if (mowPatternCurr == MOW_LANES) {
         if ((moveRightFinish) && (moveLeftFinish) ) {
           if (rollDir == RIGHT) {
             if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0)) { //wait until the 2 motor completly stop because need precision
               setNextState(STATE_PERI_OUT_LANE_ROLL1, rollDir);
             }
           }
-          else
-          {
+          else {
             if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0)) {
               setNextState(STATE_PERI_OUT_LANE_ROLL1, rollDir);
             }
           }
         }
       }
-      else
-
-
-
-
-
-
-
-
-
-
-      { //  *************************RANDOM***************************************
-
+      //  *************************RANDOM***************************************
+      else { 
         if (rollDir == RIGHT) {
           if ((odometryRight <= stateEndOdometryRight) && (moveLeftFinish) ) {
-
             if (motorLeftPWMCurr == 0 ) { //wait until the left motor completly stop because rotation is inverted
-
               setNextState(STATE_PERI_OUT_ROLL, rollDir);
             }
           }
         }
-        else
-        {
+        else {
           if ((moveRightFinish) && (odometryLeft <= stateEndOdometryLeft) ) {
-
             if (motorRightPWMCurr == 0 ) { //wait until the right motor completly stop because rotation is inverted
               setNextState(STATE_PERI_OUT_ROLL, rollDir);
             }
           }
         }
       }
-
-
-
-
-
-
-
-
-
-
       /*
         { //  *************************RANDOM***************************************
         if ((odometryRight <= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft) ) {
@@ -6905,7 +6354,6 @@ void Robot::loop()  {
         }
         setNextState(STATE_PERI_OUT_LANE_ROLL1, rollDir);//if the motor can't rech the odocible in slope
       }
-
       break;
 
     case STATE_PERI_OUT_ROLL:
@@ -6935,12 +6383,10 @@ void Robot::loop()  {
       else {
         if ((odometryRight >= stateEndOdometryRight) && (moveLeftFinish) ) {
           // if ((odometryRight >= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft) ) {
-
           if (motorLeftPWMCurr == 0 ) { //wait until the left motor completly stop because rotation is inverted
             if (!perimeterInside) setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
             else setNextState(STATE_PERI_OUT_FORW, rollDir);
           }
-
         }
       }
       if (millis() > (stateStartTime + MaxOdoStateDuration)) {
@@ -6949,8 +6395,6 @@ void Robot::loop()  {
         }
         setNextState(STATE_PERI_OUT_FORW, rollDir);//if the motor can't rech the odocible in slope
       }
-
-
       break;
 
     case STATE_PERI_OUT_ROLL_TOINSIDE:
@@ -6962,16 +6406,12 @@ void Robot::loop()  {
         setNextState(STATE_ERROR, rollDir);
         return;
       }
-
-
       if ((moveRightFinish) && (moveLeftFinish) ) {
         if ((motorLeftPWMCurr == 0 ) && (motorRightPWMCurr == 0 )) { //wait until the 2 motor completly stop
           if (!perimeterInside) setNextState(STATE_WAIT_AND_REPEAT, rollDir);//again until find the inside
           else setNextState(STATE_PERI_OUT_FORW, rollDir);
         }
       }
-
-
       if (millis() > (stateStartTime + MaxOdoStateDuration)) {
         if (developerActive) {
           ShowMessageln ("Warning can t Roll to inside in time ");
@@ -6983,12 +6423,10 @@ void Robot::loop()  {
 
     case STATE_PERI_OUT_ROLL_TOTRACK:
       motorControlOdo();
-
       if (perimeterInside) {
         setNextState(STATE_PERI_OUT_STOP_ROLL_TOTRACK, 0);
         return;
       }
-
       if (millis() > (stateStartTime + MaxOdoStateDuration)) {
         if (developerActive) {
           ShowMessageln ("Warning can t find perimeter Wire while PERI_OUT_ROLL_TOTRACK in time ");
@@ -7000,9 +6438,7 @@ void Robot::loop()  {
 
     case STATE_PERI_OUT_STOP_ROLL_TOTRACK:
       motorControlOdo();
-
       if (perimeterInside) {
-
         if ((moveRightFinish) && (moveLeftFinish) ) {
           if ((motorLeftPWMCurr == 0 ) && (motorRightPWMCurr == 0 )) {
             lastTimeForgetWire = millis(); //avoid motor reverse on tracking startup
@@ -7011,7 +6447,6 @@ void Robot::loop()  {
           }
         }
       }
-
       if (millis() > (stateStartTime + MaxOdoStateDuration)) {
         if (developerActive) {
           ShowMessageln ("Warning can t PERI_OUT_STOP_ROLL_TOTRACK in time ");
@@ -7025,8 +6460,6 @@ void Robot::loop()  {
       motorControlOdo();
       checkCurrent();
       checkBumpers();
-
-
       if ((moveRightFinish) && (moveLeftFinish))
       {
         if ((motorLeftPWMCurr == 0 ) && (motorRightPWMCurr == 0 )) { //wait until the left motor completly stop because rotation is inverted
@@ -7034,8 +6467,6 @@ void Robot::loop()  {
           else setNextState(STATE_NEXT_LANE_FORW, rollDir);
         }
       }
-
-
       if (millis() > (stateStartTime + MaxOdoStateDuration)) {
         if (developerActive) {
           ShowMessageln ("Warning can t Roll1 by lane in time ");
@@ -7048,18 +6479,15 @@ void Robot::loop()  {
       motorControlOdo();
       checkCurrent();
       checkBumpers();
-
       //bber14
       //if (!perimeterInside) setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
       if (!perimeterInside) {
         setNextState(STATE_PERI_OUT_STOP, rollDir);
         return;
       }
-
       if ((moveRightFinish) && (moveLeftFinish)) {
         if ((motorLeftPWMCurr == 0 ) && (motorRightPWMCurr == 0 )) {
           setNextState(STATE_PERI_OUT_LANE_ROLL2, rollDir);
-
         }
       }
       if (millis() > (stateStartTime + MaxOdoStateDuration)) {
@@ -7067,19 +6495,15 @@ void Robot::loop()  {
           ShowMessageln ("Warning can t reach next lane in time ");
         }
         setNextState(STATE_PERI_OUT_LANE_ROLL2, rollDir);//if the motor can't reach the odocible in slope for example
-
       }
-
       break;
 
     case STATE_PERI_OUT_LANE_ROLL2:
       motorControlOdo();
       checkCurrent();
       checkBumpers();
-
       if (rollDir == RIGHT) {
-        if ((moveRightFinish) && (moveLeftFinish))
-        {
+        if ((moveRightFinish) && (moveLeftFinish)) {
           if ((motorLeftPWMCurr == 0 ) && (motorRightPWMCurr == 0 )) { //wait until the 2 motor completly stop
             if (!perimeterInside) setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
             else setNextState(STATE_FORWARD_ODO, rollDir);// forward odo to straight line
@@ -7087,11 +6511,8 @@ void Robot::loop()  {
           }
         }
       }
-
-      else
-      {
-        if ((moveRightFinish) && (moveLeftFinish))
-        {
+      else {
+        if ((moveRightFinish) && (moveLeftFinish)) {
           if ((motorLeftPWMCurr == 0 ) && (motorRightPWMCurr == 0 )) { //wait until the 2 motor completly stop
             if (!perimeterInside) setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
             else setNextState(STATE_FORWARD_ODO, rollDir);
@@ -7108,8 +6529,7 @@ void Robot::loop()  {
           else setNextState(STATE_FORWARD_ODO, rollDir);// forward odo to straight line
           rollDir = LEFT;//invert the next rotate
         }
-        else
-        {
+        else {
           if (!perimeterInside) setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
           else setNextState(STATE_FORWARD_ODO, rollDir);
           rollDir = RIGHT;// invert the next rotate
@@ -7117,23 +6537,17 @@ void Robot::loop()  {
       }
       break;
 
-
-
-
     case STATE_PERI_OUT_FORW:
       motorControlOdo();
       if (!perimeterInside) setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
       if ((millis() > (stateStartTime + MaxOdoStateDuration)) || (odometryRight >= stateEndOdometryRight) || (odometryLeft >= stateEndOdometryLeft) ) {
         setNextState(STATE_FORWARD_ODO, rollDir);
-
       }
       break;
 
     case STATE_STATION_CHECK:
-
       // check for charging voltage here after detect station
-      if ((moveRightFinish) && (moveLeftFinish)) //move some CM to be sure the contact is OK
-      {
+      if ((moveRightFinish) && (moveLeftFinish)) {//move some CM to be sure the contact is OK
         if ((motorLeftPWMCurr == 0 ) && (motorRightPWMCurr == 0 )) { //wait until the 2 motor completly stop
           //need to adapt if station is traversante
           if (millis() >= delayToReadVoltageStation) { //wait 1.5 sec after all stop and before read voltage
@@ -7174,9 +6588,7 @@ void Robot::loop()  {
       break;
 
     case STATE_STATION_REV:
-
       motorControlOdo();
-
       if ((moveRightFinish) && (moveLeftFinish) ) {
         if ((motorLeftPWMCurr == 0 ) && (motorRightPWMCurr == 0 )) { //wait until the 2 motor completly stop
           setNextState(STATE_STATION_ROLL, 1);
@@ -7192,14 +6604,10 @@ void Robot::loop()  {
 
     case STATE_STATION_ROLL:
       motorControlOdo();
-
-      if ((moveRightFinish) && (moveLeftFinish) )
-      {
+      if ((moveRightFinish) && (moveLeftFinish) ) {
         if ((motorLeftPWMCurr == 0 ) && (motorRightPWMCurr == 0 )) { //wait until the 2 motor completly stop
           smoothPeriMag = perimeter.getSmoothMagnitude(0);
-
-          if ((perimeterInside) && (smoothPeriMag > 250)) //check if signal here and inside need a big value to be sure it is not only noise
-          {
+          if ((perimeterInside) && (smoothPeriMag > 250)) {//check if signal here and inside need a big value to be sure it is not only noise
             Serial.print("SIGNAL OK SmoothMagnitude =  ");
             Serial.println(smoothPeriMag);
             setNextState(STATE_STATION_FORW, rollDir);
@@ -7219,8 +6627,7 @@ void Robot::loop()  {
         }
         smoothPeriMag = perimeter.getSmoothMagnitude(0);
 
-        if ((perimeterInside) && (smoothPeriMag > 250)) //check if signal here and inside need a big value to be sure it is not only noise
-        {
+        if ((perimeterInside) && (smoothPeriMag > 250)) {//check if signal here and inside need a big value to be sure it is not only noise
           setNextState(STATE_STATION_FORW, rollDir);
         }
         else {
@@ -7234,28 +6641,20 @@ void Robot::loop()  {
     case STATE_STATION_FORW:
       // forward (charge station)
       //disabble the sonar during 10 seconds
-
       nextTimeCheckSonar = millis() + 10000;  //Do not check the sonar during 30 second  to avoid detect the station
-
-
       //justChangeLaneDir=false;
       motorControlOdo();
-
-      if ((odometryRight >= stateEndOdometryRight) || (odometryLeft >= stateEndOdometryLeft))
-      {
+      if ((odometryRight >= stateEndOdometryRight) || (odometryLeft >= stateEndOdometryLeft)) {
         if ((whereToStart != 0) && (startByTimer)) { //if ((whereToStart != 0) make a circle arround the station if not start immediatly
           setNextState(STATE_PERI_OBSTACLE_AVOID, rollDir);
         }
-        else
-        {
+        else {
           //020919 to check but never call and not sure it's ok
           statusCurr = NORMAL_MOWING;
           if (RaspberryPIUse) MyRpi.SendStatusToPi();
           setNextState(STATE_FORWARD_ODO, rollDir);
         }
-
       }
-
       if (millis() > (stateStartTime + MaxOdoStateDuration)) {//the motor have not enought power to reach the cible
         if (developerActive) {
           ShowMessageln ("Warning can t make the station forw in time ");
@@ -7273,7 +6672,6 @@ void Robot::loop()  {
 
     //bber50
     case STATE_ACCEL_FRWRD:
-
       motorControlOdo();
       if (!perimeterInside) {
         ShowMessageln("Try to start at other location : We are not inside perimeter");
@@ -7287,20 +6685,14 @@ void Robot::loop()  {
         motorLeftPID.reset();
         setNextState(STATE_FORWARD_ODO, rollDir);
       }
-
       break;
-
-
   } // end switch
-
   bumperRight = false;
   bumperLeft = false;
   dropRight = false;                                                                                                                             // Dropsensor - Absturzsensor
   dropLeft = false;                                                                                                                              // Dropsensor - Absturzsensor
-
   loopsPerSecCounter++;
   wdt.feed();
-
   /*
     StartReadAt = millis();
     distance_find = sensor.readRangeSingleMillimeters();
@@ -7311,5 +6703,4 @@ void Robot::loop()  {
     ShowMessage("         Read Duration in ms ");
     ShowMessageln(ReadDuration);
   */
-
 }

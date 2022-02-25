@@ -38,13 +38,15 @@
 #include "perimeter.h"
 
 /*
-  Generic robot class - subclass to implement concrete hardware!
-
+Generic robot class - subclass to implement concrete hardware!
 */
 
 // code version
-#define VER "1.2-Teensyber GY-521"
+#define VER "1.1-Teensyber GY-521"
 
+#define MAX_TIMERS 5
+
+#define BATTERY_SW_OFF -1
 
 // sensors
 enum {
@@ -211,11 +213,6 @@ enum { MOW_RANDOM, MOW_LANES, MOW_WIRE, MOW_ZIGZAG };
 enum { CONSOLE_SENSOR_COUNTERS, CONSOLE_SENSOR_VALUES, CONSOLE_PERIMETER, CONSOLE_OFF , CONSOLE_TRACKING };
 
 
-
-#define MAX_TIMERS 5
-
-#define BATTERY_SW_OFF -1
-
 class Robot
 {
   public:
@@ -235,13 +232,11 @@ class Robot
     unsigned long stateTime;
     const char* stateName();
     const char* statusName();
-    char* rfidToDoName();
+    const char* rfidToDoName();
 
-
-    char* area1_ip = "10.0.0.151";
-    char* area2_ip = "10.0.0.150";
-    char* area3_ip = "10.0.0.158";
-
+    const char* area1_ip = "10.0.0.151";
+    const char* area2_ip = "10.0.0.150";
+    const char* area3_ip = "10.0.0.158";
 
     unsigned long stateStartTime;
     unsigned long stateEndTime;
@@ -249,53 +244,53 @@ class Robot
     // --------- timer ----------------------------------
     ttimer_t timer[MAX_TIMERS];
     datetime_t datetime;
-    boolean timerUse          ;       // use timer?
-    unsigned long nextTimeTimer ;
+    boolean timerUse;       // use timer?
+    unsigned long nextTimeTimer;
     byte ActualRunningTimer;
     // ----- bluetooth -------------------------------------
     boolean freeboolean;        //use to keep the eeprom integrity
     boolean bluetoothUse;       // use Bluetooth module?
     // ----- esp8266 ---------------------------------------
     boolean esp8266Use;         // use ESP8266 Wifi module?
-    String esp8266ConfigString = "1234";
+    String esp8266ConfigString = "";
     // -------- mow pattern -----------------------------
     byte mowPatternCurr;
     const char *mowPatternName();
     // -------- gps state -------------------------------
     GPS gps;
-    boolean gpsUse            ;       // use GPS?
+    boolean gpsUse;       // use GPS?
 
     float gpsLat;
     float gpsLon;
-    float gpsX ;   // X position (m)
-    float gpsY ;   // Y position (m)
-    unsigned long nextTimeGPS ;
-    unsigned long nextTimeCheckIfStuck ;
-    int gpsSpeedIgnoreTime ; // how long gpsSpeed is ignored when robot switches into a new STATE (in ms)
+    float gpsX;   // X position (m)
+    float gpsY;   // Y position (m)
+    unsigned long nextTimeGPS;
+    unsigned long nextTimeCheckIfStuck;
+    int gpsSpeedIgnoreTime; // how long gpsSpeed is ignored when robot switches into a new STATE (in ms)
 
-    float stuckIfGpsSpeedBelow ;
-    int robotIsStuckCounter ;
+    float stuckIfGpsSpeedBelow;
+    int robotIsStuckCounter;
 
     // -------- odometry state --------------------------
-    boolean odometryUse       ;       // use odometry?
+    boolean odometryUse;       // use odometry?
     boolean twoWayOdometrySensorUse;  // free for something else
-    int odometryTicksPerRevolution ;   // encoder ticks per one full resolution
-    float odometryTicksPerCm ;  // encoder ticks per cm
-    float odometryWheelBaseCm ;    // wheel-to-wheel distance (cm)
-    int odometryLeft ;   // left wheel counter
-    int odometryRight ;  // right wheel counter
+    int odometryTicksPerRevolution;   // encoder ticks per one full resolution
+    float odometryTicksPerCm;  // encoder ticks per cm
+    float odometryWheelBaseCm;    // wheel-to-wheel distance (cm)
+    int odometryLeft;   // left wheel counter
+    int odometryRight;  // right wheel counter
     boolean odometryLeftLastState;
     boolean odometryLeftLastState2;
     boolean odometryRightLastState;
     boolean odometryRightLastState2;
     float odometryTheta; // theta angle (radiant)
-    float odometryX ;   // X map position (cm)
-    float odometryY ;   // Y map position (cm)
-    float motorLeftRpmCurr ; // left wheel rpm
-    float motorRightRpmCurr ; // right wheel rpm
-    unsigned long lastMotorRpmTime ;
-    unsigned long nextTimeOdometry ;
-    unsigned long nextTimeOdometryInfo ;
+    float odometryX;   // X map position (cm)
+    float odometryY;   // Y map position (cm)
+    float motorLeftRpmCurr; // left wheel rpm
+    float motorRightRpmCurr; // right wheel rpm
+    unsigned long lastMotorRpmTime;
+    unsigned long nextTimeOdometry;
+    unsigned long nextTimeOdometryInfo;
     //bb
     int stateEndOdometryRight;  // use to mesure the distance when rev roll etc ...
     int stateEndOdometryLeft;
@@ -311,24 +306,25 @@ class Robot
     int currDistToDrive;//IMU staright line and distance control
 
     // -------- RC remote control state -----------------
-    boolean remoteUse      ;       // use model remote control (R/C)?
-    int remoteSteer ;  // range -100..100
-    int remoteSpeed ;  // range -100..100
-    int remoteMow ;    // range 0..100
-    int remoteSwitch ; // range 0..100
-    unsigned long remoteSteerLastTime ;
-    unsigned long remoteSpeedLastTime ;
+    boolean remoteUse;       // use model remote control (R/C)?
+    int remoteSteer;  // range -100..100
+    int remoteSpeed;  // range -100..100
+    int remoteMow;    // range 0..100
+    int remoteSwitch; // range 0..100
+    unsigned long remoteSteerLastTime;
+    unsigned long remoteSpeedLastTime;
     unsigned long remoteMowLastTime ;
-    unsigned long remoteSwitchLastTime ;
-    boolean remoteSteerLastState ;
-    boolean remoteSpeedLastState ;
-    boolean remoteMowLastState ;
-    boolean remoteSwitchLastState ;
-    unsigned long nextTimeRTC ;
+    unsigned long remoteSwitchLastTime;
+    boolean remoteSteerLastState;
+    boolean remoteSpeedLastState;
+    boolean remoteMowLastState;
+    boolean remoteSwitchLastState;
+    unsigned long nextTimeRTC;
     //bber35
     String rfidTagFind;
     boolean rfidUse;
     byte rfidListElementCount = 0;
+
     struct rfid_list {
       unsigned long TagNr;
       byte TagMowerStatus;
@@ -342,26 +338,24 @@ class Robot
     };
 
     //typedef struct rfid_list;
-
     struct rfid_list *head = NULL;
 
     struct rfid_list *ptr = NULL;
-
 
     // --------- wheel motor state ----------------------------
     // wheel motor speed ( <0 backward, >0 forward); range -motorSpeedMaxRpm..motorSpeedMaxRpm
     //bb
     int motorLeftChange;
     int motorRightChange;
-    int motorAccel  ;  // motor wheel acceleration (warning: do not set too high)
-    int motorSpeedMaxRpm   ;   // motor wheel max RPM
-    int motorSpeedMaxPwm  ;  // motor wheel max Pwm  (8-bit PWM=255, 10-bit PWM=1023)
-    int motorInitialSpeedMaxPwm ;  // motor Initial wheel max Pwm
-    float motorPowerMax   ;    // motor wheel max power (Watt)
+    int motorAccel;  // motor wheel acceleration (warning: do not set too high)
+    int motorSpeedMaxRpm;   // motor wheel max RPM
+    int motorSpeedMaxPwm;  // motor wheel max Pwm  (8-bit PWM=255, 10-bit PWM=1023)
+    int motorInitialSpeedMaxPwm;  // motor Initial wheel max Pwm
+    float motorPowerMax;    // motor wheel max power (Watt)
     PID motorLeftPID;              // motor left wheel PID controller
     PID motorRightPID;              // motor right wheel PID controller
-    float motorSenseRightScale ; // motor right sense scale (mA=(ADC-zero)/scale)
-    float motorSenseLeftScale ; // motor left sense scale  (mA=(ADC-zero)/scale)
+    float motorSenseRightScale; // motor right sense scale (mA=(ADC-zero)/scale)
+    float motorSenseLeftScale; // motor left sense scale  (mA=(ADC-zero)/scale)
     /*
         int motorRollTimeMax ;  // max. roll time (ms)
         int motorRollTimeMin  ; // min. roll time (ms)
@@ -373,30 +367,30 @@ class Robot
     //int DistPeriOutRev;
 
     unsigned long motorForwTimeMax; // max. forward time (ms) / timeout
-    float motorBiDirSpeedRatio1 ;   // bidir mow pattern speed ratio 1
-    float motorBiDirSpeedRatio2 ;   // bidir mow pattern speed ratio 2
-    boolean motorRightSwapDir     ;    // inverse right motor direction?
-    boolean motorLeftSwapDir      ;    // inverse left motor direction?
-    int motorLeftSpeedRpmSet ; // set speed
-    int motorRightSpeedRpmSet ;
+    float motorBiDirSpeedRatio1;   // bidir mow pattern speed ratio 1
+    float motorBiDirSpeedRatio2;   // bidir mow pattern speed ratio 2
+    boolean motorRightSwapDir;    // inverse right motor direction?
+    boolean motorLeftSwapDir;    // inverse left motor direction?
+    int motorLeftSpeedRpmSet; // set speed
+    int motorRightSpeedRpmSet;
     //bb
     unsigned long motorOdoAccel;
 
-    int motorLeftPWMCurr ; // current speed
-    int motorRightPWMCurr ;
+    int motorLeftPWMCurr; // current speed
+    int motorRightPWMCurr;
     //float motorLeftPWMCurr ; // current speed
     //float motorRightPWMCurr ;
-    int motorRightSenseADC ;
-    int motorLeftSenseADC ;
-    float motorLeftSenseCurrent ;
-    float motorRightSenseCurrent ;
-    float motorLeftPower ;      // motor power (range 0..MAX_MOTOR_POWER)
-    float motorRightPower ;
+    int motorRightSenseADC;
+    int motorLeftSenseADC;
+    float motorLeftSenseCurrent;
+    float motorRightSenseCurrent;
+    float motorLeftPower;      // motor power (range 0..MAX_MOTOR_POWER)
+    float motorRightPower;
     int motorPowerIgnoreTime;
     int motorZeroSettleTime;     // how long (ms) to wait for motor to settle at zero speed
-    int motorLeftSenseCounter ;  // motor current counter
-    int motorRightSenseCounter ;
-    unsigned long nextTimeMotorSense ;
+    int motorLeftSenseCounter;  // motor current counter
+    int motorRightSenseCounter;
+    unsigned long nextTimeMotorSense;
     unsigned long lastSetMotorSpeedTime;
     unsigned long motorLeftZeroTimeout;
     unsigned long motorRightZeroTimeout;
@@ -404,7 +398,7 @@ class Robot
     unsigned long nextTimeRotationChange;
     unsigned long nextTimeSendTagToPi;
     unsigned long nextTimeMotorControl;
-    unsigned long nextTimeMotorImuControl ;
+    unsigned long nextTimeMotorImuControl;
 
     //bb
     int motorRightOffsetFwd;
@@ -413,7 +407,7 @@ class Robot
     //bber400
     float motorRpmCoeff; // coeff use to have a stable RPM on slope or when battery is full or empty
 
-    unsigned long nextTimeMotorOdoControl ;
+    unsigned long nextTimeMotorOdoControl;
     unsigned long nextTimePidCompute;
     unsigned long accelDurationRight;
     unsigned long accelDurationLeft;
@@ -457,7 +451,6 @@ class Robot
     int newtagDistance2;
 
     //unsigned long stateMaxiTime;  // maybe safety if the odometry is not reach in this time error
-
     int angleCorresp;
     int accelDuration;
     //bber17
@@ -469,76 +462,73 @@ class Robot
     float Mow2_Power = 0;
     float Mow3_Power = 0;
 
-    int motorMowRpmCounter ;  // mower motor speed state
-    boolean motorMowRpmLastState ;
-    boolean motorMowEnable ;  // motor can be temporary disabled if stucked etc. with this
-    boolean motorMowForceOff ; // user switch for mower motor on/off has highest priority
+    int motorMowRpmCounter;  // mower motor speed state
+    boolean motorMowRpmLastState;
+    boolean motorMowEnable;  // motor can be temporary disabled if stucked etc. with this
+    boolean motorMowForceOff; // user switch for mower motor on/off has highest priority
     // boolean ignoreRfidTag ; // use to stay on wire when mow perimeter
     boolean highGrassDetect;  //detect that the mow motor is on high load so high grass
-    float triggerMotorMowHightGrass ;     // motor mower percent of power vs power Max  trigger to start spirale or half lane
+    float triggerMotorMowHightGrass;     // motor mower percent of power vs power Max  trigger to start spirale or half lane
     // boolean motorMowEnableOverride ; // user switch for mower motor on/off has highest priority if true the motor is stop
     // mower motor sppeed; range 0..motorMowSpeedMaxPwm
-    float motorMowAccel       ;  // motor mower acceleration (warning: do not set too high)
-    int motorMowSpeedMaxPwm ;    // motor mower max PWM
-    int motorMowSpeedMinPwm ;    // motor mower min PWM (only for speed modulation)
-    float motorMowPowerMax ;     // motor mower max power (Watt)
+    float motorMowAccel;  // motor mower acceleration (warning: do not set too high)
+    int motorMowSpeedMaxPwm;    // motor mower max PWM
+    int motorMowSpeedMinPwm;    // motor mower min PWM (only for speed modulation)
+    float motorMowPowerMax;     // motor mower max power (Watt)
 
     //bb 8
     byte spiraleNbTurn;  //count the number of revolution of the spirale (10 revolutions for example before stop)
     byte halfLaneNb; //count the number of lane same as spirale (10  for example before stop)
 
-
-    float motorMowSenseScale ;   // motor mower sense scale (mA=(ADC-zero)/scale)
-    PID motorMowPID ;    // motor mower RPM PID controller
+    float motorMowSenseScale;   // motor mower sense scale (mA=(ADC-zero)/scale)
+    PID motorMowPID;    // motor mower RPM PID controller
     int motorMowSpeedPWMSet;
-    int motorMowPWMCurr ;         // current speed
-    int motorMowPwmCoeff ;      // current coeff
-    int motorMowSenseADC ;
-    float motorMowSenseCurrent ;
-    float motorMowPower ;       // motor power (range 0..MAX_MOW_POWER)
-    int motorMowSenseCounter ;
-    int motorMowSenseErrorCounter ;
+    int motorMowPWMCurr;         // current speed
+    int motorMowPwmCoeff;      // current coeff
+    int motorMowSenseADC;
+    float motorMowSenseCurrent;
+    float motorMowPower;       // motor power (range 0..MAX_MOW_POWER)
+    int motorMowSenseCounter;
+    int motorMowSenseErrorCounter;
 
     unsigned long lastMotorMowRpmTime;
 
-
     // --------- bumper state ---------------------------
     // bumper state (true = pressed)
-    boolean bumperUse       ;      // has bumpers?
-    boolean tiltUse       ;      // has tilt sensor?
+    boolean bumperUse;      // has bumpers?
+    boolean tiltUse;      // has tilt sensor?
     boolean tilt;
-    int bumperLeftCounter ;
-    boolean bumperLeft ;
-    int bumperRightCounter ;
-    boolean bumperRight ;
-    unsigned long nextTimeBumper ;
+    int bumperLeftCounter;
+    boolean bumperLeft;
+    int bumperRightCounter;
+    boolean bumperRight;
+    unsigned long nextTimeBumper;
     // --------- drop state ---------------------------
     // bumper state (true = pressed)                                                                                                  // Dropsensor - Absturzsensor vorhanden ?
-    boolean dropUse       ;      // has drops?                                                                                           // Dropsensor - Absturzsensor ZÃ¤hler links
-    int dropLeftCounter ;                                                                                                             // Dropsensor - Absturzsensor
-    boolean dropLeft ;                                                                                                                // Dropsensor - Absturzsensor links betÃ¤tigt ?
-    int dropRightCounter ;                                                                                                            // Dropsensor - Absturzsensor
-    boolean dropRight ;                                                                                                               // Dropsensor - Absturzsensor rechts betÃ¤tigt ?
-    unsigned long nextTimeDrop ;                                                                                                      // Dropsensor - Absturzsensor
-    boolean dropcontact ; // contact 0-openers 1-closers                                                                                 // Dropsensor Kontakt 0 fÃ¼r Ã–ffner - 1 SchlieÃŸer
+    boolean dropUse;      // has drops?                                                                                           // Dropsensor - Absturzsensor ZÃ¤hler links
+    int dropLeftCounter;                                                                                                             // Dropsensor - Absturzsensor
+    boolean dropLeft;                                                                                                                // Dropsensor - Absturzsensor links betÃ¤tigt ?
+    int dropRightCounter;                                                                                                            // Dropsensor - Absturzsensor
+    boolean dropRight;                                                                                                               // Dropsensor - Absturzsensor rechts betÃ¤tigt ?
+    unsigned long nextTimeDrop;                                                                                                      // Dropsensor - Absturzsensor
+    boolean dropcontact; // contact 0-openers 1-closers                                                                                 // Dropsensor Kontakt 0 fÃ¼r Ã–ffner - 1 SchlieÃŸer
     // ------- IMU state --------------------------------
     IMUClass imu;
-    boolean imuUse            ;       // use IMU?
+    boolean imuUse;       // use IMU?
     boolean CompassUse;       // Deactivate the compass and use only gyro accel from IMU
-    boolean stopMotorDuringCalib     ;       // Stop mow motor during auto calibration
-    PID imuDirPID  ;    // direction PID controller
-    PID imuRollPID ;    // roll PID controller
-    float imuDriveHeading ;       // drive heading (IMU)
+    boolean stopMotorDuringCalib;       // Stop mow motor during auto calibration
+    PID imuDirPID;    // direction PID controller
+    PID imuRollPID;    // roll PID controller
+    float imuDriveHeading;       // drive heading (IMU)
     float periFindDriveHeading;   // drive heading when search for other rfid tag or go to station
     float remoteDriveHeading;   // drive heading  when rfid tag to go to area2
     float newtagRotAngle1Radian;
 
-
-    float imuRollHeading ;      // roll heading  (IMU)
+    float imuRollHeading;      // roll heading  (IMU)
     byte  imuRollDir;
     //point_float_t accMin;
     //point_float_t accMax;
-    unsigned long nextTimeIMU ; //read IMU data
+    unsigned long nextTimeIMU; //read IMU data
     unsigned long nextTimeCheckTilt; // check if
     unsigned long nextTimeAddYawMedian;
     //unsigned long nextTimeImuUse;
@@ -555,11 +545,7 @@ class Robot
     RunningMedian motorSpeedRpmMedian = RunningMedian(35);
     RunningMedian perimeterMedian = RunningMedian(67); //perimeter is read each 15 ms so 1 second
 
-
-
     //bb 5
-
-
     float yawToFind;
     float findedYaw;
     float yawSet1;
@@ -583,35 +569,34 @@ class Robot
     boolean justChangeLaneDir;  //
     byte actualRollDirToCalibrate;
     float prevYawCalcOdo;
-    unsigned long nextTimeImuLoop ;
-    unsigned long nextTimeGpsRead ;
+    unsigned long nextTimeImuLoop;
+    unsigned long nextTimeGpsRead;
 
     int delayBetweenTwoDmpAutocalib;
     int maxDurationDmpAutocalib;
     float maxDriftPerSecond;
 
     // ------- perimeter state --------------------------
-
     //bb
     PerimeterClass perimeter;
 
     // Perimeter perimeter;
-    boolean perimeterUse       ;      // use perimeter?
+    boolean perimeterUse;      // use perimeter?
     //int perimeterOutRollTimeMax ;  //free but conserve for eeprom recovery
     //int perimeterOutRollTimeMin ;   //free but conserve for eeprom recovery
-    int perimeterOutRevTime  ;
-    int perimeterTrackRollTime ; // perimeter tracking roll time (ms)
-    int perimeterTrackRevTime ; // perimeter tracking reverse time (ms)
-    PID perimeterPID ;             // perimeter PID controller
-    int perimeterMag ;             // perimeter magnitude
-    int perimeterMagRight ;             // perimeter magnitude
+    int perimeterOutRevTime;
+    int perimeterTrackRollTime; // perimeter tracking roll time (ms)
+    int perimeterTrackRevTime; // perimeter tracking reverse time (ms)
+    PID perimeterPID;             // perimeter PID controller
+    int perimeterMag;             // perimeter magnitude
+    int perimeterMagRight;             // perimeter magnitude
     byte areaInMowing;              //it's the area in mowing nr
-    boolean perimeterInside ;      // is inside perimeter?
+    boolean perimeterInside;      // is inside perimeter?
     unsigned long perimeterTriggerTime; // time to trigger perimeter transition (timeout)
     int perimeterTriggerMinSmag;   // perimeter trigger minimum smag use on center of big area ,the Smag can be 200 and transition can occur
     unsigned long perimeterLastTransitionTime;
-    int perimeterCounter ;         // counts perimeter transitions
-    unsigned long nextTimePerimeter ;
+    int perimeterCounter;         // counts perimeter transitions
+    unsigned long nextTimePerimeter;
     unsigned long trackingPerimeterTransitionTimeOut;
     unsigned long trackingErrorTimeOut;
     boolean trakBlockInnerWheel;
@@ -642,52 +627,52 @@ class Robot
     float PeriCoeffAccel;
     float R;
     int smoothPeriMag;
-    unsigned long nextTimeReadSmoothPeriMag ; //use when wait for sig2
+    unsigned long nextTimeReadSmoothPeriMag; //use when wait for sig2
     boolean reduceSpeedNearPerimeter; //Activate the speed reduction near perimeter
     //End add bb
     //  --------- lawn state ----------------------------
-    boolean lawnSensorUse     ;       // use capacitive Sensor
+    boolean lawnSensorUse;       // use capacitive Sensor
     int lawnSensorCounter;
     boolean lawnSensor;  // lawn capacity sensor state (true = no lawn detected)
-    float lawnSensorFront ;  // front lawn sensor capacity (time)
-    float lawnSensorFrontOld ;
-    float lawnSensorBack ;   // back lawn sensor capacity (time)
-    float lawnSensorBackOld ;
-    unsigned long nextTimeLawnSensor ;
-    unsigned long nextTimeLawnSensorCheck ;
+    float lawnSensorFront;  // front lawn sensor capacity (time)
+    float lawnSensorFrontOld;
+    float lawnSensorBack;   // back lawn sensor capacity (time)
+    float lawnSensorBackOld;
+    unsigned long nextTimeLawnSensor;
+    unsigned long nextTimeLawnSensorCheck;
     // --------- rain -----------------------------------
     boolean rain;
     boolean rainUse;
     int rainCounter;
-    unsigned long nextTimeRain ;
+    unsigned long nextTimeRain;
     // --------- sonar ----------------------------------
     // ultra sonic sensor distance-to-obstacle (cm)
-    boolean sonarUse          ;      // use ultra sonic sensor?
-    boolean sonarLikeBumper   ;      // sonar behaviour is the same as bumper
+    boolean sonarUse;      // use ultra sonic sensor?
+    boolean sonarLikeBumper;      // sonar behaviour is the same as bumper
 
     boolean sonarLeftUse;
     boolean sonarRightUse;
     boolean sonarCenterUse;
-    int sonarTriggerBelow ;    // start to reverse
-    int sonarSlowBelow ;      // start to slow not use but stay here to keep the compatibily with 1.08
-    int sonarDistCenter ;
-    int sonarDistRight ;
-    int sonarDistLeft ;
+    int sonarTriggerBelow;    // start to reverse
+    int sonarSlowBelow;      // start to slow not use but stay here to keep the compatibily with 1.08
+    int sonarDistCenter;
+    int sonarDistRight;
+    int sonarDistLeft;
     //unsigned int sonarDistCounter ;
     //unsigned int tempSonarDistCounter ;
-    unsigned long sonarObstacleTimeout ;
+    unsigned long sonarObstacleTimeout;
     //unsigned long nextTimeSonar ;
-    unsigned long nextTimeCheckSonar ;
+    unsigned long nextTimeCheckSonar;
     byte distToObstacle; //min distance to obstacle in CM of the 3 sonars
     byte sonarToFrontDist;
     float sonarSpeedCoeff; // coeff to reduce speed when sonar detect something
 
     // --------- pfodApp ----------------------------------
     RemoteControl rc; // pfodApp
-    unsigned long nextTimePfodLoop ;
+    unsigned long nextTimePfodLoop;
     unsigned long next_time_refresh_mqtt;
     // ----- other -----------------------------------------
-    boolean buttonUse         ;       // has digital ON/OFF button?
+    boolean buttonUse;       // has digital ON/OFF button?
     boolean RaspberryPIUse;  //a raspberryPI is connected to USBNativeport
     boolean useMqtt; // mqtt work to send dat to homeassistant
     boolean MyrpiStatusSync;
@@ -695,11 +680,11 @@ class Robot
     boolean beepState;//for the beeper true when sound
     unsigned long  nextTimeBeeper;// use for beeper
     boolean startByTimer; // use to know if the start is initiate by timer or manual via PFOD
-    int whereToStart; // use to know where the mower need to leave the wire and start to mow
+    unsigned long whereToStart; // use to know where the mower need to leave the wire and start to mow
     unsigned int whereToResetSpeed; // use with Rfid Speed to know when reset to maxpwm
 
     int beaconToStart; // use to know where the mower need to leave the wire and start to mow
-    byte areaToGo;// use to know the area where to start by timer
+    int areaToGo;// use to know the area where to start by timer
     //--------  Temperature humidity ------------------
 
     unsigned long  nextTimeReadTemperature = 0;
@@ -710,58 +695,51 @@ class Robot
     float maxTemperature;  //switch to OFF when reach this temp
 
     // ----- user-defined switch ---------------------------
-    boolean userSwitch1       ;       // user-defined switch 1 (default value)
-    boolean userSwitch2       ;       // user-defined switch 2 (default value)
-    boolean userSwitch3       ;       // user-defined switch 3 (default value)
+    boolean userSwitch1;       // user-defined switch 1 (default value)
+    boolean userSwitch2;       // user-defined switch 2 (default value)
+    boolean userSwitch3;       // user-defined switch 3 (default value)
 
+    boolean userLed;       // Main Led (default value)
+    boolean userGreenLed;       // Green Led (default value)
+    boolean userRedLed;       // Red Led (default value)
 
-    boolean userLed           ;       // Main Led (default value)
-    boolean userGreenLed      ;       // Green Led (default value)
-    boolean userRedLed        ;       // Red Led (default value)
+    boolean userOut1;       // output on remote connector Mow (default value)
+    boolean userOut2;       // output on remote connector steering
+    boolean userOut3;       // output on remote connector speed
+    boolean userOut4;       // output on remote connector switch
 
-    boolean userOut1        ;       // output on remote connector Mow (default value)
-    boolean userOut2        ;       // output on remote connector steering
-    boolean userOut3        ;       // output on remote connector speed
-    boolean userOut4        ;       // output on remote connector switch
-
-    boolean invert_userOut  ;       //switch use in case the userOut use a relay board
-
-
-
-
-
+    boolean invert_userOut;       //switch use in case the userOut use a relay board
 
     // --------- charging -------------------------------
-
-    boolean batMonitor ;              // monitor battery and charge voltage?
-    float batGoHomeIfBelow ;     // drive home voltage (Volt)
-    float batSwitchOffIfBelow ;  // switch off if below voltage (Volt)
+    boolean batMonitor;              // monitor battery and charge voltage?
+    float batGoHomeIfBelow;     // drive home voltage (Volt)
+    float batSwitchOffIfBelow;  // switch off if below voltage (Volt)
     int batSwitchOffIfIdle;      // switch off battery if idle for minutes
-    float batFactor       ;     // battery conversion factor
-    float batChgFactor       ;     // battery conversion factor
-    float batFull         ;      // battery reference Voltage (fully charged)
-    float batChargingCurrentMax ; // maximum current your charger can devliver
-    float batFullCurrent   ; // current flowing when battery is fully charged
+    float batFactor;     // battery conversion factor
+    float batChgFactor;     // battery conversion factor
+    float batFull;      // battery reference Voltage (fully charged)
+    float batChargingCurrentMax; // maximum current your charger can devliver
+    float batFullCurrent; // current flowing when battery is fully charged
     float startChargingIfBelow; // start charging if battery Voltage is below
     unsigned long chargingTimeout; // safety timer for charging
-    float chgSenseZero    ;       // charge current sense zero point NOT USE
-    float batSenseFactor       ;     // charge current conversion factor
-    float chgSense        ;       // mV/A empfindlichkeit des Ladestromsensors in mV/A (FÃ¼r ACS712 5A = 185)
-    char chgChange        ;       // messwertumkehr von - nach +         1oder 0
-    float batVoltage ;  // battery voltage (Volt)
+    float chgSenseZero;       // charge current sense zero point NOT USE
+    float batSenseFactor;     // charge current conversion factor
+    float chgSense;       // mV/A empfindlichkeit des Ladestromsensors in mV/A (FÃ¼r ACS712 5A = 185)
+    char chgChange;       // messwertumkehr von - nach +         1oder 0
+    float batVoltage;  // battery voltage (Volt)
     // byte chgSelection     ;       // Senor Auswahl
-    float batRefFactor ;
-    float batCapacity ; // battery capacity (mAh)
-    float chgVoltage ;  // charge voltage (Volt)
-    float chgCurrent ;  // charge current  (Ampere)
+    float batRefFactor;
+    float batCapacity; // battery capacity (mAh)
+    float chgVoltage;  // charge voltage (Volt)
+    float chgCurrent;  // charge current  (Ampere)
     int chgNull;        // Nulldurchgang Ladestromsensor
-    byte stationRevDist     ;    // charge station reverse distance cm
-    byte stationRollAngle    ;    // charge station roll angle
-    int stationForwDist    ;    // charge station forward distance cm
-    byte stationCheckDist   ;    // charge station check distance cm
-    boolean UseBumperDock ;  //bumper is pressed when docking or not
+    byte stationRevDist;    // charge station reverse distance cm
+    byte stationRollAngle;    // charge station roll angle
+    int stationForwDist;    // charge station forward distance cm
+    byte stationCheckDist;    // charge station check distance cm
+    boolean UseBumperDock;  //bumper is pressed when docking or not
     boolean autoResetActive;       // at the edn of the charging all is rebbot to avoid error after 1 or 2 weeks ON
-    byte dockingSpeed ;  //speed docking is (percent of maxspeed) when sonar detect something while tracking
+    byte dockingSpeed;  //speed docking is (percent of maxspeed) when sonar detect something while tracking
     unsigned long totalDistDrive;  //use to check when to leave the wire in start timer mode
     unsigned long nextTimeBattery ;
     unsigned long nextTimeCheckBattery;
@@ -777,20 +755,20 @@ class Robot
     byte errorCounterMax[ERR_ENUM_COUNT];
     byte errorCounter[ERR_ENUM_COUNT];
     // --------- other ----------------------------------
-    int loopsPerSec ;  // main loops per second
-    int loopsPerSecCounter ;
-    byte buttonCounter ;
-    byte ledState ;
-    byte consoleMode ;
-    unsigned long nextTimeButtonCheck ;
-    unsigned long nextTimeInfo ;
-    unsigned long nextTimeScreen ;
+    int loopsPerSec;  // main loops per second
+    int loopsPerSecCounter;
+    byte buttonCounter;
+    byte ledState;
+    byte consoleMode;
+    unsigned long nextTimeButtonCheck;
+    unsigned long nextTimeInfo;
+    unsigned long nextTimeScreen;
 
     unsigned long nextTimePrintConsole;
     byte rollDir;
-    unsigned long nextTimeButton ;
+    unsigned long nextTimeButton;
     unsigned long nextTimeErrorCounterReset;
-    unsigned long nextTimeErrorBeep ;
+    unsigned long nextTimeErrorBeep;
 
     unsigned long endBeepTime; //time in millis when the beep need to stop
     int beepOnDuration; //  duration ON
@@ -798,21 +776,17 @@ class Robot
     int beepfrequenceOn;  // frequence ON
     int beepfrequenceOff;  //  frequence OFF normaly 0 but can be use to make other tone
 
-
-
     // ------------robot stats---------------------------
-    boolean statsOverride ;
-    boolean statsMowTimeTotalStart ;
-    unsigned int statsMowTimeMinutesTripCounter ;
-    unsigned long statsMowTimeMinutesTotal ;
-    float statsMowTimeHoursTotal ;
-    int statsMowTimeMinutesTrip ;
-    unsigned long nextTimeRobotStats ;
-    byte mowPatternDuration ; // use to know when need to change, the pattern change each x minutes so byte is OK
+    boolean statsOverride;
+    boolean statsMowTimeTotalStart;
+    unsigned int statsMowTimeMinutesTripCounter;
+    unsigned long statsMowTimeMinutesTotal;
+    float statsMowTimeHoursTotal;
+    int statsMowTimeMinutesTrip;
+    unsigned long nextTimeRobotStats;
+    byte mowPatternDuration; // use to know when need to change, the pattern change each x minutes so byte is OK
     byte mowPatternDurationMax; // value enter into PFOD for setting in Minutes
     //bb
-
-
     // --------------------------------------------------
     Robot();
     // robot setup
@@ -820,8 +794,6 @@ class Robot
     // robot main loop
     virtual void loop();
     virtual void resetIdleTime();
-
-
 
     // state machine
     virtual void setNextState(byte stateNew, byte dir);
@@ -850,6 +822,7 @@ class Robot
     virtual void deleteRobotStats();
     virtual void newTagFind();
     virtual void autoReboot();
+
     // other
     // virtual void beep(int numberOfBeeps, boolean shortbeep);
     virtual void printInfo(Stream &s);
@@ -875,8 +848,8 @@ class Robot
 
     virtual void printSettingSerial();
     const char* mowPatternNameList(byte mowPatternIndex);
-    char* rfidToDoNameList(byte rfidToDoIndex);
-    char* statusNameList(byte statusIndex);
+    const char* rfidToDoNameList(byte rfidToDoIndex);
+    const char* statusNameList(byte statusIndex);
 
     virtual void insert_rfid_list(unsigned long TagNr, byte TagMowerStatus, byte TagToDo, int TagSpeed, float TagAngle1, int TagDist1, float TagAngle2, int TagDist2);
     virtual void print_rfid_list();
@@ -884,8 +857,6 @@ class Robot
     virtual void delete_rfid_list(unsigned long TagNr, byte TagMowerStatus, int pos_into_list);
 
     virtual void pfodSetDateTime(byte hr1, byte min1, byte sec1, byte day1, byte month1, short year1);
-
-
 
   protected:
     static void OdoRightCountInt(); //odometry interrupt loop
@@ -899,7 +870,6 @@ class Robot
     virtual void loadSaveRobotStats(boolean readflag);
     virtual void loadUserSettings();
     virtual void checkErrorCounter();
-
 
     // read sensors
     virtual void readSensors();
@@ -918,7 +888,6 @@ class Robot
     virtual void checkPerimeterBoundary();
     virtual void checkStuckOnIsland();
 
-
     virtual void checkSonar();
     virtual void checkSonarPeriTrack();
 
@@ -933,7 +902,6 @@ class Robot
     virtual void motorControl();
 
     //bb
-
     virtual void OdoRampCompute() ;
     virtual void motorControlOdo() ;
     virtual void motorControlPerimeter();
@@ -947,7 +915,6 @@ class Robot
     virtual void reverseOrBidir(byte aRollDir);
 
     // other
-
     virtual void printOdometry();
     virtual void printMenu();
     virtual void delayInfo(int ms);
@@ -960,18 +927,10 @@ class Robot
     virtual void calcOdometry();
     virtual void menu();
 
-
     virtual void beeper();
 
     boolean search_rfid_list(unsigned long TagNr);
     void rfidTagTraitement(unsigned long TagNr, byte statusCurr);
-
-
-
-
-
 };
-
-
 
 #endif

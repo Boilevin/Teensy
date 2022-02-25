@@ -19,9 +19,8 @@ class PerimeterClass
 
     void printTimedADCInfo(uint8_t adc_num, uint16_t *buffer, uint32_t &delta_time);
 
-
-
     void changeArea(byte areaInMowing);
+
     const int16_t* getRawSignalSample(byte idx);
     // get perimeter magnitude
     int getMagnitude(byte idx);
@@ -40,21 +39,17 @@ class PerimeterClass
     void run();
     int timedOutIfBelowSmag;
     unsigned long timeOutSecIfNotInside;
-    
+
     // swap coil polarity?
     boolean swapCoilPolarityLeft;
     boolean swapCoilPolarityRight;
     boolean read2Coil;
     unsigned long lastInsideTime[2];
     //int subSample;
- 
+
   private:
-
-
     static void adc0_isr();
     static void adc1_isr();
-
-
 
     byte idxPin[2]; // channel for idx
     int callCounter;

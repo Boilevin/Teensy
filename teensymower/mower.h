@@ -16,36 +16,37 @@
 // 1 for brushless BL500W Driver
 // 2 for DC L298N Driver
 // 3 for DC BTS7960 Driver
-#define LEFT_MOTOR_DRIVER 3
-#define RIGHT_MOTOR_DRIVER 3
-#define MOW_MOTOR_DRIVER 3
+#define LEFT_MOTOR_DRIVER 1
+#define RIGHT_MOTOR_DRIVER 1
+#define MOW_MOTOR_DRIVER 1
 
 #define PWM_FREQUENCY_BL500W  29300 //
-#define PWM_FREQUENCY_L298N  10000 
+#define PWM_FREQUENCY_L298N  10000
 #define PWM_FREQUENCY_BTS7960  10000
 
-#define INA226_MOW2_PRESENT true
-#define INA226_MOW3_PRESENT true
+#define INA226_MOW2_PRESENT false
+#define INA226_MOW3_PRESENT false
 
 #define ODOMETRY_ONLY_RISING false
-//***********************************************************************
 
 //**********************       COMPASS         **************************
 //#define COMPASS_IS HMC5883L
 #define COMPASS_IS QMC5883L
 //***********************************************************************
 
-//#define Console Serial
+//Serial and Baudrates
 #define CONSOLE_BAUDRATE    115200       // baudrate used for serial debug
-#define track_ClockWise false    //tracking wire direction
 #define RaspberryPIPort Serial  //The PI is connected over USB cable
-
 #define Bluetooth Serial1  // Ardumower default OK for ESP32 or HC05
-#define BLUETOOTH_BAUDRATE  19200     // baudrate used for communication with Bluetooth module (Ardumower default: 19200)
+#define BLUETOOTH_BAUDRATE  19200     // baudrate used for communication with Bluetooth module (default: 19200)
+#define GpsPort Serial3  // GPS
+#define gpsBaudrate 38400
 
+//Define Mower Tracking Direction
+#define track_ClockWise false    //tracking wire direction
+
+//Define OLED SCREEN
 #define Enable_Screen false //set to true if OLED SCREEN is connected
-
-#define GpsPort Serial3  // GPS 
 
 
 // ---- choose only one perimeter signal code ----
@@ -54,10 +55,7 @@
 //#define SIGCODE_3  // Ardumower alternative perimeter signal
 
 
-
-
-// ------ pins---------------------------------------
-
+// ------ PIN Defination no changes needed
 #define pinMotorLeftEnable  5         // EN motors enable
 #define pinMotorLeftPWM 7          // M1_IN1 left motor PWM pin
 #define pinMotorLeftDir 6         // M1_IN2 left motor Dir pin
@@ -73,26 +71,24 @@
 #define pinSonarRightEcho A13
 #define pinSonarLeftTrigger 28   //BBER10
 #define pinSonarLeftEcho A12
-
-
 #define pinPerimeterRight A8       // perimeter
 #define pinPerimeterLeft A9
 #define pinBuzzer 37               // Buzzer
 #define pinButton 38             // digital ON/OFF button
-#define pinBatterySwitch 33         // battery-OFF switch   
+#define pinBatterySwitch 33         // battery-OFF switch
 #define pinChargeEnable 34          // charge relay
 #define pinOdometryLeft 12     // left odometry sensor
-#define pinOdometryRight 11   // right odometry sensor  
+#define pinOdometryRight 11   // right odometry sensor
 #define pinRain 39                 // rain sensor
 #define pinUserOut1 13          // remote control mower motor
-#define pinUserOut2 32          // remote control steering 
+#define pinUserOut2 32          // remote control steering
 #define pinUserOut3 A16        // remote control speed
 
 // ------- ultrasonic config ---------------------------------------------------------
 #define NO_ECHO 0
 
 /*
-  standard robot chassis
+  Class Mower
 */
 
 class Mower : public Robot

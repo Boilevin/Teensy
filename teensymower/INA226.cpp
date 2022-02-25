@@ -380,13 +380,14 @@ int16_t INA226::readRegister16(uint8_t reg)
     #else
         uint8_t vha = Wire.receive();
         uint8_t vla = Wire.receive();
-    #endif;
+    #endif
     Wire.endTransmission();
 
     value = vha << 8 | vla;
-    
+
     return value;
 }
+
 int16_t INA226::readRegister16_I2C1(uint8_t reg)
 {
     int16_t value;
@@ -410,13 +411,14 @@ int16_t INA226::readRegister16_I2C1(uint8_t reg)
     #else
         uint8_t vha = Wire1.receive();
         uint8_t vla = Wire1.receive();
-    #endif;
+    #endif
     Wire1.endTransmission();
 
     value = vha << 8 | vla;
-   
+
     return value;
 }
+
 void INA226::writeRegister16(uint8_t reg, uint16_t val)
 {
     uint8_t vla;
@@ -435,6 +437,7 @@ void INA226::writeRegister16(uint8_t reg, uint16_t val)
     #endif
     Wire.endTransmission();
 }
+
 void INA226::writeRegister16_I2C1(uint8_t reg, uint16_t val)
 {
     uint8_t vla;

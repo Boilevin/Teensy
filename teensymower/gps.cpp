@@ -58,7 +58,8 @@ GPS::GPS()
 //
 
 void GPS::init(){
-  Serial3.begin(9600);
+  Serial3.begin(38400); //Sascha
+  Serial.println("Start GPS");
 }
 
 boolean GPS::feed(){

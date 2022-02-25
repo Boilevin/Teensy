@@ -477,7 +477,7 @@ void RpiRemote::receivePiReqSetting (String Setting_page, int nb_page) {
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->rainUse;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->gpsUse; 
+    lineToSend = lineToSend + robot->gpsUse;
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->rainUse; //old stuckIfGpsSpeedBelow
     lineToSend = lineToSend + ",";
@@ -500,7 +500,7 @@ void RpiRemote::receivePiReqSetting (String Setting_page, int nb_page) {
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->esp8266Use;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + 0;  //robot->esp8266ConfigString;
+    lineToSend = lineToSend + robot->esp8266ConfigString;
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->tiltUse;
     lineToSend = lineToSend + ",";
@@ -842,7 +842,7 @@ void RpiRemote::writePi(String stringLine) {
     lineToSend = lineToSend + String(retour, HEX);
   }
   RaspberryPIPort.println(lineToSend);
-  
+
   //watchdogReset();
   //ShowMessageln(lineToSend);
 }
@@ -850,7 +850,7 @@ void RpiRemote::writePi(String stringLine) {
 void RpiRemote::readPi() {
   if (!RaspberryPIPort.available())
     return;
-  int StartTrans = millis();
+  //int StartTrans = millis();
   while (RaspberryPIPort.available()) {
     //watchdogReset();
     char c = RaspberryPIPort.read();
@@ -992,9 +992,9 @@ void RpiRemote::receive_request() {
   // Serial.print("Receive a request  --> ");
   // Serial.println(buf);
   String messageType;
-  int frequency ;
-  int trigger ;
-  int max_repetition ;
+  int frequency;
+  int trigger;
+  int max_repetition;
   int counter = 0;
   char token[12];
   Tokeniser tok(buf, ',');
@@ -1443,9 +1443,9 @@ void RpiRemote::readWrite_setting()
         robot->userSwitch3 = val[1];
         robot->timerUse = val[2];
         robot->rainUse = val[3];
-        robot->gpsUse = val[4];
-        //robot->stuckIfGpsSpeedBelow = val[5];
-        //robot->gpsBaudrate = val[6];
+        robot->rainUse = val[4]; //old gps
+        robot->rainUse = val[5];//old gps
+        robot->rainUse = val[6];//old gps
         robot->dropUse = val[7];
         robot->statsOverride = val[8];
         robot->bluetoothUse = val[9];

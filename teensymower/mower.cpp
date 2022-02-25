@@ -17,24 +17,15 @@
   Private-use only! (you need to ask for a commercial-use)
 
 */
-
-
-
-#include "mower.h"
-
 #include <Arduino.h>
 #include "drivers.h"
+#include "mower.h"
 
 //#define USE_DEVELOPER_TEST     1      // uncomment for new perimeter signal test (developers)
 
 Mower robot;
 
-
 Mower::Mower() {
-
-
-
-
   name = "Ardumower";
   // ------- wheel motors -----------------------------
   motorAccel       = 1500;  // motor wheel acceleration - only functional when odometry is not in use (warning: do not set too low)
@@ -58,7 +49,7 @@ Mower::Mower() {
   motorLeftPID.Kp       = 1.0;    // motor wheel PID controller
   motorLeftPID.Ki       = 0.4;
   motorLeftPID.Kd       = 0.0;
-  motorRightSwapDir     = 0;    // inverse right motor direction?
+  motorRightSwapDir     = 1;    // inverse right motor direction?
   motorLeftSwapDir      = 0;    // inverse left motor direction?
 
   motorRightOffsetFwd = 0;  //percent offset in PWM use for the 2 wheels motor have the same speed a the same PWM
@@ -75,25 +66,23 @@ Mower::Mower() {
   odoLeftRightCorrection     = true;       // left-right correction for straight lines used in manual mode
   autoAdjustSlopeSpeed = true;  //adjust the speed on slope to have same speed on uphill and downhill
 
-
   // ------ mower motor -------------------------------
   motorMowAccel       = 1000;  // motor mower acceleration (warning: do not set too low) 2000 seems to fit best considerating start time and power consumption
-  motorMowSpeedMaxPwm   = 200;    // motor mower max PWM
-  motorMowSpeedMinPwm = 100;   // motor mower minimum PWM (only for cutter modulation)
-  motorMowPowerMax = 18.0;     // motor mower max power (Watt)
+  motorMowSpeedMaxPwm   = 220;    // motor mower max PWM
+  motorMowSpeedMinPwm = 160;   // motor mower minimum PWM (only for cutter modulation)
+  motorMowPowerMax = 35.0;     // motor mower max power (Watt)
 
   motorMowSenseScale = 1.536; // motor mower sense scale (mA=(ADC-zero)/scale)
   motorMowPID.Kp = 0.005;    // motor mower RPM PID controller
   motorMowPID.Ki = 0.01;
   motorMowPID.Kd = 0.01;
   //  ------ bumper -----------------------------------
-  bumperUse         = 0;      // has bumpers?
+  bumperUse         = 1;      // has bumpers?
   //  ------ drop -----------------------------------
   dropUse          = 0;     // has drops?                                                                                              Dropsensor - Absturzsensor vorhanden ?
   dropcontact      = 0;     //contact 0-openers 1-closers                                                                              Dropsensor - Kontakt 0-Ã–ffner - 1-SchlieÃŸer betÃ¤tigt gegen GND
   // ------ rain ------------------------------------
   rainUse          = 0;      // use rain sensor?
-
   // ------ DHT22Use ------------------------------------
   //DHT22Use          = 0;      // use DHT22 sensor?
   maxTemperature    = 55;     // max temp before switch off
@@ -104,7 +93,6 @@ Mower::Mower() {
   newtagRotAngle2 = 0;
   newtagDistance1 = 10;
   newtagDistance2 = 0;
-
   // ------ sonar ------------------------------------
   sonarUse                   = 0;          // use ultra sonic sensor? (WARNING: robot will slow down, if enabled but not connected!)
   sonarLeftUse               = 1;
@@ -113,11 +101,8 @@ Mower::Mower() {
   sonarTriggerBelow          = 87;       // ultrasonic sensor trigger distance in cm (0=off)
   sonarToFrontDist           = 30;        // ultrasonic sensor distance to front mower in cm
   sonarLikeBumper            = false;      //ultrasonic reduce speed vs bumper like
-
-
-
   // ------ perimeter ---------------------------------
-  perimeterUse       = 0;      // use perimeter?
+  perimeterUse       = 1;      // use perimeter?
   perimeterTriggerMinSmag = 200;      // perimeter minimum smag to use on big area
   //perimeterOutRollTimeMax  = 2000;   // free
   //perimeterOutRollTimeMin = 750;    // free
@@ -145,7 +130,6 @@ Mower::Mower() {
   perimeterMagMaxValue = 2000; // Maximum value return when near the perimeter wire (use for tracking and slowing when near wire
   //perimeter.read2Coil = false;
   areaToGo = 1;//initialise the areatogo to the station area
-
   // ------ lawn sensor --------------------------------
   lawnSensorUse     = 0;       // use capacitive Sensor
   // ------  IMU (compass/accel/gyro) ----------------------
@@ -179,13 +163,11 @@ Mower::Mower() {
   justChangeLaneDir = true;
   mowPatternCurr = MOW_LANES;
   compassRollSpeedCoeff = 40; //speed used when the mower search the compass yaw it's percent of motorSpeedMaxRpm ,Avoid to roll to fast for a correct detection
-
-
   // ------ model R/C ------------------------------------
   remoteUse         = 0;       // use model remote control (R/C)?
   // ------ battery -------------------------------------
-  batMonitor = false;              // monitor battery and charge voltage?
-  batGoHomeIfBelow = 24.3;     // drive home voltage (Volt)
+  batMonitor = true;              // monitor battery and charge voltage?
+  batGoHomeIfBelow = 24.6;     // drive home voltage (Volt)
   batSwitchOffIfBelow = 23;  // switch off battery if below voltage (Volt)
   batSwitchOffIfIdle = 300;      // switch off battery if idle (minutes)
   batFactor       = 10.88;     //depend of the resistor divisor on board R12 and R13
@@ -193,7 +175,7 @@ Mower::Mower() {
   batFull          = 29.4;     // battery reference Voltage (fully charged) PLEASE ADJUST IF USING A DIFFERENT BATTERY VOLTAGE! FOR a 12V SYSTEM TO 14.4V
   batChargingCurrentMax = 2; // maximum current your charger can devliver
   batFullCurrent  = 0.1;      // current flowing when battery is fully charged
-  startChargingIfBelow = 25.0; // start charging if battery Voltage is below
+  startChargingIfBelow = 25.5; // start charging if battery Voltage is below
   chargingTimeout = 25200000; // safety timer for charging (ms)  7 hrs
   chgSenseZero    = 511;        // charge current sense zero point
   batSenseFactor  = 1.11;         // charge current conversion factor   - Empfindlichkeit nimmt mit ca. 39/V Vcc ab
@@ -205,55 +187,38 @@ Mower::Mower() {
   stationRollAngle    = 45;    // charge station roll after reverse
   stationForwDist    = 30;    // charge station accel distance cm
   stationCheckDist   = 2;    // charge station  check distance to be sure voltage is OK cm
-  UseBumperDock = true; //bumper is pressed when docking or not
+  UseBumperDock = false; //bumper is pressed when docking or not
   dockingSpeed   =  60;   //speed docking is (percent of maxspeed)
   autoResetActive  = 0;       // after charging reboot or not
-
-
   // ------ odometry ------------------------------------
   odometryUse       = 1;       // use odometry?
-  odometryTicksPerRevolution = 1010;   // encoder ticks per one full resolution
-  odometryTicksPerCm = 12.9;  // encoder ticks per cm
-  odometryWheelBaseCm = 43;    // wheel-to-wheel distance (cm)
-
+  odometryTicksPerRevolution = 1130;   // encoder ticks per one full resolution
+  odometryTicksPerCm = 11.3;  // encoder ticks per cm
+  odometryWheelBaseCm = 34;    // wheel-to-wheel distance (cm)
   // ----- GPS -------------------------------------------
   gpsUse                     = 0;          // use GPS?
   stuckIfGpsSpeedBelow       = 0.2;        // if Gps speed is below given value the mower is stuck
   gpsSpeedIgnoreTime         = 5000;       // how long gpsSpeed is ignored when robot switches into a new STATE (in ms)
-
-
   // ----- other -----------------------------------------
   buttonUse         = 1;       // has digital ON/OFF button?
   RaspberryPIUse = false; // a raspberryPi is connected to USBNative port
   mowPatternDurationMax = 120; //in minutes
   useMqtt = true; //select this to exchange data over mqtt protocol for homeassistant.
-
-
   // ----- user-defined switch ---------------------------
   userSwitch1       = 0;       // user-defined switch 1 (default value)
   userSwitch2       = 0;       // user-defined switch 2 (default value)
   userSwitch3       = 0;       // user-defined switch 3 (default value)
   // ----- timer -----------------------------------------
   timerUse          = 0;       // use RTC and timer?
-
   // ------ mower stats-------------------------------------------
   statsOverride = false; // if set to true mower stats are overwritten - be careful
   statsMowTimeMinutesTotal = 300;
   statsBatteryChargingCounterTotal = 10;  //11
   statsBatteryChargingCapacityTotal = 10000;  //30000
   // -----------configuration end-------------------------------------
-
-
-
 }
 
-
-
-
-
-
-
-
+// -----------SETUP -------------------------------------
 void Mower::setup() {
 
   pinMode(pinBatterySwitch, OUTPUT);
@@ -264,15 +229,11 @@ void Mower::setup() {
   // I2Creset();
   Wire.begin();
   //Wire1.begin();
-
   Serial.println("SETUP");
-
-
-  // LED, buzzer, battery
-
+  //Buzzer
   pinMode(pinBuzzer, OUTPUT);
   digitalWrite(pinBuzzer, 0);
-
+  //Battery Charging
   pinMode(pinChargeEnable, OUTPUT);
   setActuator(ACT_CHGRELAY, 0);
 
@@ -281,9 +242,10 @@ void Mower::setup() {
   pinMode(pinMotorMowPWM, OUTPUT);
   pinMode(pinMotorMowEnable, OUTPUT);
   digitalWrite(pinMotorMowEnable, LOW);
-
-  analogWriteFrequency(pinMotorMowPWM, 20000);//default value
+  //Default PWM Frequency Values for MOW Motor
+  analogWriteFrequency(pinMotorMowPWM, 20000);
   analogWriteFrequency(pinMotorMowDir, 20000);
+
   if (MOW_MOTOR_DRIVER == 1) {
     analogWriteFrequency(pinMotorMowPWM, PWM_FREQUENCY_BL500W);
     analogWriteFrequency(pinMotorMowDir, PWM_FREQUENCY_BL500W);
@@ -296,15 +258,15 @@ void Mower::setup() {
     analogWriteFrequency(pinMotorMowPWM, PWM_FREQUENCY_BTS7960);
     analogWriteFrequency(pinMotorMowDir, PWM_FREQUENCY_BTS7960);
   }
-
-  //left motor setting********************************************
+  //Left Motor Setting********************************************
   pinMode(pinMotorLeftEnable, OUTPUT);
   digitalWrite(pinMotorLeftEnable, LOW);
   pinMode(pinMotorLeftPWM, OUTPUT);
   pinMode(pinMotorLeftDir, OUTPUT);
-
+  //Default PWM Frequency Values for Left Motor
   analogWriteFrequency(pinMotorLeftPWM, 10000);//default value
   analogWriteFrequency(pinMotorLeftDir, 10000);
+
   if (LEFT_MOTOR_DRIVER == 1) {
     analogWriteFrequency(pinMotorLeftPWM, PWM_FREQUENCY_BL500W);
     analogWriteFrequency(pinMotorLeftDir, PWM_FREQUENCY_BL500W);
@@ -318,14 +280,15 @@ void Mower::setup() {
     analogWriteFrequency(pinMotorLeftDir, PWM_FREQUENCY_BTS7960);
   }
 
-  //right motor setting *********************************
+  //Right Motor Setting *********************************
   pinMode(pinMotorRightEnable, OUTPUT);
   digitalWrite(pinMotorRightEnable, LOW);
   pinMode(pinMotorRightPWM, OUTPUT);
   pinMode(pinMotorRightDir, OUTPUT);
-
+  //Default PWM Frequency Values for Right Motor
   analogWriteFrequency(pinMotorRightPWM, 10000);//default value
   analogWriteFrequency(pinMotorRightDir, 10000);
+
   if (RIGHT_MOTOR_DRIVER == 1) {
     analogWriteFrequency(pinMotorRightPWM, PWM_FREQUENCY_BL500W);
     analogWriteFrequency(pinMotorRightDir, PWM_FREQUENCY_BL500W);
@@ -339,11 +302,9 @@ void Mower::setup() {
     analogWriteFrequency(pinMotorRightDir, PWM_FREQUENCY_BTS7960);
   }
 
-
   // perimeter
   pinMode(pinPerimeterRight, INPUT);
   pinMode(pinPerimeterLeft, INPUT);
-
 
   // button
   pinMode(pinButton, INPUT_PULLUP);
@@ -355,9 +316,7 @@ void Mower::setup() {
   // rain
   pinMode(pinRain, INPUT);
 
-
   // odometry
-  //not sure the pullupis necessary with PCB1.3
   pinMode(pinOdometryLeft, INPUT_PULLUP);
   pinMode(pinOdometryRight, INPUT_PULLUP);
 
@@ -375,17 +334,14 @@ void Mower::setup() {
     pinMode(pinUserSwitch3, OUTPUT);
     digitalWrite(pinUserSwitch3, LOW);
   */
-
-
-  Robot::setup();
-
+  Robot::setup(); //robot.cpp
 }
+
 
 void checkMotorFault() {
   //bb to test without motor board uncomment return
   //return;
   if ((robot.stateCurr == STATE_OFF) || (robot.stateCurr == STATE_ERROR)  ) return;  //do not generate error if the state if OFF to avoid Buzzer when PI power the DUE via the USB native port
-
 }
 /*
   int Mower::readSensor(char type) {
@@ -453,15 +409,9 @@ void checkMotorFault() {
   }
 */
 
-
-
 void Mower::setActuator(char type, int value) {
-
-
   switch (type) {
-
     //case ACT_MOTOR_MOW: setL298N(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, value); break;// Motortreiber einstellung - bei Bedarf Ã¤ndern z.B setL298N auf setMC33926
-
     case ACT_MOTOR_MOW:
       if (MOW_MOTOR_DRIVER == 1) setBL500W(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, abs(value));
       if (MOW_MOTOR_DRIVER == 2) setL298N(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, abs(value));
@@ -480,8 +430,6 @@ void Mower::setActuator(char type, int value) {
       if (RIGHT_MOTOR_DRIVER == 3) setBTS7960(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value);
       break;
 
-
-
     case ACT_USER_OUT1: digitalWrite(pinUserOut1, value); break;
     case ACT_USER_OUT2: digitalWrite(pinUserOut2, value); break;
     case ACT_USER_OUT3: digitalWrite(pinUserOut3, value); break;
@@ -495,5 +443,4 @@ void Mower::setActuator(char type, int value) {
     //case ACT_CHGRELAY: digitalWrite(pinChargeEnable, !value); break;
     case ACT_BATTERY_SW: digitalWrite(pinBatterySwitch, value); break;
   }
-
 }
