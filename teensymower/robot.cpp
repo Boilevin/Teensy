@@ -497,10 +497,13 @@ void Robot::processGPSData()
   }
   gpsX = (float)gps.distance_between(nlat,  gpsLon,  gpsLat, gpsLon);
   gpsY = (float)gps.distance_between(gpsLat, nlon,   gpsLat, gpsLon);
+  if (RaspberryPIUse) MyRpi.RaspberryPISendGpsLocalisation();
+  /*
   Serial.print(" gpsX: ");
   Serial.print(gpsX);
   Serial.print(" gpsY: ");
   Serial.println(gpsY);
+  */
 }
 
 
@@ -893,7 +896,6 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, sonarRightUse);
   eereadwrite(readflag, addr, sonarTriggerBelow);
   eereadwrite(readflag, addr, perimeterUse);
-  //eereadwrite(readflag, addr, perimeter.timedOutIfBelowSmag);
   eereadwrite(readflag, addr, perimeterTriggerMinSmag);
   eereadwrite(readflag, addr, trackingErrorTimeOut);
   eereadwrite(readflag, addr, motorTickPerSecond);
@@ -903,11 +905,7 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, perimeterPID.Kp);
   eereadwrite(readflag, addr, perimeterPID.Ki);
   eereadwrite(readflag, addr, perimeterPID.Kd);
-  //eereadwrite(readflag, addr, perimeter.signalCodeNo);
-  //eereadwrite(readflag, addr, perimeter.swapCoilPolarityLeft);
-  //eereadwrite(readflag, addr, perimeter.timeOutSecIfNotInside);
   eereadwrite(readflag, addr, trakBlockInnerWheel);
-  eereadwrite(readflag, addr, freeboolean);
   eereadwrite(readflag, addr, imuUse);
   eereadwrite(readflag, addr, stopMotorDuringCalib);
   eereadwrite(readflag, addr, imuDirPID.Kp);
@@ -923,7 +921,6 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, batSwitchOffIfIdle);
   eereadwrite(readflag, addr, batFactor);
   eereadwrite(readflag, addr, batChgFactor);
-  eereadwrite(readflag, addr, chgSenseZero);  //float adress free for something else
   eereadwrite(readflag, addr, batSenseFactor);
   eereadwrite(readflag, addr, batFullCurrent);
   eereadwrite(readflag, addr, startChargingIfBelow);
@@ -1256,8 +1253,6 @@ void Robot::printSettingSerial() {
   ShowMessageln(startChargingIfBelow);
   ShowMessage  (F("chargingTimeout      : "));
   ShowMessageln(chargingTimeout);
-  ShowMessage  (F("chgSenseZero         : "));
-  ShowMessageln(chgSenseZero);
   ShowMessage  (F("batSenseFactor       : "));
   ShowMessageln( batSenseFactor);
   ShowMessage  (F("chgSense             : "));
@@ -5203,7 +5198,7 @@ void Robot::loop()  {
   }
   if (RaspberryPIUse) {
     MyRpi.run();
-    if ((millis() > 10000) && (!MyrpiStatusSync)) { // on initial powerON DUE start faster than PI , so need to send again the status to refresh
+    if ((millis() > 28000) && (!MyrpiStatusSync)) { // on initial powerON DUE start faster than PI , so need to send again the status to refresh
       MyRpi.SendStatusToPi();
       MyrpiStatusSync = true;
     }

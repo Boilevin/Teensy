@@ -15,7 +15,8 @@ void RpiRemote::init() {
 
 void RpiRemote::run() {
   readPi();
-  if ((millis() >= nextTimeRaspberryPISendStat) && (millis() >= 15000)) { // start to send the stat only after 15 sec on power up to wait pi start
+  // start to send the stat only after 35 sec on power up to wait pi start and receive all setting
+  if ((millis() >= nextTimeRaspberryPISendStat) && (millis() >= 35000)) { 
     nextTimeRaspberryPISendStat = millis() + 500;  //better to put 200
     RaspberryPISendStat();
   }
@@ -407,7 +408,7 @@ void RpiRemote::receivePiReqSetting (String Setting_page, int nb_page) {
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->batChgFactor;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->chgSenseZero;  //4
+    lineToSend = lineToSend + robot->"0";  //4
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->batSenseFactor;
     lineToSend = lineToSend + ",";
@@ -599,6 +600,20 @@ void RpiRemote::RaspberryPISendMow () {
   lineToSend = lineToSend + robot->motorMowPWMCurr;
   lineToSend = lineToSend + ",";
   lineToSend = lineToSend + robot->batVoltage;
+  lineToSend = lineToSend + ",";
+  writePi(lineToSend);
+}
+
+
+void RpiRemote::RaspberryPISendGpsLocalisation(){
+  String lineToSend;
+  lineToSend = "RMGPS";
+  lineToSend = lineToSend + ",";
+  lineToSend = lineToSend + millis();
+  lineToSend = lineToSend + ",";
+  lineToSend = lineToSend + robot->gpsX;
+  lineToSend = lineToSend + ",";
+  lineToSend = lineToSend + robot->gpsY;
   lineToSend = lineToSend + ",";
   writePi(lineToSend);
 }
@@ -1373,7 +1388,7 @@ void RpiRemote::readWrite_setting() {
         robot->batSwitchOffIfIdle = val[0];
         robot->batFactor = val[1];
         robot->batChgFactor = val[2];
-        robot->chgSenseZero = val[3];
+        //robot->chgSenseZero = val[3];
         robot->batSenseFactor = val[4];
         robot->batFullCurrent = val[5];
         robot->startChargingIfBelow = val[6];
