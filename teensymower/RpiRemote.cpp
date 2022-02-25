@@ -361,7 +361,7 @@ void RpiRemote::receivePiReqSetting (String Setting_page, int nb_page) {
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->trakBlockInnerWheel;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->lawnSensorUse;
+    lineToSend = lineToSend + "0"; // free
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->imuUse;  //9
     lineToSend = lineToSend + ",";
@@ -461,19 +461,19 @@ void RpiRemote::receivePiReqSetting (String Setting_page, int nb_page) {
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->timerUse;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->rainUse;
+    lineToSend = lineToSend + "0";
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->gpsUse;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->rainUse; //old stuckIfGpsSpeedBelow
+    lineToSend = lineToSend + "0"; //old stuckIfGpsSpeedBelow
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->rainUse; // old gpsBaudrate
+    lineToSend = lineToSend + "0"; // old gpsBaudrate
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->dropUse;
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->statsOverride;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->bluetoothUse; //10
+    lineToSend = lineToSend + "0"; //10
     lineToSend = lineToSend + ",";
     writePi(lineToSend);
     //page 10
@@ -482,9 +482,9 @@ void RpiRemote::receivePiReqSetting (String Setting_page, int nb_page) {
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + "10";
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->esp8266Use;
+    lineToSend = lineToSend + "0";
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->esp8266ConfigString;
+    lineToSend = lineToSend + "0";
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->tiltUse;
     lineToSend = lineToSend + ",";
@@ -569,7 +569,7 @@ void RpiRemote::receivePiReqSetting (String Setting_page, int nb_page) {
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->DistPeriOutStop;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->RaspberryPIUse;// free for other DHT22Use; //4
+    lineToSend = lineToSend + "0";// free for other DHT22Use; //4
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->RaspberryPIUse;
     lineToSend = lineToSend + ",";
@@ -963,10 +963,10 @@ void RpiRemote::receive_request() {
   //$RMREQ,INF,2,0,3,0,0,0,*35
   // Serial.print("Receive a request  --> ");
   // Serial.println(buf);
-  String messageType;
-  int frequency;
-  int trigger;
-  int max_repetition;
+  String messageType="";
+  int message_frequency = 1;
+  int message_trigger;
+  int max_repetition = 1;
   int counter = 0;
   char token[12];
   Tokeniser tok(buf, ',');
@@ -977,11 +977,11 @@ void RpiRemote::receive_request() {
         break;
 
       case 2:
-        frequency = atoi(token);
+        message_frequency = atoi(token);
         break;
 
       case 3:
-        trigger = atoi(token);
+        message_trigger = atoi(token);
         break;
 
       case 4:
@@ -991,37 +991,37 @@ void RpiRemote::receive_request() {
     counter++;
   }
   if (messageType == "INF") {
-    delayInfoToPi = 1000 / frequency; // if freq=2 then read each 500ms
+    delayInfoToPi = 1000 / message_frequency; // if freq=2 then read each 500ms
     maxRepetInfoToPi = max_repetition;
     nextTimeRaspberryPISendInfo = millis() + delayInfoToPi;
   }
   if (messageType == "MOT") {
-    delayMotToPi = 1000 / frequency; // if freq=2 then read each 500ms
+    delayMotToPi = 1000 / message_frequency; // if freq=2 then read each 500ms
     maxRepetMotToPi = max_repetition;
     nextTimeRaspberryPISendMot = millis() + delayMotToPi;
   }
   if (messageType == "MOW") {
-    delayMowToPi = 1000 / frequency; // if freq=2 then read each 500ms
+    delayMowToPi = 1000 / message_frequency; // if freq=2 then read each 500ms
     maxRepetMowToPi = max_repetition;
     nextTimeRaspberryPISendMow = millis() + delayMowToPi;
   }
   if (messageType == "PERI") {
-    delayPeriToPi = 1000 / frequency; // if freq=2 then read each 500ms
+    delayPeriToPi = 1000 / message_frequency; // if freq=2 then read each 500ms
     maxRepetPeriToPi = max_repetition;
     nextTimeRaspberryPISendPeri = millis() + delayPeriToPi;
   }
   if (messageType == "BAT") {
-    delayBatToPi = 60000 / frequency; // Here use the minute instead of second to manage battery for long time
+    delayBatToPi = 60000 / message_frequency; // Here use the minute instead of second to manage battery for long time
     maxRepetBatToPi = max_repetition;
     nextTimeRaspberryPISendBat = millis() + delayBatToPi;
   }
   if (messageType == "BYL") {
-    delayByLaneToPi = 1000 / frequency;
+    delayByLaneToPi = 1000 / message_frequency;
     maxRepetByLaneToPi = max_repetition;
     nextTimeRaspberryPISendByLane = millis() + delayByLaneToPi;
   }
   if (messageType == "IMU") {
-    delayImuToPi = 1000 / frequency;
+    delayImuToPi = 1000 / message_frequency;
     maxRepetImuToPi = max_repetition;
     nextTimeRaspberryPISendImu = millis() + delayImuToPi;
   }
@@ -1032,8 +1032,8 @@ void RpiRemote::receive_command() {
   //$RMCMD,mowmotor,1,0,0,4*62
   //Serial.print("Receive a Actuator command  --> ");
   //Serial.println(buf);
-  String ActuatorName;
-  int value ;
+  String ActuatorName = "";
+  int value = 0;
   int counter = 0;
   char token[12];
   Tokeniser tok(buf, ',');
@@ -1056,7 +1056,7 @@ void RpiRemote::receive_command() {
 void RpiRemote::readWrite_var() {  //can be use to change the value of 4 variable in one sentence
   //Serial.print("Receive Read Write variable --> ");
   //Serial.println(buf);
-  char readOrWrite; //flag r or w
+  char readOrWrite = 'r'; //flag r or w
   char variable_name[4][30];
   char received_value[4][30];
   int counter = 0;
@@ -1181,8 +1181,8 @@ void RpiRemote::readWrite_setting() {
   //Serial.println(buf);
   String Setting_page;
   char readOrWrite; //flag r or w
-  int nr_page ;
-  float val[9]; // 10 values from 0 to 9
+  int nr_page = 0;
+  float val[9]= {0}; // 10 values from 0 to 9
   int counter = 0;
   char token[12];
   Tokeniser tok(buf, ',');
@@ -1403,11 +1403,11 @@ void RpiRemote::readWrite_setting() {
         robot->rainUse = val[6];//old gps
         robot->dropUse = val[7];
         robot->statsOverride = val[8];
-        robot->bluetoothUse = val[9];
+        robot->freeboolean = val[9];
       }
       if (nr_page == 10) {
-        robot->esp8266Use = val[0];
-        robot->esp8266ConfigString = val[1];
+        //robot->esp8266Use = val[0];
+        //robot->esp8266ConfigString = val[1];
         robot->tiltUse = val[2];
         robot->trackingPerimeterTransitionTimeOut = val[3];
         robot->motorMowForceOff = val[4];
@@ -1445,7 +1445,7 @@ void RpiRemote::readWrite_setting() {
         robot->maxDurationDmpAutocalib = val[0];
         robot->mowPatternDurationMax = val[1];
         robot->DistPeriOutStop = val[2];
-        robot->RaspberryPIUse = val[3];  //free old DHT22Use
+        //robot->RaspberryPIUse = val[3];  //free old DHT22Use
         robot->RaspberryPIUse = val[4];
         robot->sonarToFrontDist = val[5];
         robot->UseBumperDock = val[6];
