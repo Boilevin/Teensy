@@ -160,10 +160,7 @@ Robot::Robot() {
 
   bumperLeftCounter = bumperRightCounter = 0;
   bumperLeft = bumperRight = false;
-
-  dropLeftCounter = dropRightCounter = 0;                                                                                              // Dropsensor - Absturzsensor
-  dropLeft = dropRight = false;                                                                                                        // Dropsensor - Absturzsensor
-
+ 
   gpsLat = gpsLon = gpsX = gpsY = 0;
 
   imuDriveHeading = 0;
@@ -220,13 +217,10 @@ Robot::Robot() {
   nextTimeOdometry = 0;
   nextTimeOdometryInfo = 0;
   nextTimeBumper = 0;
-  nextTimeDrop = 0;                                                                                                                    // Dropsensor - Absturzsensor
   //nextTimeSonar = 0;
   nextTimeBattery = 0;
   nextTimeCheckBattery = 0;
   nextTimePerimeter = 0;
-  nextTimeLawnSensor = 0;
-  nextTimeLawnSensorCheck = 0;
   nextTimeTimer = millis() + 60000;
   nextTimeRTC = 0;
   nextTimeGPS = 0;
@@ -265,6 +259,7 @@ Robot::Robot() {
 
   MyrpiStatusSync = false;
   ConsoleToPfod = false;
+  freeboolean = false;
 }
 
 const char* Robot::stateName() {
@@ -502,6 +497,10 @@ void Robot::processGPSData()
   }
   gpsX = (float)gps.distance_between(nlat,  gpsLon,  gpsLat, gpsLon);
   gpsY = (float)gps.distance_between(gpsLat, nlon,   gpsLat, gpsLon);
+  Serial.print(" gpsX: ");
+  Serial.print(gpsX);
+  Serial.print(" gpsY: ");
+  Serial.println(gpsY);
 }
 
 
@@ -908,7 +907,7 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   //eereadwrite(readflag, addr, perimeter.swapCoilPolarityLeft);
   //eereadwrite(readflag, addr, perimeter.timeOutSecIfNotInside);
   eereadwrite(readflag, addr, trakBlockInnerWheel);
-  eereadwrite(readflag, addr, lawnSensorUse);
+  eereadwrite(readflag, addr, freeboolean);
   eereadwrite(readflag, addr, imuUse);
   eereadwrite(readflag, addr, stopMotorDuringCalib);
   eereadwrite(readflag, addr, imuDirPID.Kp);
@@ -946,11 +945,11 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, timerUse);
   eereadwrite(readflag, addr, timer);
   eereadwrite(readflag, addr, rainUse);
-  eereadwrite(readflag, addr, dropUse);
+  //eereadwrite(readflag, addr, dropUse);
   eereadwrite(readflag, addr, statsOverride);
   eereadwrite(readflag, addr, reduceSpeedNearPerimeter);
   eereadwrite(readflag, addr, autoAdjustSlopeSpeed);
-  eereadwriteString(readflag, addr, esp8266ConfigString);
+  //eereadwriteString(readflag, addr, esp8266ConfigString);
   eereadwrite(readflag, addr, tiltUse);
   eereadwrite(readflag, addr, trackingPerimeterTransitionTimeOut);
   eereadwrite(readflag, addr, motorMowForceOff);
@@ -1099,14 +1098,7 @@ void Robot::printSettingSerial() {
   ShowMessageln("---------- bumper -----------------");
   ShowMessage  ("bumperUse           : ");
   ShowMessageln(bumperUse);
-
-  // ------ drop -------------------------------------
-  ShowMessageln("---------- drop -----------------");
-  ShowMessage  ("dropUse            : ");
-  ShowMessageln(dropUse);
-  ShowMessage  ("dropContact        : ");
-  ShowMessageln(dropcontact);
-  delayWithWatchdog (500);
+  
   // ------ rain -------------------------------------
   ShowMessageln("---------- rain ----------------");
   ShowMessage  ("rainUse             : ");
@@ -1207,11 +1199,6 @@ void Robot::printSettingSerial() {
   ShowMessage  (F("maxLenghtByLane           : "));
   ShowMessageln(maxLenghtByLane);
   //watchdogReset();
-
-  // ------ lawn sensor ----------------------------
-  ShowMessageln(F("---------- lawn sensor---------"));
-  ShowMessage  (F("lawnSensorUse            : "));
-  ShowMessageln(lawnSensorUse);
 
   // ------  IMU (compass/accel/gyro) ------
   ShowMessageln(F("---------- IMU (compass/accel/gyro) ---- "));
@@ -1495,10 +1482,6 @@ void Robot::resetMotorFault() {
     //bumper----------------------------------------------------------------------------------------------------
     case SEN_BUMPER_RIGHT: return (digitalRead(pinBumperRight)); break;
     case SEN_BUMPER_LEFT: return (digitalRead(pinBumperLeft)); break;
-
-    //drop----------------------------------------------------------------------------------------------------
-    case SEN_DROP_RIGHT: return (digitalRead(pinDropRight)); break;                                                                                     // Dropsensor - Absturzsensor
-    case SEN_DROP_LEFT: return (digitalRead(pinDropLeft)); break;                                                                                       // Dropsensor - Absturzsensor
 
     // sonar---------------------------------------------------------------------------------------------------
 
@@ -2750,8 +2733,8 @@ void Robot::setup()  {
   // if after timeout wdt is always not reset tennsy reboot
   Serial.println("Watchdog configuration start ");
   WDT_timings_t config;
-  config.trigger = 10; /* in seconds, 0->128 */
-  config.timeout = 50; /* in seconds, 0->128 */
+  config.trigger = 100; /* in seconds, 0->128 */
+  config.timeout = 120; /* in seconds, 0->128 */
   config.callback = myCallback;
   wdt.begin(config);
   Serial.println("Watchdog configuration Finish ");
@@ -2801,13 +2784,11 @@ void Robot::printInfo(Stream & s) {
         // sensor values
         Streamprint(s, "sen %4d %4d %4d ", (int)motorLeftPower, (int)motorRightPower, (int)motorMowPower);
         Streamprint(s, "bum %4d %4d ", bumperLeft, bumperRight);
-        Streamprint(s, "dro %4d %4d ", dropLeft, dropRight);                                                                                      // Dropsensor - Absturzsensor
         Streamprint(s, "son %4d %4d %4d ", sonarDistLeft, sonarDistCenter, sonarDistRight);
         Streamprint(s, "yaw %3d ", (int)(imu.ypr.yaw / PI * 180.0));
         Streamprint(s, "pit %3d ", (int)(imu.ypr.pitch / PI * 180.0));
         Streamprint(s, "rol %3d ", (int)(imu.ypr.roll / PI * 180.0));
         if (perimeterUse) Streamprint(s, "per %3d ", (int)perimeterInside);
-        if (lawnSensorUse) Streamprint(s, "lawn %3d %3d ", (int)lawnSensorFront, (int)lawnSensorBack);
       }
       else {
         // sensor counters
@@ -4824,32 +4805,6 @@ void Robot::checkCurrent() {
 }
 
 
-// Dropsensor - Absturzsensor
-// check drop
-void Robot::checkDrop() {  //the drop is used as a contact in front of the robot to detect the charging station
-  if ((millis() < 3000) || (!dropUse)) return;
-  if ((dropLeft || dropRight)) {
-    if (statusCurr == MANUAL) {
-      ShowMessageln("Drop trigger in Manual mode ?????????");
-      setNextState(STATE_OFF, 0); //the drop stop all in manual mode
-    }
-    else {
-      spiraleNbTurn = 0;
-      highGrassDetect = false;
-      motorLeftRpmCurr = motorRightRpmCurr = 0 ;
-      motorLeftPWMCurr = motorRightPWMCurr = 0;
-      setMotorPWM( 0, 0, false );
-      if (dropLeft) {
-        reverseOrBidir(RIGHT);
-      }
-      else {
-        reverseOrBidir(LEFT);
-      }
-    }
-  }
-}
-
-
 // check bumpers
 void Robot::checkBumpers() {
   if ((millis() < 3000) || (!bumperUse)) return;
@@ -4933,7 +4888,7 @@ void Robot::checkStuckOnIsland() {
   //bber600
   if (track_ClockWise) {
     if ((odometryRight - odometryLeft) - PeriOdoIslandDiff > 6 * odometryTicksPerRevolution) {
-      Serial.println("Right wheel is 6 full revolution more than left one --> Island  ??? ");
+      ShowMessageln("Right wheel is 6 full revolution more than left one --> Island  ??? ");
       newtagRotAngle1 = 90;
       setNextState(STATE_PERI_STOP_TOROLL, 0);
       return;
@@ -4941,7 +4896,7 @@ void Robot::checkStuckOnIsland() {
   }
   else {
     if ((odometryLeft - odometryRight) - PeriOdoIslandDiff > 6 * odometryTicksPerRevolution) {
-      Serial.println("Right wheel is 6 full revolution more than left one --> Island  ??? ");
+      ShowMessageln("Right wheel is 6 full revolution more than left one --> Island  ??? ");
       newtagRotAngle1 = 90;
       setNextState(STATE_PERI_STOP_TOROLL, 0);
       return;
@@ -5386,7 +5341,6 @@ void Robot::loop()  {
     case STATE_MANUAL:
       checkCurrent();
       checkBumpers();
-      checkDrop();
       motorControl();
       break;
 
@@ -5395,7 +5349,6 @@ void Robot::loop()  {
       checkRain();
       checkCurrent();
       checkBumpers();
-      checkDrop();   // Dropsensor - Absturzsensor
       // checkSonar();
       //checkLawn();
       checkTimeout();
@@ -5448,7 +5401,6 @@ void Robot::loop()  {
       checkRain();
       checkCurrent();
       checkBumpers();
-      checkDrop();                                                                                                                            // Dropsensor - Absturzsensor
       checkSonar();
       //checkLawn();
       checkTimeout();
@@ -5460,7 +5412,6 @@ void Robot::loop()  {
       if ((odometryRight >= stateEndOdometryRight) || (odometryLeft >= stateEndOdometryLeft) ) setNextState(STATE_PERI_OUT_STOP, rollDir);
       checkCurrent();
       checkBumpers();
-      checkDrop();                                                                                                                            // Dropsensor - Absturzsensor
       //checkSonar();
       if (millis() > (stateStartTime + MaxOdoStateDuration)) {
         if (developerActive) {
@@ -6260,7 +6211,6 @@ void Robot::loop()  {
       motorControlOdo();
       checkCurrent();
       checkBumpers();
-      //checkDrop();                                                                                                                            // Dropsensor - Absturzsensor
       checkSonar();
       //checkLawn();
       checkTimeout();
@@ -6608,14 +6558,14 @@ void Robot::loop()  {
         if ((motorLeftPWMCurr == 0 ) && (motorRightPWMCurr == 0 )) { //wait until the 2 motor completly stop
           smoothPeriMag = perimeter.getSmoothMagnitude(0);
           if ((perimeterInside) && (smoothPeriMag > 250)) {//check if signal here and inside need a big value to be sure it is not only noise
-            Serial.print("SIGNAL OK SmoothMagnitude =  ");
-            Serial.println(smoothPeriMag);
+            ShowMessage("SIGNAL OK SmoothMagnitude =  ");
+            ShowMessageln(smoothPeriMag);
             setNextState(STATE_STATION_FORW, rollDir);
             return;
           }
           else {
-            Serial.print("ERROR No SIGNAL SmoothMagnitude =  ");
-            Serial.println(smoothPeriMag);
+            ShowMessage("ERROR No SIGNAL SmoothMagnitude =  ");
+            ShowMessageln(smoothPeriMag);
             setNextState(STATE_ERROR, 0);
             return;
           }
@@ -6631,8 +6581,8 @@ void Robot::loop()  {
           setNextState(STATE_STATION_FORW, rollDir);
         }
         else {
-          Serial.print("ERROR No SIGNAL SmoothMagnitude =  ");
-          Serial.println(smoothPeriMag);
+          ShowMessage("ERROR No SIGNAL SmoothMagnitude =  ");
+          ShowMessageln(smoothPeriMag);
           setNextState(STATE_ERROR, 0);
         }
       }
@@ -6657,7 +6607,7 @@ void Robot::loop()  {
       }
       if (millis() > (stateStartTime + MaxOdoStateDuration)) {//the motor have not enought power to reach the cible
         if (developerActive) {
-          ShowMessageln ("Warning can t make the station forw in time ");
+          ShowMessageln("Warning can t make the station forw in time ");
         }
         if ((whereToStart != 0) && (startByTimer)) {
           setNextState(STATE_PERI_OBSTACLE_AVOID, rollDir);
@@ -6689,8 +6639,6 @@ void Robot::loop()  {
   } // end switch
   bumperRight = false;
   bumperLeft = false;
-  dropRight = false;                                                                                                                             // Dropsensor - Absturzsensor
-  dropLeft = false;                                                                                                                              // Dropsensor - Absturzsensor
   loopsPerSecCounter++;
   wdt.feed();
   /*

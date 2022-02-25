@@ -74,7 +74,7 @@ boolean GPS::feed(){
 
 bool GPS::encode(char c)
 {
-  Serial.print(c);
+  //Serial.print(c);
   bool valid_sentence = false;
 
 #ifndef _GPS_NO_STATS
