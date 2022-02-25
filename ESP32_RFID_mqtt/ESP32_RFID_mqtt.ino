@@ -16,13 +16,6 @@
 // Reset, GPIO14  --> RST
 //
 
-//TO PCB1.3 if used :
-// ESP-32    <--> pcb1.3 pin mapping:
-// Vin       <--> 5v ON BT CONNECTOR
-// GND       <--> GND ON BT CONNECTOR
-// RX2       <--> TX ON BT CONNECTOR
-// TX2       <--> RX ON BT CONNECTOR
-
 #include "PN5180.h"
 #include "PN5180ISO15693.h"
 
@@ -40,7 +33,7 @@ BluetoothSerial SerialBT;
 WiFiClient pfodClient;
 WiFiClient mqttClient;
 PubSubClient client(mqttClient);
-WiFiServer TheServeur(8881);
+WiFiServer TheServeur(portNo);
 
 uint8_t BTbuf[my_bufferSize];
 uint16_t iBT = 0;
@@ -64,15 +57,12 @@ int csvSplit(String string)//use to cut a string separator eg "STARTTIMER;1;1;0;
 {
   String tempString = "";
   int bufferIndex = 0;
-  for (int i = 0; i < string.length(); ++i)
-  {
+  for (int i = 0; i < string.length(); ++i) {
     char c = string[i];
-    if (c != ';')
-    {
+    if (c != ';') {
       tempString += c;
     }
-    else
-    {
+    else {
       tempString += '\0';
       SplitResult[bufferIndex++] = tempString;
       tempString = "";
@@ -82,8 +72,8 @@ int csvSplit(String string)//use to cut a string separator eg "STARTTIMER;1;1;0;
   return bufferIndex;
 }
 
-void receivedCallback(char* topic, byte* payload, unsigned int payload_length) { //data coming from mqtt
 
+void receivedCallback(char* topic, byte* payload, unsigned int payload_length) { //data coming from mqtt
   //convert payload to string
   String payloadString = "";
   for (int i = 0; i < payload_length; i++) {
@@ -97,8 +87,7 @@ void receivedCallback(char* topic, byte* payload, unsigned int payload_length) {
   if (payloadString.length() > 0) {
     //split payload
     int count = csvSplit(payloadString);
-    for (int j = 0; j < count; ++j)
-    {
+    for (int j = 0; j < count; ++j) {
       if (SplitResult[j].length() > 0) {
         if (debug) Serial.print(j);
         if (debug) Serial.print(" ");
@@ -126,11 +115,10 @@ void receivedCallback(char* topic, byte* payload, unsigned int payload_length) {
   }
 }
 
-void mqttconnect() {
 
+void mqttconnect() {
   if (!client.connected()) {
     if (debug) Serial.print("MQTT connecting ...");
-
     if (client.connect(mqtt_id, mqtt_user, mqtt_pass)) {
       if (debug) Serial.println("connected");
       //const char* cmd_msg = "/COMMAND/#";
@@ -139,15 +127,15 @@ void mqttconnect() {
       if (debug) Serial.print("Subscribe to : ");
       if (debug) Serial.println(outMessage);
       client.subscribe(outMessage);
-
-    } else {
+    } 
+    else {
       if (debug) Serial.print("mqtt failed, status code =");
       if (debug) Serial.print(client.state());
       if (debug) Serial.println("try again in 5 seconds");
-
     }
   }
 }
+
 
 void start_stop_AreaSender() {
   //line_receive is a char array separate by ,
@@ -161,12 +149,12 @@ void start_stop_AreaSender() {
   http.GET();
 }
 
+
 void esp32_Mqtt_sta() {
   //receive state from mower msgid,status,state,temp,battery,idle
   //message separation
   char val1[6], val2[20], val3[20], val4[20], val5[20], val6[20];
   sscanf(line_receive, "%[^,],%[^,],%[^,],%[^,],%[^,],%[^,]", val1, val2, val3, val4, val5, val6);
-
   //status
   char outTopic1[strlen(mower_name) + strlen(mqtt_statusTopic)];
   sprintf(outTopic1, "%s%s", mower_name, mqtt_statusTopic);
@@ -190,15 +178,12 @@ void esp32_Mqtt_sta() {
 }
 
 
-
 void setup() {
   delay(500);
   Serial.begin(115200);
   Serial2.begin(19200);
   if (debug) Serial.println("********* ESP32 BT and WiFi serial bridge ******************");
-
   //********************************WIFI init code*************************************
-
   if (MODE_STA == true) {
     if (debug) Serial.println("Start ESP32 Station mode");
     reconnect_count = 0;
@@ -206,7 +191,6 @@ void setup() {
     WiFi.config(ip, gateway, netmask);
     WiFi.begin(ssid, pw);
     if (debug) Serial.print("Try to Connect to your Wireless network: ");
-
     while ((WiFi.status() != WL_CONNECTED) ) {
       delay(500);
       if (debug) Serial.print(".");
@@ -233,7 +217,6 @@ void setup() {
       Serial.print(" IP= ");
       Serial.println(ip);
       Serial.println(" ");
-
     }
   }
   if (MODE_AP == true) {
@@ -251,13 +234,10 @@ void setup() {
       Serial.println(ip_ap);
     }
   }
-
   if (debug) Serial.println("Starting WIFI Serveur on port 8881");
   TheServeur.begin(); // start TCP server
   TheServeur.setNoDelay(true);
-
   //********************************BT code*************************************
-
   if (debug) {
     Serial.println("");
     Serial.println("Start Bluetooth Server");
@@ -266,12 +246,9 @@ void setup() {
     Serial.println("");
   }
   SerialBT.begin(mower_name); //Bluetooth device name
-
-
   //********************************MQTT code*************************************
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(receivedCallback);
-
   //********************************RFID code*************************************
   if (rfid_board_IsPluged) {
     // rfid reader init
@@ -283,23 +260,20 @@ void setup() {
     nfc.setupRF();
     if (debug) Serial.println("RFID READER READY");
   }
-  else
-  {
+  else {
     if (debug) Serial.println("RFID READER NOT USE");
   }
-
 }
+
 
 void loop() {
   //********************************MQTT code*************************************
-  if ((useMqtt) && (!client.connected()) && (millis() > next_test_connection))
-  {
+  if ((useMqtt) && (!client.connected()) && (millis() > next_test_connection)) {
     next_test_connection = millis() + 5000;
     mqttconnect();
   }
   //********************************RFID code*************************************
-  if (rfid_board_IsPluged)
-  {
+  if (rfid_board_IsPluged) {
     uint8_t thisUid[8];
     // Try to read a tag ID (or "get inventory" in ISO15693-speak)
     ISO15693ErrorCode rc = nfc.getInventory(thisUid);
@@ -319,9 +293,7 @@ void loop() {
       // Test if we previously knew about a card (in which case it's just been removed
       // The most significant (last) byte of a valid UID should always be 0xE0. e.g. E007C4A509C247A8
       if (lastUid[7] == 0xE0) {
-
         Serial2.print("{RFID"); // pfod start message with {
-
         for (int j = 0; j <= 2; j++) {
           Serial2.print(lastUid[j], HEX);
         }
@@ -330,61 +302,36 @@ void loop() {
         // Update the array that keeps track of last known ID
         memset(lastUid, 0, sizeof(lastUid[0]) * 8);
       }
-
     }
   }
-
-
   // receive from Bluetooth:
-  if (SerialBT.hasClient())
-  {
-    while (SerialBT.available())
-    {
+  if (SerialBT.hasClient()) {
+    while (SerialBT.available()) {
       BTbuf[iBT] = SerialBT.read(); // read char from BT client
       if (iBT < my_bufferSize - 1) iBT++;
     }
     Serial2.write(BTbuf, iBT); // now send to serial2:
     iBT = 0;
   }
-
-
-  if (TheServeur.hasClient())
-  {
-    //find free/disconnected spot
-    if (!pfodClient || !pfodClient.connected()) {
-      if (pfodClient) pfodClient.stop();
-      pfodClient = TheServeur.available();
-      if (debug) Serial.println("New WIFI client ");
-    }
-    //no free/disconnected spot so reject
-    WiFiClient TmpserverClient = TheServeur.available();
-    TmpserverClient.stop();
-  }
-
-
+  
+  CheckForConnections(); //Check for WIFI Client Connections
+ 
   //data coming from pfod
-  if (Serial2 != NULL)
-  {
-    if (pfodClient)
-    {
-      while (pfodClient.available())
-      {
+  if (Serial2 != NULL) {
+    if (pfodClient) {
+      while (pfodClient.connected() && pfodClient.available()) {
         WIFIbuf[inWiFI] = pfodClient.read(); // read char from client
         if (inWiFI < my_bufferSize - 1) inWiFI++;
       }
       Serial2.write(WIFIbuf, inWiFI); // now send to UART(2):
       inWiFI = 0;
     }
-    if (Serial2.available())
-    {
-      while (Serial2.available())
-      {
+    if (Serial2.available()) {
+      while (Serial2.available()) {
         WIFIbuf[inWiFI] = Serial2.read(); // read char from UART(2)
         char aChar = WIFIbuf[inWiFI];
         if (inWiFI < my_bufferSize - 1) inWiFI++;
-
-        if (aChar == '\n')
-        {
+        if (aChar == '\n') {
           // End of record detected. Time to parse and check for non pfod sentence
           //here data coming from mqtt or pfod over wifi
           if (debug) Serial.println(line_receive);
@@ -394,28 +341,36 @@ void loop() {
           if (strncmp(line_receive, "#RMSTA", 6) == 0) {
             esp32_Mqtt_sta();
           }
-
           mon_index = 0;
           line_receive[mon_index] = NULL;
         }
-        else
-        {
+        else {
           line_receive[mon_index] = aChar;
           mon_index++;
           line_receive[mon_index] = '\0'; // Keep the string NULL terminated
         }
       }
-      if (pfodClient)
-        pfodClient.write(WIFIbuf, inWiFI);
+      if (pfodClient) pfodClient.write(WIFIbuf, inWiFI);
       // now send to Bluetooth:
-      if (SerialBT.hasClient())
-        SerialBT.write(WIFIbuf, inWiFI);
-
+      if (SerialBT.hasClient()) SerialBT.write(WIFIbuf, inWiFI);
       inWiFI = 0;
     }
-
   }
-
   client.loop();
+}
 
+void CheckForConnections() {
+  if (TheServeur.hasClient()) {
+    // If we are already connected to another computer, 
+    // then reject the new connection. Otherwise accept
+    // the connection. 
+    if (pfodClient.connected()) {  
+     Serial.println("Connection rejected");
+     TheServeur.available().stop();  
+    }
+    else {
+      Serial.println("Connection accepted");
+      pfodClient = TheServeur.available();
+    }  
+  }
 }

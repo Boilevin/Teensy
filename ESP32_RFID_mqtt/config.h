@@ -17,29 +17,37 @@
 //Sender need the autostart option activated
 //Mqtt can't work you need to deactivate it
 
+#define VERSION "1.30"
+#define my_bufferSize 1024
+bool debug = false;
+
+String hostname = "TeensymowerESP32";
+
+const int portNo = 8881; // What Pfod TCP port to listen on for connections.
+
 //*********WIFI***************//
 //set to true and false one of the 2 possibility : MODE_AP (access point) or MODE_STA (station)
 
 boolean MODE_STA = true; // ESP32 and phone connects to wifi routeur and auto switch to mode_ap if fail
 boolean MODE_AP = false; //  phone connects directly to ESP32 inside the mower IP: 192.168.4.1 port 8881
 
-const char *ssid = "your ssid";  // Your Routeur : You need to connect your phone to the same Access Point to use PfodApp
-const char *pw = "your pass"; // and this is the password
+const char *ssid = "LB-SD";  // Your Routeur : You need to connect your phone to the same Access Point to use PfodApp
+const char *pw = "56126942568484224772"; // and this is the password
 
-IPAddress ip(10, 0, 0, 123); //you need to set a fix IP according to your routeur value
-IPAddress gateway(10, 0, 0, 1); //
+IPAddress ip(192, 168, 178, 111); //you need to set a fix IP according to your routeur value
+IPAddress gateway(192, 168, 178, 1); //192.168.178.111
 IPAddress netmask(255, 255, 255, 0);
 
 //*********RFID**************//
 #define rfid_board_IsPluged false //Set to true or false according your hardware
 
 //*********MQTT*************//
-boolean useMqtt = false ; //Set to true only if you have a mosquito broker running in your house or false
-const char* mower_name = "Teensy2";//root help if you have many mower connected to the same broker
-const char* mqtt_server = "10.0.0.8";
+boolean useMqtt = true ; //Set to true only if you have a mosquito broker running in your house or false
+const char* mower_name = "TeensyMower";//root help if you have many mower connected to the same broker
+const char* mqtt_server = "192.168.178.165";
 const uint16_t mqtt_port = 1883;
-const char* mqtt_user = "admin";
-const char* mqtt_pass = "admin";
+const char* mqtt_user = "";
+const char* mqtt_pass = "";
 const char* mqtt_subscribeTopic1 = "/COMMAND/#";
 // actual possible received topic from hassio : "START" "STOP" "HOME" "STARTTIMER")
 const char* mqtt_tempTopic = "/Temp";
@@ -48,13 +56,6 @@ const char* mqtt_idleTopic = "/Idle";
 const char* mqtt_statusTopic = "/Status";
 const char* mqtt_stateTopic = "/State";
 const char* mqtt_id = "Mower";//do not change
-
-
-bool debug = true;
-
-
-#define VERSION "1.30"
-#define my_bufferSize 1024
 
 //acces point credential
 const char *ssid_ap = "ROBOTMOWER";  // You will connect your phone to this Access Point
