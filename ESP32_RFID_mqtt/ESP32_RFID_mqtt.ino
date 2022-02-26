@@ -127,7 +127,7 @@ void mqttconnect() {
       if (debug) Serial.print("Subscribe to : ");
       if (debug) Serial.println(outMessage);
       client.subscribe(outMessage);
-    } 
+    }
     else {
       if (debug) Serial.print("mqtt failed, status code =");
       if (debug) Serial.print(client.state());
@@ -267,6 +267,7 @@ void setup() {
 
 
 void loop() {
+  //pfodClient = TheServeur.available();
   //********************************MQTT code*************************************
   if ((useMqtt) && (!client.connected()) && (millis() > next_test_connection)) {
     next_test_connection = millis() + 5000;
@@ -313,64 +314,56 @@ void loop() {
     Serial2.write(BTbuf, iBT); // now send to serial2:
     iBT = 0;
   }
-  
-  CheckForConnections(); //Check for WIFI Client Connections
- 
+  // look for Client connect trial
+  if (TheServeur.hasClient()) {
+    if (!pfodClient || !pfodClient.connected()) {
+      if (pfodClient) {
+        pfodClient.stop();
+        Serial.println("Telnet Client Stop");
+      }
+      pfodClient = TheServeur.available();
+      Serial.println("New Telnet client");
+      pfodClient.flush();  // clear input buffer, else you get strange characters
+    }
+  }
   //data coming from pfod
   if (Serial2 != NULL) {
-    if (pfodClient) {
-      while (pfodClient.connected() && pfodClient.available()) {
-        WIFIbuf[inWiFI] = pfodClient.read(); // read char from client
-        if (inWiFI < my_bufferSize - 1) inWiFI++;
-      }
-      Serial2.write(WIFIbuf, inWiFI); // now send to UART(2):
-      inWiFI = 0;
+    while (pfodClient.available()) { // get data from Client
+      //Serial.write(pfodClient.read());
+      WIFIbuf[inWiFI] = pfodClient.read(); // read char from client
+      if (inWiFI < my_bufferSize - 1) inWiFI++;
     }
-    if (Serial2.available()) {
-      while (Serial2.available()) {
-        WIFIbuf[inWiFI] = Serial2.read(); // read char from UART(2)
-        char aChar = WIFIbuf[inWiFI];
-        if (inWiFI < my_bufferSize - 1) inWiFI++;
-        if (aChar == '\n') {
-          // End of record detected. Time to parse and check for non pfod sentence
-          //here data coming from mqtt or pfod over wifi
-          if (debug) Serial.println(line_receive);
-          if (strncmp(line_receive, "$SENDER", 7) == 0) {
-            start_stop_AreaSender();
-          }
-          if (strncmp(line_receive, "#RMSTA", 6) == 0) {
-            esp32_Mqtt_sta();
-          }
-          mon_index = 0;
-          line_receive[mon_index] = NULL;
+    Serial2.write(WIFIbuf, inWiFI); // now send to UART(2):
+    inWiFI = 0;
+  }
+  if (Serial2.available()) {
+    while (Serial2.available()) {
+      WIFIbuf[inWiFI] = Serial2.read(); // read char from UART(2)
+      char aChar = WIFIbuf[inWiFI];
+      if (inWiFI < my_bufferSize - 1) inWiFI++;
+      if (aChar == '\n') {
+        // End of record detected. Time to parse and check for non pfod sentence
+        //here data coming from mqtt or pfod over wifi
+        if (debug) Serial.println(line_receive);
+        if (strncmp(line_receive, "$SENDER", 7) == 0) {
+          start_stop_AreaSender();
         }
-        else {
-          line_receive[mon_index] = aChar;
-          mon_index++;
-          line_receive[mon_index] = '\0'; // Keep the string NULL terminated
+        if (strncmp(line_receive, "#RMSTA", 6) == 0) {
+          esp32_Mqtt_sta();
         }
+        mon_index = 0;
+        line_receive[mon_index] = NULL;
       }
-      if (pfodClient) pfodClient.write(WIFIbuf, inWiFI);
-      // now send to Bluetooth:
-      if (SerialBT.hasClient()) SerialBT.write(WIFIbuf, inWiFI);
-      inWiFI = 0;
+      else {
+        line_receive[mon_index] = aChar;
+        mon_index++;
+        line_receive[mon_index] = '\0'; // Keep the string NULL terminated
+      }
     }
+    if (pfodClient) pfodClient.write(WIFIbuf, inWiFI);
+    // now send to Bluetooth:
+    if (SerialBT.hasClient()) SerialBT.write(WIFIbuf, inWiFI);
+    inWiFI = 0;
   }
   client.loop();
-}
-
-void CheckForConnections() {
-  if (TheServeur.hasClient()) {
-    // If we are already connected to another computer, 
-    // then reject the new connection. Otherwise accept
-    // the connection. 
-    if (pfodClient.connected()) {  
-     Serial.println("Connection rejected");
-     TheServeur.available().stop();  
-    }
-    else {
-      Serial.println("Connection accepted");
-      pfodClient = TheServeur.available();
-    }  
-  }
 }

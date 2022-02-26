@@ -19,7 +19,7 @@
 
 #define VERSION "1.30"
 #define my_bufferSize 1024
-bool debug = false;
+bool debug = true;
 
 String hostname = "TeensymowerESP32";
 
