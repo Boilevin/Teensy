@@ -31,8 +31,8 @@ const int portNo = 8881; // What Pfod TCP port to listen on for connections.
 boolean MODE_STA = true; // ESP32 and phone connects to wifi routeur and auto switch to mode_ap if fail
 boolean MODE_AP = false; //  phone connects directly to ESP32 inside the mower IP: 192.168.4.1 port 8881
 
-const char *ssid = "LB-SD";  // Your Routeur : You need to connect your phone to the same Access Point to use PfodApp
-const char *pw = "56126942568484224772"; // and this is the password
+const char *ssid = "YOUR SID";  // Your Routeur : You need to connect your phone to the same Access Point to use PfodApp
+const char *pw = "YOUR PASSWORD"; // and this is the password
 
 IPAddress ip(192, 168, 178, 111); //you need to set a fix IP according to your routeur value
 IPAddress gateway(192, 168, 178, 1); //192.168.178.111
