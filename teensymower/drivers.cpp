@@ -102,19 +102,19 @@ String date2str(date_t date) {
 
 // brushless BL500W motor driver
 //+5V --> 5V OUTPUT
-//EL <-- Enable/Disable HIGH=Enable/LOW=Disable -> Testing with mine it is swapped
+//EL <-- shunt with the +5V of the motor driver
 //ZF <-- Direction HIGH=Forward/GND=Backwards
 //VR <-- Analog 0..5V (PWM)
 //GND <--> GND
 
 void setBL500W(int pinDir, int pinPWM, int pinEnable, int speed) {
+  
   if (speed < 0) {
-    digitalWrite(pinDir, HIGH) ;
-    if (speed >= -4) speed = -4;
-    analogWrite(pinPWM, ((byte)abs(speed)));
-  } else {
     digitalWrite(pinDir, LOW) ;
-    if (speed <= 4) speed = 4;
+    analogWrite(pinPWM, ((byte)abs(speed)));
+  }
+  else {
+    digitalWrite(pinDir, HIGH) ;
     analogWrite(pinPWM, ((byte)abs(speed)));
   }
 }
@@ -131,7 +131,7 @@ void setBL500W(int pinDir, int pinPWM, int pinEnable, int speed) {
 void setL298N(int pinDir, int pinPWM , int pinEnable, int speed) {
   if (speed < 0) {
     digitalWrite(pinDir, HIGH) ;
-    digitalWrite(pinEnable, LOW) ;
+    digitalWrite(pinEnable, HIGH) ;
     analogWrite(pinPWM, speed);
   } else {
     digitalWrite(pinDir, LOW) ;

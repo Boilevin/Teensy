@@ -272,7 +272,7 @@ void RemoteControl::processSettingsMenu(String pfodCmd) {
   else if (pfodCmd == "s12") sendDateTimeMenu(false);
   else if (pfodCmd == "s13") sendRainMenu(false);
   else if (pfodCmd == "s14") sendGPSMenu(false);
-  
+
   else if (pfodCmd == "s16") sendByLaneMenu(false);
   else if (pfodCmd == "s17") sendRFIDMenu(false);
   else if (pfodCmd == "sx") sendFactorySettingsMenu(false);
@@ -1044,7 +1044,7 @@ void RemoteControl::processBatteryMenu(String pfodCmd) {
   }
   else if (pfodCmd.startsWith("j03")) processSlider(pfodCmd, robot->batSwitchOffIfBelow, 0.1);
   else if (pfodCmd.startsWith("j05")) processSlider(pfodCmd, robot->batFactor, 0.01);
- // else if (pfodCmd.startsWith("j06")) processSlider(pfodCmd, robot->chgSenseZero, 1);
+  // else if (pfodCmd.startsWith("j06")) processSlider(pfodCmd, robot->chgSenseZero, 1);
   else if (pfodCmd.startsWith("j08")) processSlider(pfodCmd, robot->batSenseFactor, 0.01);
   else if (pfodCmd.startsWith("j09")) processSlider(pfodCmd, robot->batChgFactor, 0.01);
   else if (pfodCmd.startsWith("j10")) processSlider(pfodCmd, robot->startChargingIfBelow, 0.1);
@@ -1660,7 +1660,7 @@ void RemoteControl::sendTestOdoMenu(boolean update) {
   serialPort->print(int(robot->perimeterNoise));
   serialPort->print(F("|yt12~Mow is "));
   sendOnOff(robot->motorMowEnable);
-  //serialPort->print(F("|yt8~Calib Ticks/Second"));  //to compute the ticks per second motor speed
+  serialPort->print(F("|yt8~OFF"));  //to stop all test
   serialPort->print(F("|yt0~1 turn Wheel Fwd"));  //to verify and adjust the TicksPerRevolution
   serialPort->print(F("|yt1~5 turns Wheel Fwd"));  //to verify and adjust the TicksPerRevolution  and PWM right OFFSET the 2 wheel need to stop at the same time
   serialPort->print(F("|yt2~1 turn Wheel Rev"));
@@ -1670,6 +1670,7 @@ void RemoteControl::sendTestOdoMenu(boolean update) {
   serialPort->print(F("|yt5~Rotate 360Deg"));  //to verify and adjust the odometryWheelBaseCm
   serialPort->print(F("|yt7~Rotate Non Stop"));
   serialPort->print(F("|yt13~Reset Odo count"));  //to verify and adjust the odometryWheelBaseCm
+
   serialPort->println("}");
 
 }
@@ -1686,6 +1687,16 @@ void RemoteControl::processTestOdoMenu(String pfodCmd) {
     robot->setNextState(STATE_TEST_MOTOR, robot->rollDir);
     sendTestOdoMenu(true);
   }
+
+
+  else if (pfodCmd == "yt8") {
+    // cmd: off
+    robot->odometryRight = robot->odometryLeft = 0;
+    robot->setNextState(STATE_OFF, 0);
+    sendTestOdoMenu(true);
+  }
+
+
   else if (pfodCmd == "yt13") {
     robot->odometryRight = robot->odometryLeft = 0;
     sendTestOdoMenu(true);
@@ -1845,7 +1856,7 @@ void RemoteControl::run() {
       serialPort->print(robot->perimeterCounter);
       serialPort->print(",");
       serialPort->print(robot->rainCounter);
-      
+
     }
   } else if (pfodState == PFOD_PLOT_SENSORS) {
     if (millis() >= nextPlotTime) {
@@ -2092,7 +2103,7 @@ boolean RemoteControl::readSerial() {
       else if (pfodCmd.startsWith("r")) processCommandMenu(pfodCmd);
       else if (pfodCmd.startsWith("s")) processSettingsMenu(pfodCmd);
       else if (pfodCmd.startsWith("t")) processDateTimeMenu(pfodCmd);
-      
+
       else if (pfodCmd.startsWith("v")) processInfoMenu(pfodCmd);
       else if (pfodCmd.startsWith("w")) processByLaneMenu(pfodCmd);
       else if (pfodCmd.startsWith("x")) processFactorySettingsMenu(pfodCmd);
@@ -2127,7 +2138,7 @@ void RemoteControl::processPI(String RpiCmd, float v1, float v2, float v3) {
   else if (pfodCmd.startsWith("c")) processCompassMenu(pfodCmd);
   else if (pfodCmd.startsWith("d")) processSonarMenu(pfodCmd);
   else if (pfodCmd.startsWith("e")) processPerimeterMenu(pfodCmd);
-  
+
   else if (pfodCmd.startsWith("g")) processImuMenu(pfodCmd);
   else if (pfodCmd.startsWith("h")) processRemoteMenu(pfodCmd);
   else if (pfodCmd.startsWith("i")) processTimerMenu(pfodCmd);
@@ -2142,7 +2153,7 @@ void RemoteControl::processPI(String RpiCmd, float v1, float v2, float v3) {
   else if (pfodCmd.startsWith("r")) processCommandMenu(pfodCmd);
   else if (pfodCmd.startsWith("s")) processSettingsMenu(pfodCmd);
   else if (pfodCmd.startsWith("t")) processDateTimeMenu(pfodCmd);
-  
+
   else if (pfodCmd.startsWith("v")) processInfoMenu(pfodCmd);
   else if (pfodCmd.startsWith("w")) processByLaneMenu(pfodCmd);
   else if (pfodCmd.startsWith("x")) processFactorySettingsMenu(pfodCmd);

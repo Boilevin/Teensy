@@ -37,6 +37,10 @@ Mower::Mower() {
 
   name = "Ardumower";
   // ------- wheel motors -----------------------------
+  motorRightSwapDir     = false;    // inverse right motor direction?
+  motorLeftSwapDir      = true;    // inverse left motor direction?
+
+
   motorAccel       = 1500;  // motor wheel acceleration - only functional when odometry is not in use (warning: do not set too low)
   //bb
   motorLeftChange = 500;
@@ -58,8 +62,6 @@ Mower::Mower() {
   motorLeftPID.Kp       = 1.0;    // motor wheel PID controller
   motorLeftPID.Ki       = 0.4;
   motorLeftPID.Kd       = 0.0;
-  motorRightSwapDir     = 0;    // inverse right motor direction?
-  motorLeftSwapDir      = 0;    // inverse left motor direction?
 
   motorRightOffsetFwd = 0;  //percent offset in PWM use for the 2 wheels motor have the same speed a the same PWM
   motorRightOffsetRev = 0;  //use the 1 ml ODO test to find good value the 2 wheels need to stop at the same time
@@ -88,7 +90,7 @@ Mower::Mower() {
   motorMowPID.Kd = 0.01;
   //  ------ bumper -----------------------------------
   bumperUse         = 0;      // has bumpers?
- 
+
   // ------ rain ------------------------------------
   rainUse          = 0;      // use rain sensor?
 
@@ -144,7 +146,7 @@ Mower::Mower() {
   //perimeter.read2Coil = false;
   areaToGo = 1;//initialise the areatogo to the station area
 
-  
+
   // ------  IMU (compass/accel/gyro) ----------------------
   imuUse            = 1;       // use IMU?
   CompassUse = 0;       // activate compass?
@@ -415,7 +417,7 @@ void checkMotorFault() {
     case SEN_BUMPER_RIGHT: return (digitalRead(pinBumperRight)); break;
     case SEN_BUMPER_LEFT: return (digitalRead(pinBumperLeft)); break;
 
-   
+
     // sonar---------------------------------------------------------------------------------------------------
 
     case SEN_SONAR_CENTER: return (NewSonarCenter.ping_cm()); break;

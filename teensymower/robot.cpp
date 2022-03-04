@@ -523,10 +523,10 @@ void Robot::processGPSData()
   gpsY = (float)gps.distance_between(gpsLat, nlon,   gpsLat, gpsLon);
   if (RaspberryPIUse) MyRpi.RaspberryPISendGpsLocalisation();
   /*
-  Serial.print(" gpsX: ");
-  Serial.print(gpsX);
-  Serial.print(" gpsY: ");
-  Serial.println(gpsY);
+    Serial.print(" gpsX: ");
+    Serial.print(gpsX);
+    Serial.print(" gpsY: ");
+    Serial.println(gpsY);
   */
 
 }
@@ -930,8 +930,6 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, motorMowPID.Kd);
   eereadwrite(readflag, addr, motorBiDirSpeedRatio1);
   eereadwrite(readflag, addr, motorBiDirSpeedRatio2);
-  eereadwrite(readflag, addr, motorLeftSwapDir);
-  eereadwrite(readflag, addr, motorRightSwapDir);
   eereadwrite(readflag, addr, bumperUse);
   eereadwrite(readflag, addr, sonarUse);
   eereadwrite(readflag, addr, sonarCenterUse);
@@ -2682,7 +2680,7 @@ void Robot::myCallback() {
 
   robot.ShowMessageln("warning Watchdog detect that loops take too long duration ");
   robot.ShowMessageln("Tennsy can automaticly reboot if issue is not reset ");
-  // try to stop everything
+  // try to stop everything imediatly
   robot.setNextState(STATE_OFF, 0);
   return;
 
@@ -2700,6 +2698,9 @@ void Robot::setup()  {
   Serial.print("++++++++++++++* Start Robot Setup at ");
   Serial.print(millis());
   Serial.println(" ++++++++++++");
+
+  Serial.print("Version : ");
+  Serial.println(VER);
 
 
   if (ODOMETRY_ONLY_RISING)
@@ -2880,8 +2881,8 @@ void Robot::setup()  {
 
   Serial.println("Watchdog configuration start ");
   WDT_timings_t config;
-  config.trigger = 100; /* in seconds, 0->128 */
-  config.timeout = 120; /* in seconds, 0->128 */
+  config.trigger = 2; /* in seconds, 0->128 */
+  config.timeout = 10; /* in seconds, 0->128 */
   config.callback = myCallback;
   wdt.begin(config);
   Serial.println("Watchdog configuration Finish ");
