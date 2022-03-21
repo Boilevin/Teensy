@@ -130,7 +130,7 @@ void PerimeterClass::begin(byte idx0Pin, byte idx1Pin) {
     adc->adc1->stopTimer();
     adc->adc1->startSingleRead(idx1Pin); // call this to setup everything before the Timer starts
     adc->adc1->enableInterrupts(adc1_isr);
-    //adc->adc1->startTimer(38462); //frequency in Hz
+    adc->adc1->startTimer(38462); //frequency in Hz
     timed_read_elapsed = 0;
     buffer_adc_1_count = 0;
     Serial.println("adc1 Timer Interrupt Started");

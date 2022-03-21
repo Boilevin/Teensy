@@ -126,7 +126,13 @@ Mower::Mower() {
   perimeterTrackRevTime = 2200;  // reverse time during perimeter tracking
   DistPeriOutRev = 40; // reverse distance when reach the perimeter in cm
   DistPeriObstacleRev = 30; // reverse distance when hit obstacle while tracking in cm
-  DistPeriOutForw = 60; // distance to accell
+  if ( LEFT_MOTOR_DRIVER == 1) {
+    DistPeriOutForw = 15; // distance to accell reduce when BL motor is used
+  }
+  else
+  {
+    DistPeriOutForw = 60; // distance to accell
+  }
   DistPeriOutStop = 15; //slowing distance after crossover the wire
   DistPeriObstacleForw = 25; //distance while arc circle in peri obstacle avoid
   perimeterPID.Kp    = 16.5;  // perimeter PID controller
@@ -159,11 +165,11 @@ Mower::Mower() {
   imuRollPID.Kd     = 0;
   //bb
   yawSet1 = 45;
-  yawOppositeLane1RollRight = -125;
-  yawOppositeLane1RollLeft = -135;
+  yawOppositeLane1RollRight = -133;
+  yawOppositeLane1RollLeft = -138;
   yawSet2 = 90;
-  yawOppositeLane2RollRight = -92;
-  yawOppositeLane2RollLeft = -88;
+  yawOppositeLane2RollRight = -88;
+  yawOppositeLane2RollLeft = -92;
   yawSet3 = 135;
   yawOppositeLane3RollRight = -47;
   yawOppositeLane3RollLeft = -42;
@@ -348,17 +354,38 @@ void Mower::setup() {
   pinMode(pinButton, INPUT_PULLUP);
 
   // bumpers
-  pinMode(pinBumperLeft, INPUT_PULLUP); //it's contact
-  pinMode(pinBumperRight, INPUT_PULLUP);
+  if (BUMPER_IS_SWITCH) {
+    pinMode(pinBumperLeft, INPUT_PULLUP); //it's contact
+    pinMode(pinBumperRight, INPUT_PULLUP);
+    if (BUMPER_REAR_EXIST) {
+      pinMode(pinBumperRearLeft, INPUT_PULLUP); //it's contact
+      pinMode(pinBumperRearRight, INPUT_PULLUP);
 
+    }
+  }
+  else
+  {
+    pinMode(pinBumperLeft, INPUT); //it's electronics like KY003
+    pinMode(pinBumperRight, INPUT);
+    if (BUMPER_REAR_EXIST) {
+      pinMode(pinBumperRearLeft, INPUT); //it's contact
+      pinMode(pinBumperRearRight, INPUT);
+    }
+  }
   // rain
   pinMode(pinRain, INPUT);
 
 
   // odometry
-  //not sure the pullupis necessary with PCB1.3
-  pinMode(pinOdometryLeft, INPUT_PULLUP);
-  pinMode(pinOdometryRight, INPUT_PULLUP);
+  if (LEFT_MOTOR_DRIVER == 1) {  //for BL motor no need pull_up
+    pinMode(pinOdometryLeft, INPUT);
+    pinMode(pinOdometryRight, INPUT);
+  }
+  else
+  {
+    pinMode(pinOdometryLeft, INPUT_PULLUP);
+    pinMode(pinOdometryRight, INPUT_PULLUP);
+  }
 
   pinMode(pinUserOut1, OUTPUT);
   pinMode(pinUserOut2, OUTPUT);

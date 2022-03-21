@@ -370,7 +370,7 @@ void RemoteControl::sendMotorMenu(boolean update) {
   sendSlider("a06", F("Speed max in rpm"), robot->motorSpeedMaxRpm, "", 1, 50, 20);
   sendSlider("a15", F("Speed max in pwm"), robot->motorSpeedMaxPwm, "", 1, 255, 50);
 
-  sendSlider("a11", F("Accel"), robot->motorAccel, "", 1, 2000, 500);
+  //sendSlider("a11", F("Accel"), robot->motorAccel, "", 1, 2000, 500);
   sendSlider("a18", F("Power ignore time"), robot->motorPowerIgnoreTime, "", 1, 8000, 1);
   sendSlider("a07", F("Roll Degrees max"), robot->motorRollDegMax, "", 1, 360, 1);
   sendSlider("a19", F("Roll Degrees min"), robot->motorRollDegMin, "", 1, 180, 1);
@@ -436,7 +436,7 @@ void RemoteControl::processMotorMenu(String pfodCmd) {
   else if (pfodCmd.startsWith("a08")) processSlider(pfodCmd, robot->DistPeriOutRev, 1);
   else if (pfodCmd.startsWith("a09")) processSlider(pfodCmd, robot->DistPeriOutStop, 1);
   else if (pfodCmd.startsWith("a10")) robot->autoAdjustSlopeSpeed = !robot->autoAdjustSlopeSpeed;
-  else if (pfodCmd.startsWith("a11")) processSlider(pfodCmd, robot->motorAccel, 1);
+  //else if (pfodCmd.startsWith("a11")) processSlider(pfodCmd, robot->motorAccel, 1);
   else if (pfodCmd.startsWith("a12")) processSlider(pfodCmd, robot->motorBiDirSpeedRatio1, 0.01);
   else if (pfodCmd.startsWith("a13")) processSlider(pfodCmd, robot->motorBiDirSpeedRatio2, 0.01);
   else if (pfodCmd.startsWith("a14")) processPIDSlider(pfodCmd, "a14", robot->motorLeftPID, 0.01, 3.0);
@@ -594,11 +594,13 @@ void RemoteControl::sendPerimeterMenu(boolean update) {
   sendYesNo(robot->perimeterUse);
   serialPort->print(F("|e09~Actual Mowing Area"));
   serialPort->print(robot->areaInMowing);
-  serialPort->println(F("|e02~Mag / Smag"));
+  serialPort->println(F("|e02~Mag L/R   Smag"));
   serialPort->print(robot->perimeterMag);
   serialPort->print(F("/"));
+  serialPort->print(robot->perimeterMagRight);
+  serialPort->print(F("    "));
   serialPort->print(robot->perimeter.getSmoothMagnitude(0));
-  //serialPort->print(robot->perimeterMagRight);
+ 
   //  serialPort->println(robot->perimeterInside);
   sendSlider("e08", F("Mini Smag"), robot->perimeter.timedOutIfBelowSmag, "", 1, 200, 1);
   sendSlider("e14", F("Timeout (s) if Outside"), robot->perimeter.timeOutSecIfNotInside, "", 1, 20, 1);
@@ -1762,6 +1764,10 @@ void RemoteControl::processTestOdoMenu(String pfodCmd) {
   }
   else if (pfodCmd == "yt12") {
     robot->motorMowEnable = !robot->motorMowEnable;
+    robot->odometryRight = robot->odometryLeft = 0;
+    robot->motorLeftSpeedRpmSet = robot->motorRightSpeedRpmSet = 0; //use to avoid the test stop immediatly
+    robot->stateEndOdometryRight = robot->odometryRight + 5 * robot->odometryTicksPerRevolution;
+    robot->stateEndOdometryLeft = robot->odometryLeft + 5 * robot->odometryTicksPerRevolution;
     robot->setNextState(STATE_TEST_MOTOR, robot->rollDir);
     sendTestOdoMenu(true);
   }

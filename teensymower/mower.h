@@ -16,16 +16,22 @@
 // 1 for brushless BL500W Driver
 // 2 for DC L298N Driver
 // 3 for DC BTS7960 Driver
-#define LEFT_MOTOR_DRIVER 1
+#define LEFT_MOTOR_DRIVER 1  //never mix BL and DC on drive motor
 #define RIGHT_MOTOR_DRIVER 1
 #define MOW_MOTOR_DRIVER 1
 
-#define PWM_FREQUENCY_BL500W  10000 //
+#define PWM_FREQUENCY_BL500W  20000 //
 #define PWM_FREQUENCY_L298N  10000 
 #define PWM_FREQUENCY_BTS7960  10000
 
-#define INA226_MOW2_PRESENT true
-#define INA226_MOW3_PRESENT true
+
+#define BUMPER_IS_SWITCH false  // set to true if the bumper is a single ON/OFF switch
+#define BUMPER_REAR_EXIST false  // set to true to manage the rear bumper connected on CAN3 J20 connector
+
+#define START_BUTTON_IS_NC true //if button is normaly closed
+
+#define INA226_MOW2_PRESENT false
+#define INA226_MOW3_PRESENT false
 
 #define ODOMETRY_ONLY_RISING false
 //***********************************************************************
@@ -43,7 +49,7 @@
 #define Bluetooth Serial1  // Ardumower default OK for ESP32 or HC05
 #define BLUETOOTH_BAUDRATE  19200     // baudrate used for communication with Bluetooth module (Ardumower default: 19200)
 
-#define Enable_Screen false //set to true if OLED SCREEN is connected
+#define Enable_Screen true //set to true if OLED SCREEN is connected to I2c2
 
 #define GpsPort Serial3  // GPS 
 
@@ -69,6 +75,8 @@
 #define pinMotorMowDir 9          // M1_IN2 mower motor Dir pin (if using MOSFET, keep unconnected)
 #define pinBumperLeft 35          // bumper pins
 #define pinBumperRight 36
+#define pinBumperRearLeft 30          // bumper pins
+#define pinBumperRearRight 31
 #define pinSonarRightTrigger 29  //BBER10
 #define pinSonarRightEcho A13
 #define pinSonarLeftTrigger 28   //BBER10

@@ -3178,9 +3178,17 @@ void Robot::readSerial() {
 }
 
 void Robot::checkButton() {
+  boolean buttonPressed;
   if ( (!buttonUse) || (millis() < nextTimeButtonCheck) ) return;
   nextTimeButtonCheck = millis() + 100;
-  boolean buttonPressed = (digitalRead(pinButton) == LOW);
+  if (START_BUTTON_IS_NC) {
+    buttonPressed = !(digitalRead(pinButton) == LOW);
+  }
+  else
+  {
+    buttonPressed = (digitalRead(pinButton) == LOW);
+  }
+  
   //boolean buttonPressed = false;
   if ( ((!buttonPressed) && (buttonCounter > 0)) || ((buttonPressed) && (millis() >= nextTimeButton)) )
   {
