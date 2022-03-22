@@ -43,7 +43,7 @@
 */
 
 // code version
-#define VER "1.25-Teensyber GY-521"
+#define VER "1.26-Teensyber GY-521"
 
 
 // sensors

@@ -2650,28 +2650,30 @@ void Robot::setUserOut() {
   }
 
 }
-volatile float Pulse1;
-volatile float Pulse2;
-volatile float Pulse01;
-volatile float Pulse02;
 
+/*
+  volatile float Pulse1;
+  volatile float Pulse2;
+  volatile float Pulse01;
+  volatile float Pulse02;
+*/
 
 void Robot::OdoRightCountInt() {
-  Pulse1 = micros() - Pulse2;
-  if (Pulse1 > 10  ) { // debounce for 120uS
-    Pulse2 = micros();
-    if (robot.motorRightPWMCurr > 0 ) robot.odometryRight++; else robot.odometryRight--;
-  }
+  // Pulse1 = micros() - Pulse2;
+  // if (Pulse1 > 10  ) { // debounce for 120uS
+  //   Pulse2 = micros();
+  if (robot.motorRightPWMCurr > 0 ) robot.odometryRight++; else robot.odometryRight--;
+  // }
   asm("dsb");
 
 
 }
 void Robot::OdoLeftCountInt() {
-  Pulse01 = micros() - Pulse02;
-  if (Pulse01 > 10  ) { // debounce for 120uS
-    Pulse02 = micros();
-    if (robot.motorLeftPWMCurr > 0 ) robot.odometryLeft++; else robot.odometryLeft--;
-  }
+  // Pulse01 = micros() - Pulse02;
+  // if (Pulse01 > 10  ) { // debounce for 120uS
+  //   Pulse02 = micros();
+  if (robot.motorLeftPWMCurr > 0 ) robot.odometryLeft++; else robot.odometryLeft--;
+  //}
   asm("dsb");
 
 }
@@ -3188,7 +3190,7 @@ void Robot::checkButton() {
   {
     buttonPressed = (digitalRead(pinButton) == LOW);
   }
-  
+
   //boolean buttonPressed = false;
   if ( ((!buttonPressed) && (buttonCounter > 0)) || ((buttonPressed) && (millis() >= nextTimeButton)) )
   {
@@ -3812,6 +3814,20 @@ void Robot::setNextState(byte stateNew, byte dir) {
 
 
     case STATE_PERI_OUT_STOP: //in auto mode and forward slow down before stop and reverse
+
+      if (mowPatternCurr == MOW_LANES) {
+        if (stateCurr == STATE_NEXT_LANE_FORW) {  // change to mow random if the wire is detected
+          //bber201
+          mowPatternDuration = mowPatternDurationMax - 3 ; //set the mow_random for the next 3 minutes
+          ShowMessageln("Find a corner change to Random for 3 minutes ");
+          mowPatternCurr = MOW_RANDOM; //change the pattern each x minutes
+          laneUseNr = laneUseNr + 1;
+          findedYaw = 999;
+          justChangeLaneDir = true;
+          nextTimeToDmpAutoCalibration = millis(); // so the at the end of the next line a calibration occur
+          if (laneUseNr > 3) laneUseNr = 1;
+        }
+      }
       //-------------------------------Verify if it's time to change mowing pattern
       if (mowPatternDuration > mowPatternDurationMax) {
         ShowMessageln(" mowPatternCurr  change ");
@@ -4326,7 +4342,17 @@ void Robot::setNextState(byte stateNew, byte dir) {
         ShowMessage("Find Inside roll nb: ");
         ShowMessageln(RollToInsideQty);
       }
-
+      if (mowPatternCurr == MOW_LANES) {
+        //bber201
+        mowPatternDuration = mowPatternDurationMax - 3 ; //set the mow_random for the next 3 minutes
+        ShowMessageln("Find a corner change to Random for 3 minutes ");
+        mowPatternCurr = MOW_RANDOM; //change the pattern each x minutes
+        laneUseNr = laneUseNr + 1;
+        findedYaw = 999;
+        justChangeLaneDir = true;
+        nextTimeToDmpAutoCalibration = millis(); // so the at the end of the next line a calibration occur
+        if (laneUseNr > 3) laneUseNr = 1;
+      }
       AngleRotate = 50;
       Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
       if (dir == RIGHT) {
