@@ -43,7 +43,7 @@
 */
 
 // code version
-#define VER "1.26-Teensyber GY-521"
+#define VER "1.30-Teensyber GY-521"
 
 
 // sensors
@@ -190,7 +190,8 @@ enum {
   STATE_PERI_OUT_STOP_ROLL_TOTRACK, // after the mower rool to track we need to stop the right motor because it's reverse and the track is forward
   STATE_PERI_STOP_TO_FAST_START,  // after the mower find a tag for find a new start entry point
   STATE_CALIB_MOTOR_SPEED,  // we need to know how may ticks the motor can do in 1 ms to compute the maxododuration
-  STATE_ACCEL_FRWRD // when start from calib or off need to accel before motorodo
+  STATE_ACCEL_FRWRD, // when start from calib or off need to accel before motorodo
+  STATE_ENDLANE_STOP //when mower is at the end of the lane avoid to reverse before roll
 
 };
 
@@ -254,8 +255,8 @@ class Robot
     byte ActualRunningTimer;
     // ----- bluetooth -------------------------------------
     boolean freeboolean;        //use to keep the eeprom integrity
-    
-   
+
+
     // -------- mow pattern -----------------------------
     byte mowPatternCurr;
     const char *mowPatternName();
@@ -644,7 +645,7 @@ class Robot
     boolean reduceSpeedNearPerimeter; //Activate the speed reduction near perimeter
     //End add bb
 
- 
+
     // --------- rain -----------------------------------
     boolean rain;
     boolean rainUse;
@@ -903,7 +904,7 @@ class Robot
     virtual void checkTimer();
     virtual void checkCurrent();
     virtual void checkBumpers();
-   
+
     virtual void checkBumpersPerimeter();
     virtual void checkPerimeterBoundary();
     virtual void checkStuckOnIsland();

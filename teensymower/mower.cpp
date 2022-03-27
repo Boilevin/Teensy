@@ -35,7 +35,7 @@ Mower::Mower() {
 
 
 
-  name = "Ardumower";
+  name = "MI632";
   // ------- wheel motors -----------------------------
   motorRightSwapDir     = false;    // inverse right motor direction?
   motorLeftSwapDir      = true;    // inverse left motor direction?
@@ -46,9 +46,9 @@ Mower::Mower() {
   motorLeftChange = 500;
   motorRightChange = 500;
   motorOdoAccel = 1500; //Time for accel from 0 to 100% in ms
-  motorSpeedMaxRpm       = 24;   // motor wheel max RPM (WARNING: do not set too high, so there's still speed control when battery is low!)
-  motorSpeedMaxPwm    = 190;  // motor wheel max Pwm  (8-bit PWM=255, 10-bit PWM=1023)
-  motorPowerMax     = 23;    // motor wheel max power (Watt)
+  motorSpeedMaxRpm       = 30;   // motor wheel max RPM (WARNING: do not set too high, so there's still speed control when battery is low!)
+  motorSpeedMaxPwm    = 108;  // motor wheel max Pwm  (8-bit PWM=255, 10-bit PWM=1023)
+  motorPowerMax     = 20;    // motor wheel max power (Watt)
   motorSenseRightScale = 1.870; // normal is 1.536 motor right sense scale (mA=(ADC-zero)/scale)
   motorSenseLeftScale = 1.650; // normal is 1.536 motor left sense scale  (mA=(ADC-zero)/scale)
   motorPowerIgnoreTime = 2000; // time to ignore motor power when start to avoid read the peack on motor start (ms)
@@ -80,16 +80,16 @@ Mower::Mower() {
 
   // ------ mower motor -------------------------------
   motorMowAccel       = 1000;  // motor mower acceleration (warning: do not set too low) 2000 seems to fit best considerating start time and power consumption
-  motorMowSpeedMaxPwm   = 200;    // motor mower max PWM
+  motorMowSpeedMaxPwm   = 115;    // motor mower max PWM
   motorMowSpeedMinPwm = 100;   // motor mower minimum PWM (only for cutter modulation)
-  motorMowPowerMax = 18.0;     // motor mower max power (Watt)
+  motorMowPowerMax = 65.0;     // motor mower max power (Watt)
 
   motorMowSenseScale = 1.536; // motor mower sense scale (mA=(ADC-zero)/scale)
   motorMowPID.Kp = 0.005;    // motor mower RPM PID controller
   motorMowPID.Ki = 0.01;
   motorMowPID.Kd = 0.01;
   //  ------ bumper -----------------------------------
-  bumperUse         = 0;      // has bumpers?
+  bumperUse         = 1;      // has bumpers?
 
   // ------ rain ------------------------------------
   rainUse          = 0;      // use rain sensor?
@@ -117,8 +117,8 @@ Mower::Mower() {
 
 
   // ------ perimeter ---------------------------------
-  perimeterUse       = 0;      // use perimeter?
-  perimeterTriggerMinSmag = 200;      // perimeter minimum smag to use on big area
+  perimeterUse       = 1;      // use perimeter?
+  perimeterTriggerMinSmag = 50;      // perimeter minimum smag to use on big area
   //perimeterOutRollTimeMax  = 2000;   // free
   //perimeterOutRollTimeMin = 750;    // free
   perimeterOutRevTime   = 2200;   // free
@@ -142,13 +142,13 @@ Mower::Mower() {
   trackingErrorTimeOut = 10000;
   trakBlockInnerWheel = true;
   //bb
-  MaxSpeedperiPwm = 180; // speed max in PWM while perimeter tracking
+  MaxSpeedperiPwm = 85; // speed max in PWM while perimeter tracking
   ActualSpeedPeriPWM = MaxSpeedperiPwm; //speed in PWM while perimeter tracking
   //timeToResetSpeedPeri = 0; // if millis() > at this var the speed is set to max value
   RollTimeFor45Deg = 1000; //time while roll in peri obstacle avoid if no Odometry
   circleTimeForObstacle = 4000; //time while arc circle in peri obstacle avoid if no Odometry
   DistPeriObstacleAvoid = 100; //distance while arc circle in peri obstacle avoid
-  perimeterMagMaxValue = 2000; // Maximum value return when near the perimeter wire (use for tracking and slowing when near wire
+  perimeterMagMaxValue = 5000; // Maximum value return when near the perimeter wire (use for tracking and slowing when near wire
   //perimeter.read2Coil = false;
   areaToGo = 1;//initialise the areatogo to the station area
 
@@ -193,11 +193,11 @@ Mower::Mower() {
   batGoHomeIfBelow = 24.3;     // drive home voltage (Volt)
   batSwitchOffIfBelow = 23;  // switch off battery if below voltage (Volt)
   batSwitchOffIfIdle = 300;      // switch off battery if idle (minutes)
-  batFactor       = 10.88;     //depend of the resistor divisor on board R12 and R13
-  batChgFactor    = 10.89;     //depend of the resistor divisor on board R9 and R10
+  batFactor       = 1.00;     //not use
+  batChgFactor    = 1.00;     //not use
   batFull          = 29.4;     // battery reference Voltage (fully charged) PLEASE ADJUST IF USING A DIFFERENT BATTERY VOLTAGE! FOR a 12V SYSTEM TO 14.4V
   batChargingCurrentMax = 2; // maximum current your charger can devliver
-  batFullCurrent  = 0.1;      // current flowing when battery is fully charged
+  batFullCurrent  = 0.05;      // current flowing when battery is fully charged
   startChargingIfBelow = 25.0; // start charging if battery Voltage is below
   chargingTimeout = 25200000; // safety timer for charging (ms)  7 hrs
 
@@ -217,8 +217,8 @@ Mower::Mower() {
 
   // ------ odometry ------------------------------------
   odometryUse       = 1;       // use odometry?
-  odometryTicksPerRevolution = 1010;   // encoder ticks per one full resolution
-  odometryTicksPerCm = 12.9;  // encoder ticks per cm
+  odometryTicksPerRevolution = 2070;   // encoder ticks per one full resolution
+  odometryTicksPerCm = 29.6;  // encoder ticks per cm
   odometryWheelBaseCm = 43;    // wheel-to-wheel distance (cm)
 
   // ----- GPS -------------------------------------------
@@ -231,7 +231,7 @@ Mower::Mower() {
   buttonUse         = 1;       // has digital ON/OFF button?
   RaspberryPIUse = false; // a raspberryPi is connected to USBNative port
   mowPatternDurationMax = 120; //in minutes
-  useMqtt = true; //select this to exchange data over mqtt protocol for homeassistant.
+  useMqtt = false; //select this to exchange data over mqtt protocol for homeassistant.
 
 
   // ----- user-defined switch ---------------------------

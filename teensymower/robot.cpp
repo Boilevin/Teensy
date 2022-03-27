@@ -67,7 +67,7 @@ const char* stateNames[] = {"OFF", "RC", "FORW", "ROLL", "REV", "CIRC", "ERR", "
                             "STOPTOTRACK", "AUTOCALIB", "ROLLTOFINDYAW", "TESTMOTOR", "FINDYAWSTOP", "STOPONBUMPER",
                             "STOPCALIB", "SONARTRIG", "STOPSPIRAL", "MOWSPIRAL", "ROT360", "NEXTSPIRE", "ESCAPLANE",
                             "TRACKSTOP", "ROLLTOTAG", "STOPTONEWAREA", "ROLL1TONEWAREA", "DRIVE1TONEWAREA", "ROLL2TONEWAREA", "DRIVE2TONEWAREA", "WAITSIG2", "STOPTONEWAREA", "ROLLSTOPTOTRACK",
-                            "STOPTOFASTSTART", "CALIBMOTORSPEED", "ACCELFRWRD"
+                            "STOPTOFASTSTART", "CALIBMOTORSPEED", "ACCELFRWRD", "ENDLANE"
                            };
 
 const char* statusNames[] = {"WAIT", "NORMALMOWING", "SPIRALEMOWING", "BACKTOSTATION", "TRACKTOSTART", "MANUAL", "REMOTE", "ERROR", "STATION", "TESTING", "SIGWAIT" , "WIREMOWING"
@@ -960,9 +960,9 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, batGoHomeIfBelow);
   eereadwrite(readflag, addr, batSwitchOffIfBelow);
   eereadwrite(readflag, addr, batSwitchOffIfIdle);
-  eereadwrite(readflag, addr, batFactor);
-  eereadwrite(readflag, addr, batChgFactor);
-  eereadwrite(readflag, addr, batSenseFactor);
+  eereadwrite(readflag, addr, batFactor);  //not use with ina226
+  eereadwrite(readflag, addr, batChgFactor);  //not use with ina226
+  eereadwrite(readflag, addr, batSenseFactor); //not use with ina226
   eereadwrite(readflag, addr, batFullCurrent);
   eereadwrite(readflag, addr, startChargingIfBelow);
   eereadwrite(readflag, addr, stationRevDist);
@@ -2436,19 +2436,15 @@ void Robot::motorControlPerimeter() {
 
 // check for odometry sensor faults
 void Robot::checkOdometryFaults() {
-
+  // if pwm > 1/3 of maxvalue the rpm need to be !=0 or it's error
   boolean leftErr = false;
   boolean rightErr = false;
-  if ((stateCurr == STATE_FORWARD) &&  (millis() - stateStartTime > 8000) ) {
+  if ((stateCurr == STATE_FORWARD_ODO) &&  (millis() - stateStartTime > 8000) ) {
     // just check if odometry sensors may not be working at all
-    if ( (motorLeftPWMCurr > 100) && (abs(motorLeftRpmCurr) < 1)  )  leftErr = true;
-    if ( (motorRightPWMCurr > 100) && (abs(motorRightRpmCurr) < 1)  ) rightErr = true;
+    if ( (motorLeftPWMCurr > motorSpeedMaxPwm / 3) && (abs(motorLeftRpmCurr) < 1)  )  leftErr = true;
+    if ( (motorRightPWMCurr > motorSpeedMaxPwm / 3) && (abs(motorRightRpmCurr) < 1)  ) rightErr = true;
   }
-  if ((stateCurr == STATE_ROLL) &&  (millis() - stateStartTime > 1000) ) {
-    // just check if odometry sensors may be turning in the wrong direction
-    if ( ((motorLeftPWMCurr > 100) && (motorLeftRpmCurr < -3)) || ((motorLeftPWMCurr < -100) && (motorLeftRpmCurr > 3)) ) leftErr = true;
-    if ( ((motorRightPWMCurr > 100) && (motorRightRpmCurr < -3)) || ((motorRightPWMCurr < -100) && (motorRightRpmCurr > 3)) ) rightErr = true;
-  }
+
   if (leftErr) {
     ShowMessage("Left odometry error: PWM=");
     ShowMessage(motorLeftPWMCurr);
@@ -3004,7 +3000,7 @@ void Robot::delayWithWatchdog(int ms) {
   unsigned long endtime = millis() + ms;
   while (millis() < endtime) {
     delay(500);
-    //watchdogReset();
+    wdt.feed();
   }
 }
 
@@ -3512,6 +3508,7 @@ void Robot::readSensors() {
       chgvolt = ChargeIna226.readBusVoltage() ;
       curramp = ChargeIna226.readBusPower(); //  ?? sense don't work
       batvolt = MotRightIna226.readBusVoltage() ;
+      batvolt = batvolt + D5VoltageDrop;
       readingDuration = millis() - nextTimeBattery + 500;
       if (readingDuration > 30 ) {  //leave 30 ms to I2C reading
         ShowMessage("Error in INA226 Bat Voltage Timeout reading I2C : ");
@@ -3846,7 +3843,20 @@ void Robot::setNextState(byte stateNew, byte dir) {
 
       break;
 
+    case STATE_ENDLANE_STOP: //in auto mode and forward slow down before stop and reverse
+      //-------------------------------Verify if it's time to change mowing pattern
+      justChangeLaneDir = !justChangeLaneDir;  //use to know if the lane is not limit distance
+      UseAccelLeft = 0;
+      UseBrakeLeft = 1;
+      UseAccelRight = 0;
+      UseBrakeRight = 1;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm; //perimeterSpeedCoeff reduce speed near the wire to 70%
+      stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * 2 * DistPeriOutStop);
+      stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * 2 * DistPeriOutStop);
+      OdoRampCompute();
 
+
+      break;
     case STATE_SONAR_TRIG: //in auto mode and forward slow down before stop and reverse different than stop because reduce speed during a long time and not immediatly
       justChangeLaneDir = !justChangeLaneDir;
       distToObstacle = distToObstacle - sonarToFrontDist; //   the distance between sonar and front of mower
@@ -5636,10 +5646,10 @@ void Robot::loop()  {
 
   readSensors();
   readAllTemperature();
-  // checkRobotStats();
+  checkRobotStats();
   checkPerimeterBoundary();
   calcOdometry();
-  //checkOdometryFaults();
+  checkOdometryFaults();
   checkButton();
   motorMowControl();
   //checkTilt();
@@ -5837,12 +5847,14 @@ void Robot::loop()  {
       {
         if ((mowPatternCurr == MOW_LANES) && (!justChangeLaneDir)) {
           ShowMessageln("MAX LANE LENGHT TRIGGER time to reverse");
-          setNextState(STATE_PERI_OUT_STOP, rollDir);
+          //setNextState(STATE_PERI_OUT_STOP, rollDir);
+          setNextState(STATE_ENDLANE_STOP, rollDir);
         }
         else {
           ShowMessageln("more than 300 ML in straight line ?? ?? ?? ?? ?? ??");
           setBeeper(3000, 100, 100, 2000, 50);//beep for 3 sec
-          setNextState(STATE_PERI_OUT_STOP, rollDir);
+          //setNextState(STATE_PERI_OUT_STOP, rollDir);
+          setNextState(STATE_ENDLANE_STOP, rollDir);
         }
       }
 
@@ -6437,6 +6449,14 @@ void Robot::loop()  {
     case STATE_STATION_CHARGING:
       // waiting until charging completed
       if (batMonitor) {
+
+        if (chgVoltage <= 2 ) { //something is wrong in the charger or bad contact
+          ShowMessageln("Station Voltage was lost while charging");
+          setNextState(STATE_OFF, 0);
+          return;
+        }
+
+
         if ((chgCurrent < batFullCurrent) && (millis() - stateStartTime > 3000)) {
           if ((autoResetActive) && (millis() - stateStartTime > 3600000)) { // only reboot if the mower is charging for more 1 hour
             ShowMessageln("End of charge by batfullcurrent Time to Restart PI and Due");
@@ -6503,7 +6523,30 @@ void Robot::loop()  {
         setNextState(STATE_PERI_OUT_REV, rollDir);//if the motor can't rech the odocible in slope
       }
       break;
+    case STATE_ENDLANE_STOP:
+      motorControlOdo();
+      if ((moveRightFinish) && (moveLeftFinish) ) {
+        if (rollDir == RIGHT) {
+          if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0)) { //wait until the 2 motor completly stop because need precision
+            setNextState(STATE_PERI_OUT_LANE_ROLL1, rollDir);
+          }
+        }
+        else
+        {
+          if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0)) {
+            setNextState(STATE_PERI_OUT_LANE_ROLL1, rollDir);
+          }
+        }
+      }
 
+      if (millis() > (stateStartTime + MaxOdoStateDuration)) {
+        if (developerActive) {
+          ShowMessageln ("Warning can t end lane in time ");
+        }
+        setNextState(STATE_PERI_OUT_LANE_ROLL1, rollDir);//if the motor can't reach the odocible in slope
+      }
+
+      break;
 
     case STATE_SONAR_TRIG:
       motorControlOdo();

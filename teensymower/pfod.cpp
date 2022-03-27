@@ -1012,15 +1012,7 @@ void RemoteControl::sendBatteryMenu(boolean update) {
   serialPort->print(" V");
   serialPort->print(F("|j01~Monitor "));
   sendYesNo(robot->batMonitor);
-  //bb add
-  if (robot->developerActive) {
-    sendSlider("j09", F("Charge Factor"), robot->batChgFactor, "", 0.01, 12, 9);
-    sendSlider("j05", F("Battery Factor "), robot->batFactor, "", 0.01, 12, 9);
-    sendSlider("j08", F("Sense factor"), robot->batSenseFactor, "", 0.01, 12, 9);
-  }
-  //end add
-  //ShowMessage("batFactor=");
-  //ShowMessageln(robot->batFactor);
+
   sendSlider("j02", F("Go home if below Volt"), robot->batGoHomeIfBelow, "", 0.1, robot->batFull, (robot->batFull * 0.72)); // for Sony Konion cells 4.2V * 0,72= 3.024V which is pretty safe to use
   sendSlider("j12", F("Switch off if idle minutes"), robot->batSwitchOffIfIdle, "", 1, 300, 1);
   sendSlider("j03", F("Switch off if below Volt"), robot->batSwitchOffIfBelow, "", 0.1, robot->batFull, (robot->batFull * 0.72));
@@ -1033,7 +1025,7 @@ void RemoteControl::sendBatteryMenu(boolean update) {
   //sendSlider("j06", F("Charge sense zero"), robot->chgSenseZero, "", 1, 600, 400);
 
   sendSlider("j10", F("charging starts if Voltage is below"), robot->startChargingIfBelow, "", 0.1, robot->batFull, (robot->batFull * 0.72));
-  sendSlider("j11", F("Battery is fully charged if current is below"), robot->batFullCurrent, "", 0.1, robot->batChargingCurrentMax, 0);
+  sendSlider("j11", F("Battery is fully charged if current is below"), robot->batFullCurrent, "", 0.01,0.2,0);
   serialPort->println("}");
 }
 
@@ -1045,12 +1037,8 @@ void RemoteControl::processBatteryMenu(String pfodCmd) {
     //ShowMessageln(robot->batGoHomeIfBelow);
   }
   else if (pfodCmd.startsWith("j03")) processSlider(pfodCmd, robot->batSwitchOffIfBelow, 0.1);
-  else if (pfodCmd.startsWith("j05")) processSlider(pfodCmd, robot->batFactor, 0.01);
-  // else if (pfodCmd.startsWith("j06")) processSlider(pfodCmd, robot->chgSenseZero, 1);
-  else if (pfodCmd.startsWith("j08")) processSlider(pfodCmd, robot->batSenseFactor, 0.01);
-  else if (pfodCmd.startsWith("j09")) processSlider(pfodCmd, robot->batChgFactor, 0.01);
   else if (pfodCmd.startsWith("j10")) processSlider(pfodCmd, robot->startChargingIfBelow, 0.1);
-  else if (pfodCmd.startsWith("j11")) processSlider(pfodCmd, robot->batFullCurrent, 0.1);
+  else if (pfodCmd.startsWith("j11")) processSlider(pfodCmd, robot->batFullCurrent, 0.01);
   else if (pfodCmd.startsWith("j12")) processSlider(pfodCmd, robot->batSwitchOffIfIdle, 1);
   sendBatteryMenu(true);
 }
@@ -1571,7 +1559,7 @@ void RemoteControl::processCommandMenu(String pfodCmd) {
 }
 
 void RemoteControl::sendManualMenu(boolean update) {
-  if (update) serialPort->print("{:"); else serialPort->println(F("{^Manual navigation`1000"));
+  if (update) serialPort->print("{:"); else serialPort->println(F("{^Manual navigation`400"));
   serialPort->print(F("|nl~Left|nr~Right|nf~Forward"));
   if (   ((robot->motorLeftSpeedRpmSet  < 5)  && (robot->motorLeftSpeedRpmSet  > -5))
          &&  ((robot->motorRightSpeedRpmSet < 5)  && (robot->motorRightSpeedRpmSet > -5))  ) {
