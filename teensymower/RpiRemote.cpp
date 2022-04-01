@@ -588,7 +588,7 @@ void RpiRemote::receivePiReqSetting (String Setting_page, int nb_page) {
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->DistPeriOutStop;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + "0"; // free for other DHT22Use; //4
+    lineToSend = lineToSend + robot->Enable_Screen; // free for other DHT22Use; //4
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->RaspberryPIUse;
     lineToSend = lineToSend + ",";
@@ -1505,7 +1505,7 @@ void RpiRemote::readWrite_setting()
         robot->maxDurationDmpAutocalib = val[0];
         robot->mowPatternDurationMax = val[1];
         robot->DistPeriOutStop = val[2];
-        //robot->RaspberryPIUse = val[3];  //free old DHT22Use
+        robot->Enable_Screen = val[3];  //free old DHT22Use
         robot->RaspberryPIUse = val[4];
         robot->sonarToFrontDist = val[5];
         robot->UseBumperDock = val[6];

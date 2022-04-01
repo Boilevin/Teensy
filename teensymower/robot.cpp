@@ -101,6 +101,7 @@ Robot::Robot() {
   statsMowTimeTotalStart = false;
 
 
+
   odometryLeft = odometryRight = 0;
   PeriOdoIslandDiff = 0;
   odometryLeftLastState = odometryLeftLastState2 = odometryRightLastState = odometryRightLastState2 = LOW;
@@ -242,6 +243,7 @@ Robot::Robot() {
   nextTimeToDmpAutoCalibration = 0; //at this time the mower start calibration on first positive lane stop
   //bber17
   RollToInsideQty = 0;
+  rollToTrackQty = 0;
   findedYaw = 999; //use the first time set the compass and the Gyro have the same direction with state roll to find yaw
   highGrassDetect = false;
   motorRightPID.Kp = motorLeftPID.Kp;
@@ -1021,7 +1023,7 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, maxDurationDmpAutocalib);
   eereadwrite(readflag, addr, mowPatternDurationMax);
   eereadwrite(readflag, addr, DistPeriOutStop);
-  eereadwrite(readflag, addr, RaspberryPIUse); //free replace dht22
+  eereadwrite(readflag, addr, Enable_Screen); //free replace dht22
   eereadwrite(readflag, addr, RaspberryPIUse);
   //RaspberryPIUse=false;
   eereadwrite(readflag, addr, sonarToFrontDist);
@@ -1156,12 +1158,14 @@ void Robot::printSettingSerial() {
   ShowMessage  ("rainUse             : ");
   ShowMessageln(rainUse);
 
-  // ------ DHT22 Temperature -----------------------
+  // ------  Temperature -----------------------
   ShowMessageln("----------  Temperature ---");
   ShowMessage  ("MaxTemperature     : ");
   ShowMessageln(maxTemperature);
 
-  //watchdogReset();
+  // ------ Screen -----------------------
+  ShowMessage  ("Enable_Screen        : ");
+  ShowMessageln(Enable_Screen);
 
   // ------ sonar -----------------------------------
   ShowMessageln(F("---------- sonar ---------------"));
@@ -2721,10 +2725,7 @@ void Robot::setup()  {
   if (RaspberryPIUse) MyRpi.init();
 
 
-  //------------------------  SCREEN parts  ----------------------------------------
-  if (Enable_Screen) {
-    MyScreen.init();
-  }
+
 
 
   //initialise the date time part
@@ -2763,7 +2764,10 @@ void Robot::setup()  {
   else loadSaveRobotStats(false);
   setUserSwitches();
   if (rfidUse) loadRfidList();
-
+  //------------------------  SCREEN parts  ----------------------------------------
+  if (Enable_Screen) {
+    MyScreen.init();
+  }
   if (imuUse) {
     imu.begin();
   }
@@ -4801,6 +4805,7 @@ void Robot::setNextState(byte stateNew, byte dir) {
 
     case STATE_PERI_TRACK:
       //motorMowEnable = false;     // FIXME: should be an option?
+      rollToTrackQty = 0 ;
       perimeterPID.reset();
       if (track_ClockWise) {
         PeriOdoIslandDiff =  odometryRight - odometryLeft;
@@ -7030,8 +7035,14 @@ void Robot::loop()  {
         if (developerActive) {
           ShowMessageln ("Warning can t find perimeter Wire while PERI_OUT_ROLL_TOTRACK in time ");
         }
+        rollToTrackQty = rollToTrackQty + 1;
+        if (rollToTrackQty >= 6) {
+          ShowMessageln ("Warning can t find again perimeter Wire after 6 rev");
+          setNextState(STATE_ERROR, 0);
+          return;
+        }
         if (!perimeterInside) setNextState(STATE_WAIT_AND_REPEAT, 0);//again until find the inside
-        else setNextState(STATE_PERI_OUT_STOP_ROLL_TOTRACK, 0);;
+        else setNextState(STATE_PERI_OUT_STOP_ROLL_TOTRACK, 0);
       }
       break;
 

@@ -248,7 +248,7 @@ void RemoteControl::sendSettingsMenu(boolean update) {
   if ((robot->stateCurr == STATE_OFF) || (robot->stateCurr == STATE_STATION))  //deactivate the save setting if the mower is not OFF to avoid zombie
   {
     serialPort->print(F("|sz~Save settings|s1~Motor|s2~Mow|s3~Bumper/Button|s4~Sonar|s5~Perimeter|s6~Lawn sensor|s7~IMU|s8~Raspberry"));
-    serialPort->println(F("|s9~Battery|s10~Station|s11~Odometry|s13~Rain Temp Humid|s14~GPS|s16~ByLane Setting|s17~RFID|i~Timer|s12~Date/time|sx~Factory settings}"));
+    serialPort->println(F("|s9~Battery|s10~Station|s11~Odometry|s13~Rain Temp Screen|s14~GPS|s16~ByLane Setting|s17~RFID|i~Timer|s12~Date/time|sx~Factory settings}"));
   }
   else
   {
@@ -670,9 +670,8 @@ void RemoteControl::sendRainMenu(boolean update) {
   serialPort->print(robot->rainCounter);
   serialPort->println(F("|m02~Value"));
   serialPort->print(robot->rain);
-
-  //serialPort->println(F("|m03~DHT22 Use "));
-  //sendYesNo(robot->DHT22Use);
+  serialPort->println(F("|m03~Screen Use (need reboot) "));
+  sendYesNo(robot->Enable_Screen);
   serialPort->println(F("|m04~Temperature Teensy "));
   serialPort->print(robot->temperatureTeensy);
   serialPort->println(F("|m05~Temperature Imu "));
@@ -684,7 +683,7 @@ void RemoteControl::sendRainMenu(boolean update) {
 
 void RemoteControl::processRainMenu(String pfodCmd) {
   if (pfodCmd == "m00") robot->rainUse = !robot->rainUse;
-  //else if (pfodCmd == "m03") robot->DHT22Use = !robot->DHT22Use;
+  else if (pfodCmd == "m03") robot->Enable_Screen = !robot->Enable_Screen;
   else if (pfodCmd.startsWith("m06")) processSlider(pfodCmd, robot->maxTemperature, 1);
   sendRainMenu(true);
 }
@@ -1752,11 +1751,6 @@ void RemoteControl::processTestOdoMenu(String pfodCmd) {
   }
   else if (pfodCmd == "yt12") {
     robot->motorMowEnable = !robot->motorMowEnable;
-    robot->odometryRight = robot->odometryLeft = 0;
-    robot->motorLeftSpeedRpmSet = robot->motorRightSpeedRpmSet = 0; //use to avoid the test stop immediatly
-    robot->stateEndOdometryRight = robot->odometryRight + 5 * robot->odometryTicksPerRevolution;
-    robot->stateEndOdometryLeft = robot->odometryLeft + 5 * robot->odometryTicksPerRevolution;
-    robot->setNextState(STATE_TEST_MOTOR, robot->rollDir);
     sendTestOdoMenu(true);
   }
 }

@@ -39,7 +39,8 @@ Mower::Mower() {
   // ------- wheel motors -----------------------------
   motorRightSwapDir     = false;    // inverse right motor direction?
   motorLeftSwapDir      = true;    // inverse left motor direction?
-
+  
+  //Enable_Screen = false;  // a OLED 0.96 is connected to I2C2
 
   motorAccel       = 1500;  // motor wheel acceleration - only functional when odometry is not in use (warning: do not set too low)
   //bb
@@ -94,6 +95,9 @@ Mower::Mower() {
   // ------ rain ------------------------------------
   rainUse          = 0;      // use rain sensor?
 
+  // ------ screen ------------------------------------
+  Enable_Screen    = 0;       //set to 1 if OLED SCREEN is connected to I2c2
+
   // ------ DHT22Use ------------------------------------
   //DHT22Use          = 0;      // use DHT22 sensor?
   maxTemperature    = 55;     // max temp before switch off
@@ -113,7 +117,6 @@ Mower::Mower() {
   sonarTriggerBelow          = 87;       // ultrasonic sensor trigger distance in cm (0=off)
   sonarToFrontDist           = 30;        // ultrasonic sensor distance to front mower in cm
   sonarLikeBumper            = false;      //ultrasonic reduce speed vs bumper like
-
 
 
   // ------ perimeter ---------------------------------

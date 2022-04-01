@@ -243,7 +243,8 @@ class Robot
     char* area2_ip = "10.0.0.150";
     char* area3_ip = "10.0.0.158";
 
-
+    boolean Enable_Screen ;
+    
     unsigned long stateStartTime;
     unsigned long stateEndTime;
     int idleTimeSec;
@@ -461,6 +462,7 @@ class Robot
     int accelDuration;
     //bber17
     byte RollToInsideQty; //use to stop if roll non stop
+    byte rollToTrackQty; //use to stop if roll non stop when lost perimeter wire
 
     // -------- mower motor state -----------------------
     boolean powerboard_I2c_line_Ok = true;

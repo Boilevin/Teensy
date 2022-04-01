@@ -103,7 +103,7 @@ void PerimeterClass::begin(byte idx0Pin, byte idx1Pin) {
 
   Serial.println("Begin setup adc0");
   ///// ADC0 ////
-  adc->adc0->setAveraging(1); // set number of averages
+  adc->adc0->setAveraging(32); // set number of averages
   adc->adc0->setResolution(10); // set bits of resolution
   //adc->adc0->setConversionSpeed(ADC_CONVERSION_SPEED::MED_SPEED); // change the conversion speed
   //adc->adc0->setSamplingSpeed(ADC_SAMPLING_SPEED::MED_SPEED); // change the sampling speed
@@ -121,7 +121,7 @@ void PerimeterClass::begin(byte idx0Pin, byte idx1Pin) {
   if (read2Coil) {
     Serial.println("Begin setup adc1");
     ////// ADC1 /////
-    adc->adc1->setAveraging(1); // set number of averages
+    adc->adc1->setAveraging(32); // set number of averages
     adc->adc1->setResolution(10); // set bits of resolution
     adc->adc1->setConversionSpeed(ADC_CONVERSION_SPEED::VERY_HIGH_SPEED); // change the conversion speed
     adc->adc1->setSamplingSpeed(ADC_SAMPLING_SPEED::VERY_HIGH_SPEED); // change the sampling speed
