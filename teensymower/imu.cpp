@@ -321,7 +321,7 @@ void IMUClass::readImuTemperature() {
   int16_t rawTemp = 0;
   rawTemp = mpu.getTemperature();
   robot.temperatureImu = (rawTemp / 340.) + 36.53;
-  
+
 }
 
 void IMUClass::run() {
@@ -357,11 +357,12 @@ void IMUClass::run() {
   }
 
   if (fifoCount != 0) {
+    ypr.yaw = scalePI(gyroAccYaw + CompassGyroOffset) ;
     //Serial.println("//////MPU6050 DMP fill the fifo during the reading IMU value are skip //////////////");
     return;  ///the DMP fill the fifo during the reading , all the value are false but without interrupt it's the only way i have find to make it work ???certainly i am wrong
   }
 
-  
+
 
   mpu.dmpGetQuaternion(&q, fifoBuffer);
   mpu.dmpGetGravity(&gravity, &q);

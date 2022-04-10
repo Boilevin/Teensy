@@ -43,7 +43,7 @@
 */
 
 // code version
-#define VER "1.30-Teensyber GY-521"
+#define VER "1.33-Teensyber GY-521"
 
 
 // sensors
@@ -191,8 +191,8 @@ enum {
   STATE_PERI_STOP_TO_FAST_START,  // after the mower find a tag for find a new start entry point
   STATE_CALIB_MOTOR_SPEED,  // we need to know how may ticks the motor can do in 1 ms to compute the maxododuration
   STATE_ACCEL_FRWRD, // when start from calib or off need to accel before motorodo
-  STATE_ENDLANE_STOP //when mower is at the end of the lane avoid to reverse before roll
-
+  STATE_ENDLANE_STOP, //when mower is at the end of the lane avoid to reverse before roll
+  STATE_START_FROM_STATION, //when mower is station and a start command is receive need to start again IMU ,perimeter signal etc....
 };
 
 // status mode
@@ -244,7 +244,7 @@ class Robot
     char* area3_ip = "10.0.0.158";
 
     boolean Enable_Screen ;
-    
+
     unsigned long stateStartTime;
     unsigned long stateEndTime;
     int idleTimeSec;
@@ -371,7 +371,7 @@ class Robot
     int motorRollDegMax;
     int motorRollDegMin;
     //int DistPeriOutRev;
-
+    unsigned long stateOffAfter; // using BL Motor the manual PID control can generate a small vibration at end of the movement ,so jump to OFF
     unsigned long motorForwTimeMax; // max. forward time (ms) / timeout
     float motorBiDirSpeedRatio1 ;   // bidir mow pattern speed ratio 1
     float motorBiDirSpeedRatio2 ;   // bidir mow pattern speed ratio 2
@@ -439,6 +439,7 @@ class Robot
     float OdoStartBrakeLeft;
     float OdoStartBrakeRight;
     float MaxOdoStateDuration;
+    float MaxStateDuration;
     float PrevStateOdoDepassLeft;
     float PrevStateOdoDepassRight;
     boolean UseAccelRight;
@@ -486,10 +487,10 @@ class Robot
 
     //bb 8
     byte spiraleNbTurn;  //count the number of revolution of the spirale (10 revolutions for example before stop)
-    byte halfLaneNb; //count the number of lane same as spirale (10  for example before stop)
+    //byte halfLaneNb; //count the number of lane same as spirale (10  for example before stop)
 
 
-    float motorMowSenseScale ;   // motor mower sense scale (mA=(ADC-zero)/scale)
+    float highGrassSpeedCoeff ;   // speed ratio when high grass is detected
     PID motorMowPID ;    // motor mower RPM PID controller
     int motorMowSpeedPWMSet;
     int motorMowPWMCurr ;         // current speed
@@ -553,7 +554,7 @@ class Robot
     RunningMedian compassYawMedian = RunningMedian(60);
     RunningMedian accelGyroYawMedian = RunningMedian(60);
     RunningMedian motorMowPowerMedian = RunningMedian(30);
-    RunningMedian motorSpeedRpmMedian = RunningMedian(35);
+    // RunningMedian motorSpeedRpmMedian = RunningMedian(35);
     RunningMedian perimeterMedian = RunningMedian(67); //perimeter is read each 15 ms so 1 second
 
 
@@ -737,7 +738,7 @@ class Robot
     float batFullCurrent   ; // current flowing when battery is fully charged
     float startChargingIfBelow; // start charging if battery Voltage is below
     unsigned long chargingTimeout; // safety timer for charging
-    //float chgSenseZero    ;       // charge current sense zero point NOT USE
+    float stationHeading    ;       // station heading to init the YAW when leave station (in radian)
     float batSenseFactor       ;     // charge current conversion factor
     float chgSense        ;       // mV/A empfindlichkeit des Ladestromsensors in mV/A (FÃ¼r ACS712 5A = 185)
     char chgChange        ;       // messwertumkehr von - nach +         1oder 0
@@ -820,7 +821,7 @@ class Robot
     virtual void setNextState(byte stateNew, byte dir);
 
     // motor
-    virtual void setMotorPWM(int pwmLeft, int pwmRight, boolean useAccel);
+    virtual void setMotorPWM(int pwmLeft, int pwmRight);
     virtual void setMotorMowPWM(int pwm, boolean useAccel);
 
     // GPS
@@ -843,6 +844,8 @@ class Robot
     virtual void deleteRobotStats();
     virtual void newTagFind();
     virtual void autoReboot();
+    virtual void teensyBootLoader();
+    
     // other
     // virtual void beep(int numberOfBeeps, boolean shortbeep);
     virtual void printInfo(Stream &s);

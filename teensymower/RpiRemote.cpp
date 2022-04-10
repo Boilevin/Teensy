@@ -281,7 +281,7 @@ void RpiRemote::receivePiReqSetting (String Setting_page, int nb_page) {
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->motorMowSpeedMinPwm;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->motorMowSenseScale;
+    lineToSend = lineToSend + robot->highGrassSpeedCoeff;
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->motorLeftPID.Kp;
     lineToSend = lineToSend + ",";
@@ -418,7 +418,7 @@ void RpiRemote::receivePiReqSetting (String Setting_page, int nb_page) {
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->batChgFactor;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + "0";  
+    lineToSend = lineToSend + robot->stationHeading;  //4 
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->batSenseFactor;
     lineToSend = lineToSend + ",";
@@ -1375,7 +1375,7 @@ void RpiRemote::readWrite_setting()
         robot->motorMowSpeedMaxPwm = val[2];
         robot->motorMowPowerMax = val[3];
         robot->motorMowSpeedMinPwm = val[4];
-        robot->motorMowSenseScale = val[5];
+        robot->highGrassSpeedCoeff = val[5];
         robot->motorLeftPID.Kp = val[6];
         robot->motorLeftPID.Ki = val[7];
         robot->motorLeftPID.Kd = val[8];
@@ -1433,7 +1433,7 @@ void RpiRemote::readWrite_setting()
         robot->batSwitchOffIfIdle = val[0];
         robot->batFactor = val[1];
         robot->batChgFactor = val[2];
-        //robot->chgSenseZero = val[3];
+        robot->stationHeading = val[3];
         robot->batSenseFactor = val[4];
         robot->batFullCurrent = val[5];
         robot->startChargingIfBelow = val[6];

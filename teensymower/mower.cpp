@@ -57,7 +57,7 @@ Mower::Mower() {
   motorRollDegMax    = 100;  // max. roll Deg
   motorRollDegMin    = 20; //min. roll Deg
 
-  motorForwTimeMax   = 80000; // not use max. forward time (ms) / timeout
+  motorForwTimeMax   = 120000; // max. forward time (ms) / reverse
   motorBiDirSpeedRatio1 = 0.3;   // bidir mow pattern speed ratio 1
   motorBiDirSpeedRatio2 = 0.92;   // bidir mow pattern speed ratio 2
   motorLeftPID.Kp       = 1.0;    // motor wheel PID controller
@@ -84,8 +84,8 @@ Mower::Mower() {
   motorMowSpeedMaxPwm   = 115;    // motor mower max PWM
   motorMowSpeedMinPwm = 100;   // motor mower minimum PWM (only for cutter modulation)
   motorMowPowerMax = 65.0;     // motor mower max power (Watt)
+  highGrassSpeedCoeff = 0.7;  //drive speed coeff when detect high grass in by lane mode
 
-  motorMowSenseScale = 1.536; // motor mower sense scale (mA=(ADC-zero)/scale)
   motorMowPID.Kp = 0.005;    // motor mower RPM PID controller
   motorMowPID.Ki = 0.01;
   motorMowPID.Kd = 0.01;
@@ -202,7 +202,7 @@ Mower::Mower() {
   batChargingCurrentMax = 2; // maximum current your charger can devliver
   batFullCurrent  = 0.05;      // current flowing when battery is fully charged
   startChargingIfBelow = 25.0; // start charging if battery Voltage is below
-  chargingTimeout = 25200000; // safety timer for charging (ms)  7 hrs
+  chargingTimeout = 36000000; // safety timer for charging (ms)  10 hrs
 
   batSenseFactor  = 1.11;         // charge current conversion factor   - Empfindlichkeit nimmt mit ca. 39/V Vcc ab
   chgSense        = 185.0;      // mV/A empfindlichkeit des Ladestromsensors in mV/A (FÃ¼r ACS712 5A = 185)
@@ -216,6 +216,7 @@ Mower::Mower() {
   UseBumperDock = true; //bumper is pressed when docking or not
   dockingSpeed   =  60;   //speed docking is (percent of maxspeed)
   autoResetActive  = 0;       // after charging reboot or not
+  stationHeading  = 0;  //heading of the charging station to use when no compass
 
 
   // ------ odometry ------------------------------------
