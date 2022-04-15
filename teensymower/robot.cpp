@@ -913,7 +913,7 @@ void Robot::loadSaveUserSettings(boolean readflag) {
 
   if ((readflag) && (magic != MAGIC)) {
     ShowMessageln(F("************************************"));
-    ShowMessageln(F("EEPROM USERDATA: NO EEPROM USER DATA"));
+    ShowMessageln(F("        NO EEPROM USER DATA"));
     ShowMessageln(F("PLEASE CHECK AND SAVE YOUR SETTINGS "));
     ShowMessageln(F("  FACTORY SETTING ARE USED INSTEAD  "));
     ShowMessageln(F("************************************"));
@@ -2507,7 +2507,7 @@ void Robot::motorMowControl() {
     motorMowPowerMedian.add(motorMowPower);
     if (motorMowPowerMedian.getCount() > 10) { //check each 1 secondes
       int prevcoeff =  motorMowPwmCoeff;
-      motorMowPwmCoeff = int((100 * motorMowPowerMedian.getAverage(4)) / (0.5 * motorMowPowerMax));
+      motorMowPwmCoeff = int((100 * motorMowPowerMedian.getAverage(4)) / (0.8 * motorMowPowerMax));
       if (motorMowPwmCoeff < prevcoeff) {
         //filter on speed reduce to keep the mow speed high for longuer duration
         motorMowPwmCoeff = int((0.1) * motorMowPwmCoeff + (0.9) * prevcoeff);// use only 10% of the new value
@@ -3161,7 +3161,7 @@ void Robot::checkButton() {
       ShowMessage(F("Button Pressed counter : "));
       ShowMessageln(buttonCounter);
       // ON/OFF button pressed
-      setBeeper(500, 500, 0, 2000, 0);//beep for 3 sec
+      setBeeper(500, 500, 0, 2000, 0);//beep for 0.5 sec
       buttonCounter++;
       if (buttonCounter >= 3) buttonCounter = 3;
       //resetIdleTime();
