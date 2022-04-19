@@ -187,5 +187,43 @@ void Screen::refreshErrorScreen() {
   u8g2.clearBuffer();
 }
 void Screen::refreshTrackScreen() {
+ // battery icon
+ /*
+  batLevel = map(int(robot.batVoltage), int(robot.batSwitchOffIfBelow), int(robot.batFull), 0, 25);
+  batLevel = constrain(batLevel, 0, 25);
+  u8g2.drawFrame(99, 0, 27, 10);
+  u8g2.drawBox(101, 2, batLevel, 6);
+  u8g2.drawBox(126, 3, 2, 4);
+*/
+  u8g2.setFont(u8g2_font_ncenB08_tr);
+  u8g2.setCursor(60, 10);
+  u8g2.print(int(robot.loopsPerSec));
+  u8g2.setCursor(0, 10);
+  u8g2.print(robot.perimeterMag);
+  /*
+  u8g2.setFont(u8g2_font_ncenB10_tr);
+  u8g2.setCursor(2, 30);
+  u8g2.print(robot.mowPatternName());
+  
+  if (robot.statusCurr == NORMAL_MOWING) {
+    u8g2.setCursor(65, 30);
+    u8g2.print("Normal");
+  }
+  if (robot.statusCurr == SPIRALE_MOWING) {
+    u8g2.setCursor(65, 30);
+    u8g2.print("Spirale");
+  }
+  if (robot.statusCurr == WIRE_MOWING) {
+    u8g2.setCursor(65, 30);
+    u8g2.print("Wire");
+  }
+  u8g2.setCursor(50, 45);
+  u8g2.print((robot.imu.ypr.yaw / PI * 180),1);
+*/
+  u8g2.setFont(u8g2_font_ncenB12_tr);
+  u8g2.setCursor(0, 64);
+  u8g2.print(robot.stateName());
 
+  u8g2.sendBuffer();
+  u8g2.clearBuffer();
 }

@@ -1581,7 +1581,7 @@ void Robot::checkErrorCounter() {
   }
 }
 void Robot::teensyBootLoader() {
-   delayWithWatchdog(8000); //wait for pyteensy to stop and start pi teensy loader
+  delayWithWatchdog(8000); //wait for pyteensy to stop and start pi teensy loader
   _reboot_Teensyduino_();
 }
 
@@ -2383,8 +2383,13 @@ void Robot::motorControlPerimeter() {
 
   //bb2
   if ((millis() - stateStartTime ) < 2000) { //at the start of the tracking accelerate slowly during 2 secondes
-    leftSpeedperi = leftSpeedperi - (66 - (millis() - stateStartTime) / 30);
-    rightSpeedperi = rightSpeedperi - (66 - (millis() - stateStartTime) / 30);
+    //leftSpeedperi = leftSpeedperi - (66 - (millis() - stateStartTime) / 30);
+    leftSpeedperi = int(leftSpeedperi * ((millis() - stateStartTime) / 2000));
+    //bber300
+    if (leftSpeedperi < SpeedOdoMin) leftSpeedperi = SpeedOdoMin;  
+    //rightSpeedperi = rightSpeedperi - (66 - (millis() - stateStartTime) / 30);
+    rightSpeedperi = int(rightSpeedperi * ((millis() - stateStartTime) / 2000));
+    if (rightSpeedperi < SpeedOdoMin) rightSpeedperi = SpeedOdoMin;
   }
 
   if (track_ClockWise) {
@@ -2747,7 +2752,7 @@ void Robot::setup()  {
 
   if (!buttonUse) {
     // robot has no ON/OFF button => start immediately
-    setNextState(STATE_FORWARD_ODO, 0);
+    //setNextState(STATE_FORWARD_ODO, 0);
   }
 
 
@@ -3190,7 +3195,7 @@ void Robot::checkButton() {
           rollDir = 1;
           whereToStart = 1;
           areaToGo = 1;
-          actualLenghtByLane = 40;
+          actualLenghtByLane = maxLenghtByLane; //initialise lenght lane
           beaconToStart = 0;
           mowPatternDuration = 0;
           totalDistDrive = 0;
@@ -3232,7 +3237,8 @@ void Robot::checkButton() {
         else if (buttonCounter == 3) {
           if (stateCurr == STATE_STATION) return;
           //go to station
-          //periFindDriveHeading = scalePI(imu.ypr.yaw);
+          motorMowEnable = false;
+          periFindDriveHeading = scalePI(imu.ypr.yaw);
           areaToGo = 1;
           whereToStart = 99999;
           nextTimeTimer = millis() + 3600000; //avoid the mower start again if timer activate.
@@ -3690,13 +3696,16 @@ void Robot::setNextState(byte stateNew, byte dir) {
         ShowMessageln(" secondes ");
         nextTimeTimer = millis() + 1200000; // only check again the timer after 20 minutes to avoid repetition
       }
-      delayToReadVoltageStation = millis() + 1500; //the battery is read only each 500 ms so need a duration to be sure we have the last voltage
+      else{
+        ShowMessageln("Check station");
+      }
+      delayToReadVoltageStation = millis() + 500; //the battery is read only each 500 ms so need a duration to be sure we have the last voltage
       //bber14 no accel here ?????
       UseAccelLeft = 0;
       UseBrakeLeft = 1;
       UseAccelRight = 0;
       UseBrakeRight = 1;
-      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm / 2;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = SpeedOdoMin;
       stateEndOdometryRight = odometryRight + (odometryTicksPerCm * stationCheckDist);
       stateEndOdometryLeft = odometryLeft + (odometryTicksPerCm * stationCheckDist);
       OdoRampCompute();
@@ -3841,7 +3850,7 @@ void Robot::setNextState(byte stateNew, byte dir) {
 
       break;
     case STATE_SONAR_TRIG: //in auto mode and forward slow down before stop and reverse different than stop because reduce speed during a long time and not immediatly
-      justChangeLaneDir = !justChangeLaneDir;
+     // justChangeLaneDir = !justChangeLaneDir;  //need to change this feature
       distToObstacle = distToObstacle - sonarToFrontDist; //   the distance between sonar and front of mower
       UseAccelLeft = 0;
       UseBrakeLeft = 1;
@@ -4399,6 +4408,7 @@ void Robot::setNextState(byte stateNew, byte dir) {
       UseBrakeLeft = 1;
       UseAccelRight = 0;
       UseBrakeRight = 1;
+      //bber300
       if (track_ClockWise) {
         motorLeftSpeedRpmSet = motorSpeedMaxRpm / 1.5;
         motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
@@ -5015,7 +5025,7 @@ void Robot::checkCurrent() {
   if ((statusCurr == NORMAL_MOWING) && (!highGrassDetect)) {  //do not start the spirale if in tracking and motor detect high grass
     if (motorMowPower >= 0.8 * motorMowPowerMax) {
       spiraleNbTurn = 0;
-    
+
       highGrassDetect = true;
       ShowMessageln("Warning  motorMowPower >= 0.8 * motorMowPowerMax ");
       ////  http://forums.parallax.com/discussion/comment/1326585#Comment_1326585
@@ -5023,7 +5033,7 @@ void Robot::checkCurrent() {
     else {
       if ((spiraleNbTurn >= 8)) {
         spiraleNbTurn = 0;
-        
+
         highGrassDetect = false; //stop the spirale
       }
     }
@@ -5252,6 +5262,7 @@ void Robot::checkBumpersPerimeter() {
       setMotorPWM(0, 0);//stop immediatly and wait 2 sec to see if voltage on pin
       ShowMessageln("Detect a voltage on charging contact check if it's the station");
       setNextState(STATE_STATION_CHECK, rollDir);
+      return;
     }
   }
 }
@@ -5438,7 +5449,7 @@ void Robot::checkSonar() {
 
     // **************************if sonar during spirale reinit spirale variable*****************
     spiraleNbTurn = 0;
-  
+
     highGrassDetect = false; //stop the spirale
     // *********************************************************************************
     if ((stateCurr == STATE_FORWARD_ODO) || (stateCurr == STATE_PERI_FIND) || (stateCurr == STATE_MOW_SPIRALE)) {
@@ -5822,7 +5833,6 @@ void Robot::loop()  {
       {
         if ((mowPatternCurr == MOW_LANES) && (!justChangeLaneDir)) {
           ShowMessageln("MAX LANE LENGHT TRIGGER time to reverse");
-          //setNextState(STATE_PERI_OUT_STOP, rollDir);
           setNextState(STATE_ENDLANE_STOP, rollDir);
         }
         else {
@@ -5834,7 +5844,6 @@ void Robot::loop()  {
 
       //-----------here need to start to mow in spirale or half lane lenght-----------
       if (highGrassDetect) {
-
         if ((mowPatternCurr != MOW_LANES)) {
           setNextState(STATE_STOP_BEFORE_SPIRALE, rollDir);
           return;
@@ -7016,6 +7025,8 @@ void Robot::loop()  {
         if ((moveRightFinish) && (moveLeftFinish) ) {
           if ((motorLeftPWMCurr == 0 ) && (motorRightPWMCurr == 0 )) {
             lastTimeForgetWire = millis(); //avoid motor reverse on tracking startup
+            //bber300
+
             setNextState(STATE_PERI_TRACK, 0);
             return;
           }
@@ -7146,9 +7157,9 @@ void Robot::loop()  {
       {
         if ((motorLeftPWMCurr == 0 ) && (motorRightPWMCurr == 0 )) { //wait until the 2 motor completly stop
           //need to adapt if station is traversante
-          if (millis() >= delayToReadVoltageStation) { //wait 1.5 sec after all stop and before read voltage
-            //bber30
-            nextTimeBattery = millis();
+          if (millis() >= delayToReadVoltageStation) { //wait 0.5 sec after all stop and before read voltage
+            //bber300
+            nextTimeBattery = millis()-10;
             readSensors();  //read the chgVoltage immediatly
             if (chgVoltage > 5.0)  {
               ShowMessageln ("Charge Voltage detected ");
@@ -7250,6 +7261,7 @@ void Robot::loop()  {
           {
             ShowMessage("SIGNAL OK SmoothMagnitude =  ");
             ShowMessageln(smoothPeriMag);
+            motorMowEnable = true;
             setNextState(STATE_STATION_FORW, rollDir);
             return;
           }
