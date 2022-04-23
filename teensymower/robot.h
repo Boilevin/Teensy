@@ -43,7 +43,7 @@
 */
 
 // code version
-#define VER "1.33-Teensyber GY-521"
+#define VER "1.35-Teensyber GY-521"
 
 
 // sensors
@@ -757,9 +757,10 @@ class Robot
     boolean autoResetActive;       // at the edn of the charging all is rebbot to avoid error after 1 or 2 weeks ON
     byte dockingSpeed ;  //speed docking is (percent of maxspeed) when sonar detect something while tracking
     unsigned long totalDistDrive;  //use to check when to leave the wire in start timer mode
-    unsigned long nextTimeBattery ;
-    unsigned long nextTimeCheckBattery;
+    unsigned long nextTimeBattery ; // delay between 2 battery reading
+    unsigned long nextTimeCheckBattery; // check the battery state
     unsigned long delayToReadVoltageStation; //wait before read the voltage
+    unsigned long nextTimeReadStationVoltage; //while tracking delay between 2 station voltage check
     int statsBatteryChargingCounter;
     int statsBatteryChargingCounterTotal;
     float  statsBatteryChargingCapacityTrip;

@@ -5,7 +5,7 @@
 //to do 
 //delete last rfid tag
 //change declar location for area1_ip etc....
-
+//imu.readImuTemperature(); is it possible locking teensy ?
 
 
 //On the first start if beep on error you need to do:

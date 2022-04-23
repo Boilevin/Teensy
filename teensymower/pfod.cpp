@@ -1577,49 +1577,49 @@ void RemoteControl::sendManualMenu(boolean update) {
 void RemoteControl::processManualMenu(String pfodCmd) {
   if (pfodCmd == "nl") {
     // manual: left
-    robot->setNextState(STATE_MANUAL, 0);
     float sign = 1.0;
     if (robot->motorLeftSpeedRpmSet < 0) sign = -1.0;
     if (sign * robot->motorLeftSpeedRpmSet >= sign * robot->motorRightSpeedRpmSet) robot->motorLeftSpeedRpmSet  = sign * robot->motorSpeedMaxRpm / 2;
     else robot->motorLeftSpeedRpmSet /= 1.5;
     robot->motorRightSpeedRpmSet = sign * robot->motorSpeedMaxRpm;
     robot->stateOffAfter=millis()+120000;
+    robot->setNextState(STATE_MANUAL, 0);
     sendManualMenu(true);
   } else if (pfodCmd == "nr") {
     // manual: right
-    robot->setNextState(STATE_MANUAL, 0);
     float sign = 1.0;
     if (robot->motorRightSpeedRpmSet < 0) sign = -1.0;
     if (sign * robot->motorRightSpeedRpmSet >= sign * robot->motorLeftSpeedRpmSet) robot->motorRightSpeedRpmSet  = sign * robot->motorSpeedMaxRpm / 2;
     else robot->motorRightSpeedRpmSet /= 1.5;
     robot->motorLeftSpeedRpmSet  = sign * robot->motorSpeedMaxRpm;
     robot->stateOffAfter=millis()+120000;
+    robot->setNextState(STATE_MANUAL, 0);
     sendManualMenu(true);
   } else if (pfodCmd == "nf") {
     // manual: forward
-    robot->setNextState(STATE_MANUAL, 0);
     robot->motorLeftSpeedRpmSet  = robot->motorSpeedMaxRpm;
     robot->motorRightSpeedRpmSet = robot->motorSpeedMaxRpm;
     robot->stateOffAfter=millis()+120000;
+    robot->setNextState(STATE_MANUAL, 0);
     sendManualMenu(true);
   } else if (pfodCmd == "nb") {
-    // manual: reverse
-    robot->setNextState(STATE_MANUAL, 0);
+    // manual: reverse  
     robot->motorLeftSpeedRpmSet  = -robot->motorSpeedMaxRpm;
     robot->motorRightSpeedRpmSet = -robot->motorSpeedMaxRpm;
     robot->stateOffAfter=millis()+120000; //stop all after 2 minutes
+    robot->setNextState(STATE_MANUAL, 0);
     sendManualMenu(true);
   } else if (pfodCmd == "nm") {
     // manual: mower ON/OFF
-    //bber13
-    robot->setNextState(STATE_MANUAL, 0);
     robot->motorMowEnable = !robot->motorMowEnable;
+    robot->stateOffAfter=millis()+120000; //stop all after 2 minutes
+    robot->setNextState(STATE_MANUAL, 0);
     sendManualMenu(true);
   } else if (pfodCmd == "ns") {
     // manual: stop
-    robot->setNextState(STATE_MANUAL, 0);
     robot->stateOffAfter=millis()+1000; //stop all after 1 secondes
     robot->motorLeftSpeedRpmSet  =  robot->motorRightSpeedRpmSet = 0;
+    robot->setNextState(STATE_MANUAL, 0);
     sendManualMenu(true);
   }
 }

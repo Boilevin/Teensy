@@ -234,6 +234,7 @@ Robot::Robot() {
   nextTimeAddYawMedian = 0;
   nextTimeRobotStats = 0;
   delayToReadVoltageStation = 0;
+  nextTimeReadStationVoltage = 0;
 
   MaxOdoStateDuration = 2000;
   MaxStateDuration = 2000;
@@ -2386,7 +2387,7 @@ void Robot::motorControlPerimeter() {
     //leftSpeedperi = leftSpeedperi - (66 - (millis() - stateStartTime) / 30);
     leftSpeedperi = int(leftSpeedperi * ((millis() - stateStartTime) / 2000));
     //bber300
-    if (leftSpeedperi < SpeedOdoMin) leftSpeedperi = SpeedOdoMin;  
+    if (leftSpeedperi < SpeedOdoMin) leftSpeedperi = SpeedOdoMin;
     //rightSpeedperi = rightSpeedperi - (66 - (millis() - stateStartTime) / 30);
     rightSpeedperi = int(rightSpeedperi * ((millis() - stateStartTime) / 2000));
     if (rightSpeedperi < SpeedOdoMin) rightSpeedperi = SpeedOdoMin;
@@ -3564,6 +3565,12 @@ void Robot::setNextState(byte stateNew, byte dir) {
         statusCurr = NORMAL_MOWING;
         if (RaspberryPIUse) MyRpi.SendStatusToPi();
       }
+      //bber300 for debug
+      ShowMessage("Lane lenght : ");
+      ShowMessage(actualLenghtByLane);
+      ShowMessage(" change : ");
+      ShowMessageln(justChangeLaneDir);
+
 
       UseAccelRight = 0;
       UseAccelLeft = 0;
@@ -3686,7 +3693,7 @@ void Robot::setNextState(byte stateNew, byte dir) {
       break;
 
     case STATE_STATION_CHECK:
-      //bber3
+      //Move forward in stattion 2 or 3 cm to be sure contact are OK
       if (statusCurr == WIRE_MOWING) { //it is the last status
         ShowMessage("Total distance drive ");
         ShowMessage(totalDistDrive / 100);
@@ -3696,16 +3703,15 @@ void Robot::setNextState(byte stateNew, byte dir) {
         ShowMessageln(" secondes ");
         nextTimeTimer = millis() + 1200000; // only check again the timer after 20 minutes to avoid repetition
       }
-      else{
+      else {
         ShowMessageln("Check station");
       }
-      delayToReadVoltageStation = millis() + 500; //the battery is read only each 500 ms so need a duration to be sure we have the last voltage
-      //bber14 no accel here ?????
+      delayToReadVoltageStation = millis() + 500; //the battery is read again after 500 ms to be sure we have always voltage
       UseAccelLeft = 0;
       UseBrakeLeft = 1;
       UseAccelRight = 0;
       UseBrakeRight = 1;
-      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = SpeedOdoMin;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = int(motorSpeedMaxRpm / 7);  //very low speed to avoid rebond
       stateEndOdometryRight = odometryRight + (odometryTicksPerCm * stationCheckDist);
       stateEndOdometryLeft = odometryLeft + (odometryTicksPerCm * stationCheckDist);
       OdoRampCompute();
@@ -3730,7 +3736,7 @@ void Robot::setNextState(byte stateNew, byte dir) {
       UseBrakeLeft = 1;
       UseAccelRight = 1;
       UseBrakeRight = 1;
-      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5 ;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm / 2 ;
       stateEndOdometryRight = odometryRight - (odometryTicksPerCm * DistPeriObstacleRev);
       stateEndOdometryLeft = odometryLeft - (odometryTicksPerCm * DistPeriObstacleRev);
       OdoRampCompute();
@@ -3743,13 +3749,13 @@ void Robot::setNextState(byte stateNew, byte dir) {
       UseBrakeRight = 1;
       if (track_ClockWise) {
         Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
-        motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5 ;
-        motorLeftSpeedRpmSet = motorSpeedMaxRpm / 1.5 ;
+        motorRightSpeedRpmSet = -motorSpeedMaxRpm / 2 ;
+        motorLeftSpeedRpmSet = motorSpeedMaxRpm / 2 ;
       }
       else {
         Tempovar = -36000 / AngleRotate; //need a value*100 for integer division later
-        motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.5 ;
-        motorLeftSpeedRpmSet = -motorSpeedMaxRpm / 1.5 ;
+        motorRightSpeedRpmSet = motorSpeedMaxRpm / 2 ;
+        motorLeftSpeedRpmSet = -motorSpeedMaxRpm / 2 ;
       }
       stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
       stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
@@ -3761,8 +3767,8 @@ void Robot::setNextState(byte stateNew, byte dir) {
       UseBrakeLeft = 0;
       UseAccelRight = 1;
       UseBrakeRight = 0;
-      motorRightSpeedRpmSet = motorSpeedMaxRpm ;
-      motorLeftSpeedRpmSet = motorSpeedMaxRpm ;
+      motorRightSpeedRpmSet = motorSpeedMaxRpm / 2;
+      motorLeftSpeedRpmSet = motorSpeedMaxRpm / 2;
       stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriObstacleForw);//50cm
       stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriObstacleForw);
       OdoRampCompute();
@@ -3776,10 +3782,10 @@ void Robot::setNextState(byte stateNew, byte dir) {
       UseBrakeRight = 0;
       if (track_ClockWise) {
         motorRightSpeedRpmSet = motorSpeedMaxRpm ;
-        motorLeftSpeedRpmSet = motorSpeedMaxRpm / 1.5;
+        motorLeftSpeedRpmSet = int(motorSpeedMaxRpm / 3);
       }
       else {
-        motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.5;
+        motorRightSpeedRpmSet = int(motorSpeedMaxRpm / 3);
         motorLeftSpeedRpmSet = motorSpeedMaxRpm;
       }
       stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriObstacleAvoid);
@@ -3850,7 +3856,7 @@ void Robot::setNextState(byte stateNew, byte dir) {
 
       break;
     case STATE_SONAR_TRIG: //in auto mode and forward slow down before stop and reverse different than stop because reduce speed during a long time and not immediatly
-     // justChangeLaneDir = !justChangeLaneDir;  //need to change this feature
+      // justChangeLaneDir = !justChangeLaneDir;  //need to change this feature
       distToObstacle = distToObstacle - sonarToFrontDist; //   the distance between sonar and front of mower
       UseAccelLeft = 0;
       UseBrakeLeft = 1;
@@ -4784,7 +4790,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
 
 
     case STATE_PERI_TRACK:
-      //motorMowEnable = false;     // FIXME: should be an option?
       rollToTrackQty = 0 ;
       perimeterPID.reset();
       if (track_ClockWise) {
@@ -5246,21 +5251,21 @@ void Robot::checkBumpersPerimeter() {
   if ((bumperLeft || bumperRight)) { // the bumper is used to detect the station
     motorLeftRpmCurr = motorRightRpmCurr = 0 ;
     setMotorPWM(0, 0);//stop immediatly and station check to see if voltage on pin
-    nextTimeBattery = millis();
-    readSensors();  //read the chgVoltage
-    ShowMessageln("Bump on Something check if it's the station");
+    ShowMessageln("Bump on Something check for station");
     setNextState(STATE_STATION_CHECK, rollDir);
     return;
   }
 
-  if (!UseBumperDock) {   // run slower because read fast the station voltage but we don't use bumper to detect station we use only charging voltage
-    //bber30
-    nextTimeBattery = millis();
-    readSensors();  //read the chgVoltage immediatly
+  if (!UseBumperDock) {   // read the station voltage
+    //bber300
+    if ((powerboard_I2c_line_Ok) && (millis() >= nextTimeReadStationVoltage)) {
+      nextTimeReadStationVoltage = millis() + 20;
+      chgVoltage = ChargeIna226.readBusVoltage() ;
+    }
     if (chgVoltage > 5) {
       motorLeftRpmCurr = motorRightRpmCurr = 0 ;
       setMotorPWM(0, 0);//stop immediatly and wait 2 sec to see if voltage on pin
-      ShowMessageln("Detect a voltage on charging contact check if it's the station");
+      ShowMessageln("Detect a voltage on charging contact");
       setNextState(STATE_STATION_CHECK, rollDir);
       return;
     }
@@ -5273,7 +5278,7 @@ void Robot::checkStuckOnIsland() {
   //bber600
   if (track_ClockWise) {
     if ((odometryRight - odometryLeft) - PeriOdoIslandDiff > 6 * odometryTicksPerRevolution) {
-      ShowMessageln("Right wheel is 6 full revolution more than left one --> Island  ??? ");
+      ShowMessageln("Left wheel is 6 full revolution more than Right one --> Island  ??? ");
       newtagRotAngle1 = 90;
       setNextState(STATE_PERI_STOP_TOROLL, 0);
       return;
@@ -5501,8 +5506,22 @@ void Robot::checkTilt() {
   nextTimeCheckTilt = millis() + 200; // 5Hz same as nextTimeImu
   int pitchAngle = (imu.ypr.pitch / PI * 180.0);
   int rollAngle  = (imu.ypr.roll / PI * 180.0);
-  //bber4
-  if ( (stateCurr != STATE_MANUAL) && (stateCurr != STATE_OFF) && (stateCurr != STATE_ERROR) && (stateCurr != STATE_STATION) && (stateCurr != STATE_STATION_CHARGING)) {
+  //at 40 deg mower start to reverse ,so do not test if not in mowing condition
+  if ((stateCurr != STATE_MANUAL) && (stateCurr != STATE_OFF) && (stateCurr != STATE_ERROR) && (stateCurr != STATE_STATION) && (stateCurr != STATE_STATION_CHARGING)) {
+    if ( (abs(pitchAngle) > 70) || (abs(rollAngle) > 70) ) {
+      nextTimeCheckTilt = millis() + 5000; // avoid repeat
+      ShowMessage(F("ERROR : IMU Roll / Tilt -- > "));
+      ShowMessage(rollAngle);
+      ShowMessage(F(" / "));
+      ShowMessageln(pitchAngle);
+      addErrorCounter(ERR_IMU_TILT);
+      ShowMessageln("Mower STOP");
+      motorMowEnable = false;
+      setNextState(STATE_ERROR, 0);
+      pitchAngle = 0;
+      rollAngle = 0;
+    }
+
     if ( (abs(pitchAngle) > 40) || (abs(rollAngle) > 40) ) {
       nextTimeCheckTilt = millis() + 5000; // avoid repeat
       ShowMessage(F("Warning : IMU Roll / Tilt -- > "));
@@ -5510,9 +5529,6 @@ void Robot::checkTilt() {
       ShowMessage(F(" / "));
       ShowMessageln(pitchAngle);
       addErrorCounter(ERR_IMU_TILT);
-      //bber500
-
-
       ShowMessageln("Motor mow STOP start again after 1 minute");
       motorMowEnable = false;
       lastTimeMotorMowStuck = millis();
@@ -5585,7 +5601,7 @@ void Robot::readAllTemperature() {
       ShowMessage(" Actual Temperature = ");
       ShowMessageln(temperatureTeensy);
       nextTimeReadTemperature = nextTimeReadTemperature + 180000; // do not read again the temp for the next 3 minute and set the idle bat to 2 minute to poweroff the PCB
-      batSwitchOffIfIdle = 2; //use to switch all off after 1 minute
+      batSwitchOffIfIdle = 2; //use to switch all off after 2 minute
       setNextState(STATE_ERROR, 0);
       return;
     }
@@ -6357,14 +6373,14 @@ void Robot::loop()  {
 
     case STATE_PERI_TRACK:
       // track perimeter
-      checkCurrent();
-      checkBumpersPerimeter();
+      checkCurrent();  // use to detect voltage station
+      checkBumpersPerimeter();  // use to detect voltage station
       checkSonarPeriTrack();
       if (statusCurr == BACK_TO_STATION) {
         checkStuckOnIsland();
       }
 
-      if (ActualSpeedPeriPWM != MaxSpeedperiPwm) {
+      if (ActualSpeedPeriPWM != MaxSpeedperiPwm) {  // RFID tag can reduce speed ,so need a reset
         if (totalDistDrive > whereToResetSpeed) {
           ShowMessage("Distance OK, time to reset the initial Speed : ");
           ShowMessageln(ActualSpeedPeriPWM);
@@ -7157,10 +7173,9 @@ void Robot::loop()  {
       {
         if ((motorLeftPWMCurr == 0 ) && (motorRightPWMCurr == 0 )) { //wait until the 2 motor completly stop
           //need to adapt if station is traversante
-          if (millis() >= delayToReadVoltageStation) { //wait 0.5 sec after all stop and before read voltage
+         // if (millis() >= delayToReadVoltageStation) { //wait 0.5 sec after all stop and before read voltage
             //bber300
-            nextTimeBattery = millis()-10;
-            readSensors();  //read the chgVoltage immediatly
+            if (powerboard_I2c_line_Ok) chgVoltage = ChargeIna226.readBusVoltage() ;
             if (chgVoltage > 5.0)  {
               ShowMessageln ("Charge Voltage detected ");
               setNextState(STATE_STATION, rollDir);// we are into the station
@@ -7171,25 +7186,27 @@ void Robot::loop()  {
               setNextState(STATE_PERI_OBSTACLE_REV, rollDir);// not into the station so avoid obstacle
               return;
             }
-          }
+          //}
         }
       }
       if (millis() > (stateStartTime + MaxOdoStateDuration)) {//the motor have not enought power to reach the cible
-        if (developerActive) {
+        //if (developerActive) {
           ShowMessageln ("Warning can t make the station check in time ");
-        }
-        if (millis() >= delayToReadVoltageStation) {
-          nextTimeBattery = millis();
-          readSensors();  //read the chgVoltage
-          if (chgVoltage > 5.0) {
+        //}
+       // if (millis() >= delayToReadVoltageStation) { //wait 0.5 sec after all stop and before read voltage
+          //bber300
+          if (powerboard_I2c_line_Ok) chgVoltage = ChargeIna226.readBusVoltage() ;
+          if (chgVoltage > 5.0)  {
+            ShowMessageln ("Charge Voltage detected ");
             setNextState(STATE_STATION, rollDir);// we are into the station
             return;
           }
           else {
+            ShowMessageln ("No Voltage detected so certainly Obstacle ");
             setNextState(STATE_PERI_OBSTACLE_REV, rollDir);// not into the station so avoid obstacle
             return;
           }
-        }
+        //}
       }
       motorControlOdo();
       break;
