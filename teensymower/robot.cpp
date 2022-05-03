@@ -162,7 +162,8 @@ Robot::Robot() {
 
 
   perimeterMag = 0;
-  perimeterInside = false;
+  perimeterInsideLeft = false;
+  perimeterInsideRight = false;
   perimeterCounter = 0;
   perimeterLastTransitionTime = 0;
   perimeterTriggerTime = 0;
@@ -1583,7 +1584,8 @@ void Robot::checkErrorCounter() {
 }
 void Robot::teensyBootLoader() {
   delayWithWatchdog(8000); //wait for pyteensy to stop and start pi teensy loader
-  _reboot_Teensyduino_();
+  asm("bkpt #251");
+  //_reboot_Teensyduino_();
 }
 
 void Robot::autoReboot() {
@@ -2242,10 +2244,13 @@ void Robot::motorControlPerimeter() {
   //use the PerimeterMag as cible to smooth the tracking
   //Value reference perimeterMagMaxValue , maybe need to be calculate in mower setting up procedure
 
-  perimeterPID.x = 5 * (double(perimeterMag) / perimeterMagMaxValue);
 
-  if (perimeterInside)  perimeterPID.w = -0.5;
+
+  perimeterPID.x = 5 * (double(perimeterMag) / perimeterMagMaxValue);
+  if (perimeterInsideLeft)  perimeterPID.w = -0.5;
   else     perimeterPID.w = 0.5;
+
+
 
   perimeterPID.y_min = -ActualSpeedPeriPWM ;
   perimeterPID.y_max = ActualSpeedPeriPWM ;
@@ -2256,7 +2261,7 @@ void Robot::motorControlPerimeter() {
     // robot is wheel-spinning while tracking => roll to get ground again
 
     if (trakBlockInnerWheel == 0) {
-      if (perimeterInside) {
+      if (perimeterInsideLeft) {
         rightSpeedperi = max(-ActualSpeedPeriPWM, min(ActualSpeedPeriPWM, ActualSpeedPeriPWM / 1.5  + perimeterPID.y));
         leftSpeedperi = -ActualSpeedPeriPWM / 2;
       }
@@ -2266,7 +2271,7 @@ void Robot::motorControlPerimeter() {
       }
     }
     if (trakBlockInnerWheel == 1) {
-      if (perimeterInside) {
+      if (perimeterInsideLeft) {
         rightSpeedperi = max(-ActualSpeedPeriPWM, min(ActualSpeedPeriPWM, ActualSpeedPeriPWM / 1.5  + perimeterPID.y));
         leftSpeedperi = 0;
       }
@@ -2281,7 +2286,7 @@ void Robot::motorControlPerimeter() {
       ShowMessage(";");
       ShowMessage (perimeterMag);
       ShowMessage(";");
-      ShowMessage(perimeterInside);
+      ShowMessage(perimeterInsideLeft);
       ShowMessage(";");
       ShowMessage (perimeterPID.x);
       ShowMessage(";");
@@ -2303,7 +2308,7 @@ void Robot::motorControlPerimeter() {
     lastTimeForgetWire = millis();
 
     if (millis() > perimeterLastTransitionTime + trackingErrorTimeOut) {
-      if (perimeterInside) {
+      if (perimeterInsideLeft) {
         ShowMessageln("Tracking Fail and we are inside, So start to find again the perimeter");
         //   periFindDriveHeading = imu.ypr.yaw;
         setNextState(STATE_PERI_FIND, 0);
@@ -2344,7 +2349,7 @@ void Robot::motorControlPerimeter() {
       ShowMessage(";");
       ShowMessage (perimeterMag);
       ShowMessage(";");
-      ShowMessage(perimeterInside);
+      ShowMessage(perimeterInsideLeft);
       ShowMessage(";");
       ShowMessage (perimeterPID.x);
       ShowMessage(";");
@@ -2368,7 +2373,7 @@ void Robot::motorControlPerimeter() {
       ShowMessage(";");
       ShowMessage (perimeterMag);
       ShowMessage(";");
-      ShowMessage(perimeterInside);
+      ShowMessage(perimeterInsideLeft);
       ShowMessage(";");
       ShowMessage (perimeterPID.x);
       ShowMessage(";");
@@ -2401,6 +2406,186 @@ void Robot::motorControlPerimeter() {
   }
 
   if (abs(perimeterMag) < perimeterMagMaxValue / 4) { //250 can be replace by timedOutIfBelowSmag to be tested
+    perimeterLastTransitionTime = millis(); //initialise perimeterLastTransitionTime if perfect sthraith line
+
+  }
+}
+
+
+
+
+
+
+
+void Robot::motorControlPerimeter2Coil() {
+  if (millis() < nextTimeMotorPerimeterControl) return;
+  nextTimeMotorPerimeterControl = millis() + 15; //bb read the perimeter each 15 ms
+  //never stop the PID compute while turning for the new transition
+  //use the PerimeterMag as cible to smooth the tracking
+  //Value reference perimeterMagMaxValue , maybe need to be calculate in mower setting up procedure
+
+
+  perimeterPID.x = 5 * (double(perimeterMagRight) / perimeterMagMaxValue);
+  if (perimeterInsideRight)  perimeterPID.w = -0.5;
+  else     perimeterPID.w = 0.5;
+
+
+
+  perimeterPID.y_min = -ActualSpeedPeriPWM ;
+  perimeterPID.y_max = ActualSpeedPeriPWM ;
+  perimeterPID.max_output = ActualSpeedPeriPWM ;
+  perimeterPID.compute();
+
+
+  if (!(perimeterInsideLeft) || ((millis() > stateStartTime + 10000) && (millis() > perimeterLastTransitionTime + trackingPerimeterTransitionTimeOut))) {
+    // robot is wheel-spinning while tracking => roll to get ground again
+
+    if (trakBlockInnerWheel == 0) {
+      if (perimeterInsideRight) {
+        rightSpeedperi = max(-ActualSpeedPeriPWM, min(ActualSpeedPeriPWM, ActualSpeedPeriPWM / 1.5  + perimeterPID.y));
+        leftSpeedperi = -ActualSpeedPeriPWM / 2;
+      }
+      else {
+        rightSpeedperi = -ActualSpeedPeriPWM / 2;
+        leftSpeedperi = max(-ActualSpeedPeriPWM, min(ActualSpeedPeriPWM, ActualSpeedPeriPWM / 1.5 - perimeterPID.y));
+      }
+    }
+    if (trakBlockInnerWheel == 1) {
+      if (perimeterInsideRight) {
+        rightSpeedperi = max(-ActualSpeedPeriPWM, min(ActualSpeedPeriPWM, ActualSpeedPeriPWM / 1.5  + perimeterPID.y));
+        leftSpeedperi = 0;
+      }
+      else {
+        rightSpeedperi = 0;
+        leftSpeedperi = max(-ActualSpeedPeriPWM, min(ActualSpeedPeriPWM, ActualSpeedPeriPWM / 1.5 - perimeterPID.y));
+      }
+    }
+    if (consoleMode == CONSOLE_TRACKING) {
+      ShowMessage("SEARCH;");
+      ShowMessage(millis());
+      ShowMessage(";");
+      ShowMessage (perimeterMagRight);
+      ShowMessage(";");
+      ShowMessage(perimeterInsideRight);
+      ShowMessage(";   ");
+      ShowMessage (perimeterPID.x);
+      ShowMessage("    ;");
+      ShowMessage(perimeterPID.y);
+      ShowMessage(";");
+      ShowMessage (leftSpeedperi);
+      ShowMessage(";");
+      ShowMessage (rightSpeedperi);
+      ShowMessage(";");
+      ShowMessageln(perimeterLastTransitionTime);
+    }
+    if (track_ClockWise) {
+      setMotorPWM( leftSpeedperi, rightSpeedperi);
+    }
+    else {
+      setMotorPWM( rightSpeedperi, leftSpeedperi);
+    }
+
+    lastTimeForgetWire = millis();
+
+    if (millis() > perimeterLastTransitionTime + trackingErrorTimeOut) {
+      if (perimeterInsideRight) {
+        ShowMessageln("Tracking Fail and we are inside, So start to find again the perimeter");
+        //   periFindDriveHeading = imu.ypr.yaw;
+        setNextState(STATE_PERI_FIND, 0);
+      }
+      else
+      {
+        ShowMessageln("Tracking Fail and we are outside, So start to roll to find again the perimeter");
+        if (track_ClockWise) {
+          rollDir = 0; //le 02/04/22 need to check if it's the correct roll dir
+        }
+        else {
+          rollDir = 1;
+        }
+        setNextState(STATE_PERI_OUT_ROLL_TOTRACK, rollDir);
+      }
+
+    }
+    return;
+  }
+
+
+  if ((millis() - lastTimeForgetWire ) < trackingPerimeterTransitionTimeOut) {
+    //PeriCoeffAccel move gently from 3 to 1 and so perimeterPID.y/PeriCoeffAccel increase during 3 secondes
+    PeriCoeffAccel = (3000.00 - (millis() - lastTimeForgetWire)) / 1000.00 ;
+    if (PeriCoeffAccel < 1.00) PeriCoeffAccel = 1.00;
+    rightSpeedperi = max(0,  ActualSpeedPeriPWM  + (perimeterPID.y ) / PeriCoeffAccel);
+    leftSpeedperi = max(0,  ActualSpeedPeriPWM  - (perimeterPID.y ) / PeriCoeffAccel);
+    //bber30 we are in sonartrigger ,so maybe near station , so avoid 1 wheel reverse because station check is forward
+    if (ActualSpeedPeriPWM != MaxSpeedperiPwm)
+    {
+      if (rightSpeedperi < 0) rightSpeedperi = 0;
+      if (leftSpeedperi < 0) leftSpeedperi = 0;
+    }
+
+    if (consoleMode == CONSOLE_TRACKING) {
+      ShowMessage("SLOW;");
+      ShowMessage(millis());
+      ShowMessage(";");
+      ShowMessage (perimeterMagRight);
+      ShowMessage(";");
+      ShowMessage(perimeterInsideRight);
+      ShowMessage(";     ");
+      ShowMessage (perimeterPID.x);
+      ShowMessage("     ;     ");
+      ShowMessage(perimeterPID.y);
+      ShowMessage("   ;");
+      ShowMessage (leftSpeedperi);
+      ShowMessage(";");
+      ShowMessage (rightSpeedperi);
+      ShowMessage(";");
+      ShowMessageln(perimeterLastTransitionTime);
+    }
+  }
+  else
+  {
+    rightSpeedperi = max(0, ActualSpeedPeriPWM +  perimeterPID.y);
+    leftSpeedperi = max(0, ActualSpeedPeriPWM - perimeterPID.y);
+
+    if (consoleMode == CONSOLE_TRACKING) {
+      ShowMessage("FAST;");
+      ShowMessage(millis());
+      ShowMessage(";");
+      ShowMessage (perimeterMagRight);
+      ShowMessage(";");
+      ShowMessage(perimeterInsideRight);
+      ShowMessage(";    ");
+      ShowMessage (perimeterPID.x);
+      ShowMessage("   ;  ");
+      ShowMessage(perimeterPID.y);
+      ShowMessage("   ;");
+      ShowMessage (leftSpeedperi);
+      ShowMessage(";");
+      ShowMessage (rightSpeedperi);
+      ShowMessage(";");
+      ShowMessageln(perimeterLastTransitionTime);
+    }
+  }
+
+  //bb2
+  if ((millis() - stateStartTime ) < 2000) { //at the start of the tracking accelerate slowly during 2 secondes
+    //leftSpeedperi = leftSpeedperi - (66 - (millis() - stateStartTime) / 30);
+    leftSpeedperi = int(leftSpeedperi * ((millis() - stateStartTime) / 2000));
+    //bber300
+    if (leftSpeedperi < SpeedOdoMin) leftSpeedperi = SpeedOdoMin;
+    //rightSpeedperi = rightSpeedperi - (66 - (millis() - stateStartTime) / 30);
+    rightSpeedperi = int(rightSpeedperi * ((millis() - stateStartTime) / 2000));
+    if (rightSpeedperi < SpeedOdoMin) rightSpeedperi = SpeedOdoMin;
+  }
+
+  if (track_ClockWise) {
+    setMotorPWM( leftSpeedperi, rightSpeedperi);
+  }
+  else {
+    setMotorPWM( rightSpeedperi, leftSpeedperi);
+  }
+
+  if (abs(perimeterMagRight) < perimeterMagMaxValue / 4) { //250 can be replace by timedOutIfBelowSmag to be tested
     perimeterLastTransitionTime = millis(); //initialise perimeterLastTransitionTime if perfect sthraith line
 
   }
@@ -2748,7 +2933,6 @@ void Robot::setup()  {
     Serial.println(" ------- Initialize Perimeter Setting ------- ");
     // perimeter.changeArea(1);
     perimeter.begin(pinPerimeterLeft, pinPerimeterRight);
-    //perimeter.begin(A8, A9);
   }
 
   if (!buttonUse) {
@@ -2907,7 +3091,7 @@ void Robot::printInfo(Stream & s) {
                   (int)perimeter.getSignalMin(0), (int)perimeter.getSignalMax(0), (int)perimeter.getSignalAvg(0),
                   perimeterMag, (int)(perimeter.getFilterQuality(0) * 100.0));
       Streamprint(s, "  in %2d  cnt %4d  on %1d\r\n",
-                  (int)perimeterInside, perimeterCounter, (int)(!perimeter.signalTimedOut(0)) );
+                  (int)perimeterInsideLeft, perimeterCounter, (int)(!perimeter.signalTimedOut(0)) );
     } else {
 
       Streamprint(s, "odo %4d %4d ", (int)odometryLeft, (int)odometryRight);
@@ -2921,7 +3105,7 @@ void Robot::printInfo(Stream & s) {
         Streamprint(s, "yaw %3d ", (int)(imu.ypr.yaw / PI * 180.0));
         Streamprint(s, "pit %3d ", (int)(imu.ypr.pitch / PI * 180.0));
         Streamprint(s, "rol %3d ", (int)(imu.ypr.roll / PI * 180.0));
-        if (perimeterUse) Streamprint(s, "per %3d ", (int)perimeterInside);
+        if (perimeterUse) Streamprint(s, "per %3d ", (int)perimeterInsideLeft);
 
       } else {
         // sensor counters
@@ -3362,15 +3546,30 @@ void Robot::readSensors() {
 
 
   }
-
+  //perimeter
   if ((stateCurr != STATE_STATION) && (stateCurr != STATE_STATION_CHARGING) && (perimeterUse) && (millis() >= nextTimePerimeter)) {
     nextTimePerimeter = millis() +  15;
 
     if (perimeter.read2Coil) {
       perimeterMagRight = perimeter.getMagnitude(1);
+      if ((perimeter.isInside(1) != perimeterInsideRight)) {
+        perimeterLastTransitionTime = millis();
+        perimeterInsideRight = perimeter.isInside(1);
+      }
+
+
+
     }
 
     perimeterMag = perimeter.getMagnitude(0);
+
+    //for signal debug
+    /*
+      Serial.print(perimeterMagRight);
+      Serial.print(",");
+      Serial.println(perimeterMag);
+    */
+
     perimeterMedian.add(perimeterMag);
     if (perimeterMedian.isFull()) {
       perimeterNoise = perimeterMedian.getHighest() - perimeterMedian.getLowest();
@@ -3378,13 +3577,13 @@ void Robot::readSensors() {
     }
 
 
-    if ((perimeter.isInside(0) != perimeterInside)) {
+    if ((perimeter.isInside(0) != perimeterInsideLeft)) {
       perimeterCounter++;
       perimeterLastTransitionTime = millis();
-      perimeterInside = perimeter.isInside(0);
+      perimeterInsideLeft = perimeter.isInside(0);
     }
 
-    if ((!perimeterInside) && (perimeterTriggerTime == 0)) {
+    if ((!perimeterInsideLeft) && (perimeterTriggerTime == 0)) {
       // set perimeter trigger time
 
       //bber2
@@ -6172,7 +6371,7 @@ void Robot::loop()  {
             smoothPeriMag = perimeter.getSmoothMagnitude(0);
             ShowMessage("SmoothMagnitude =  ");
             ShowMessageln(smoothPeriMag);
-            if ((perimeterInside) && (smoothPeriMag > 250)) //check if signal here and inside need a big value to be sure it is not only noise
+            if ((perimeterInsideLeft) && (smoothPeriMag > 250)) //check if signal here and inside need a big value to be sure it is not only noise
             {
               if (areaToGo == 1) {
                 statusCurr = BACK_TO_STATION; //if we are in the area1 it is to go to station
@@ -6329,7 +6528,7 @@ void Robot::loop()  {
         findedYaw = yawToFind;
         nextTimeToDmpAutoCalibration = millis() + 21600 * 1000; //do not try to calibration for the next 6 hours
         setBeeper(0, 0, 0, 0, 0);
-        if (perimeterInside) setNextState(STATE_ACCEL_FRWRD, rollDir);
+        if (perimeterInsideLeft) setNextState(STATE_ACCEL_FRWRD, rollDir);
         else setNextState(STATE_PERI_OUT_REV, rollDir);
         return;
       }
@@ -6359,7 +6558,7 @@ void Robot::loop()  {
 
     case STATE_PERI_FIND:
       // find perimeter
-      if (!perimeterInside) {
+      if (!perimeterInsideLeft) {
         ShowMessageln("Not inside so start to track the wire");
         setNextState(STATE_PERI_STOP_TOTRACK, 0);
         return;
@@ -6379,7 +6578,6 @@ void Robot::loop()  {
       if (statusCurr == BACK_TO_STATION) {
         checkStuckOnIsland();
       }
-
       if (ActualSpeedPeriPWM != MaxSpeedperiPwm) {  // RFID tag can reduce speed ,so need a reset
         if (totalDistDrive > whereToResetSpeed) {
           ShowMessage("Distance OK, time to reset the initial Speed : ");
@@ -6387,7 +6585,6 @@ void Robot::loop()  {
           ActualSpeedPeriPWM = MaxSpeedperiPwm;
         }
       }
-
       //********************************* if start by timer
       if (statusCurr == TRACK_TO_START) {
         //bber11
@@ -6404,12 +6601,14 @@ void Robot::loop()  {
           setNextState(STATE_PERI_STOP_TOROLL, rollDir);
           return;
         }
-
-
+      }
+      if (perimeter.read2Coil) {
+        motorControlPerimeter2Coil();
+      }
+      else {
+        motorControlPerimeter();
       }
 
-
-      motorControlPerimeter();
       break;
 
     case STATE_STATION:
@@ -6702,7 +6901,7 @@ void Robot::loop()  {
           setBeeper(0, 0, 0, 0, 0); //stop sound immediatly
 
           if (stopMotorDuringCalib) motorMowEnable = true;//restart the mow motor
-          if (perimeterInside) {
+          if (perimeterInsideLeft) {
             setNextState(STATE_ACCEL_FRWRD, rollDir); //if not outside continue in forward
           }
           else
@@ -6724,7 +6923,7 @@ void Robot::loop()  {
         ShowMessageln("WAIT to stop Drift of GYRO : is not OK mowing Drift too important");
         nextTimeToDmpAutoCalibration = millis() + delayBetweenTwoDmpAutocalib * 1000;
         setBeeper(0, 0, 0, 0, 0);
-        if (perimeterInside) {
+        if (perimeterInsideLeft) {
           if (mowPatternCurr == MOW_LANES) {  //change the rolldir now because again when new forward_odo only in lane mowing
             // if (rollDir == 0) rollDir = 1;
             // else rollDir = 0;
@@ -6822,7 +7021,7 @@ void Robot::loop()  {
       }
       //********************************************************************************************
       if ((odometryRight >= stateEndOdometryRight) || (odometryLeft >= stateEndOdometryLeft) ) {
-        if (!perimeterInside) {
+        if (!perimeterInsideLeft) {
           setNextState(STATE_STOP_ON_BUMPER, rollDir);
         }
         else
@@ -6956,7 +7155,7 @@ void Robot::loop()  {
         if ((moveRightFinish) && (odometryLeft >= stateEndOdometryLeft) ) {  //no brake on left wheel
           //if ((odometryRight <= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft) ) {
           if (motorRightPWMCurr == 0 ) { //wait until the left motor completly stop because rotation is inverted
-            if (!perimeterInside) setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
+            if (!perimeterInsideLeft) setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
             else setNextState(STATE_PERI_OUT_FORW, rollDir);
           }
         }
@@ -6966,7 +7165,7 @@ void Robot::loop()  {
           // if ((odometryRight >= stateEndOdometryRight) && (odometryLeft <= stateEndOdometryLeft) ) {
 
           if (motorLeftPWMCurr == 0 ) { //wait until the left motor completly stop because rotation is inverted
-            if (!perimeterInside) setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
+            if (!perimeterInsideLeft) setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
             else setNextState(STATE_PERI_OUT_FORW, rollDir);
           }
 
@@ -6995,7 +7194,7 @@ void Robot::loop()  {
 
       if ((moveRightFinish) && (moveLeftFinish) ) {
         if ((motorLeftPWMCurr == 0 ) && (motorRightPWMCurr == 0 )) { //wait until the 2 motor completly stop
-          if (!perimeterInside) setNextState(STATE_WAIT_AND_REPEAT, rollDir);//again until find the inside
+          if (!perimeterInsideLeft) setNextState(STATE_WAIT_AND_REPEAT, rollDir);//again until find the inside
           else setNextState(STATE_PERI_OUT_FORW, rollDir);
         }
       }
@@ -7005,7 +7204,7 @@ void Robot::loop()  {
         if (developerActive) {
           ShowMessageln ("Warning can t Roll to inside in time ");
         }
-        if (!perimeterInside) setNextState(STATE_WAIT_AND_REPEAT, rollDir);//again until find the inside
+        if (!perimeterInsideLeft) setNextState(STATE_WAIT_AND_REPEAT, rollDir);//again until find the inside
         else setNextState(STATE_PERI_OUT_FORW, rollDir);
       }
       break;
@@ -7013,7 +7212,7 @@ void Robot::loop()  {
     case STATE_PERI_OUT_ROLL_TOTRACK:
       motorControlOdo();
 
-      if (perimeterInside) {
+      if (perimeterInsideLeft) {
         setNextState(STATE_PERI_OUT_STOP_ROLL_TOTRACK, 0);
         return;
       }
@@ -7028,7 +7227,7 @@ void Robot::loop()  {
           setNextState(STATE_ERROR, 0);
           return;
         }
-        if (!perimeterInside) setNextState(STATE_WAIT_AND_REPEAT, 0);//again until find the inside
+        if (!perimeterInsideLeft) setNextState(STATE_WAIT_AND_REPEAT, 0);//again until find the inside
         else setNextState(STATE_PERI_OUT_STOP_ROLL_TOTRACK, 0);
       }
       break;
@@ -7036,7 +7235,7 @@ void Robot::loop()  {
     case STATE_PERI_OUT_STOP_ROLL_TOTRACK:
       motorControlOdo();
 
-      if (perimeterInside) {
+      if (perimeterInsideLeft) {
 
         if ((moveRightFinish) && (moveLeftFinish) ) {
           if ((motorLeftPWMCurr == 0 ) && (motorRightPWMCurr == 0 )) {
@@ -7053,7 +7252,7 @@ void Robot::loop()  {
         if (developerActive) {
           ShowMessageln ("Warning can t PERI_OUT_STOP_ROLL_TOTRACK in time ");
         }
-        if (!perimeterInside) setNextState(STATE_PERI_OUT_ROLL_TOTRACK, 0);//again until find the inside
+        if (!perimeterInsideLeft) setNextState(STATE_PERI_OUT_ROLL_TOTRACK, 0);//again until find the inside
         else setNextState(STATE_PERI_TRACK, 0);
       }
       break;
@@ -7067,7 +7266,7 @@ void Robot::loop()  {
       if ((moveRightFinish) && (moveLeftFinish))
       {
         if ((motorLeftPWMCurr == 0 ) && (motorRightPWMCurr == 0 )) { //wait until the left motor completly stop because rotation is inverted
-          if (!perimeterInside) setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
+          if (!perimeterInsideLeft) setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
           else setNextState(STATE_NEXT_LANE_FORW, rollDir);
         }
       }
@@ -7087,8 +7286,8 @@ void Robot::loop()  {
       checkBumpers();
 
       //bber14
-      //if (!perimeterInside) setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
-      if (!perimeterInside) {
+      //if (!perimeterInsideLeft) setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
+      if (!perimeterInsideLeft) {
         setNextState(STATE_PERI_OUT_STOP, rollDir);
         return;
       }
@@ -7118,7 +7317,7 @@ void Robot::loop()  {
         if ((moveRightFinish) && (moveLeftFinish))
         {
           if ((motorLeftPWMCurr == 0 ) && (motorRightPWMCurr == 0 )) { //wait until the 2 motor completly stop
-            if (!perimeterInside) setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
+            if (!perimeterInsideLeft) setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
             else setNextState(STATE_FORWARD_ODO, rollDir);// forward odo to straight line
             rollDir = LEFT;//invert the next rotate
           }
@@ -7130,7 +7329,7 @@ void Robot::loop()  {
         if ((moveRightFinish) && (moveLeftFinish))
         {
           if ((motorLeftPWMCurr == 0 ) && (motorRightPWMCurr == 0 )) { //wait until the 2 motor completly stop
-            if (!perimeterInside) setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
+            if (!perimeterInsideLeft) setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
             else setNextState(STATE_FORWARD_ODO, rollDir);
             rollDir = RIGHT;// invert the next rotate
           }
@@ -7141,13 +7340,13 @@ void Robot::loop()  {
           ShowMessageln ("Warning can t make the roll2 in time ");
         }
         if (rollDir == RIGHT) {
-          if (!perimeterInside) setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
+          if (!perimeterInsideLeft) setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
           else setNextState(STATE_FORWARD_ODO, rollDir);// forward odo to straight line
           rollDir = LEFT;//invert the next rotate
         }
         else
         {
-          if (!perimeterInside) setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
+          if (!perimeterInsideLeft) setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
           else setNextState(STATE_FORWARD_ODO, rollDir);
           rollDir = RIGHT;// invert the next rotate
         }
@@ -7159,7 +7358,7 @@ void Robot::loop()  {
 
     case STATE_PERI_OUT_FORW:
       motorControlOdo();
-      if (!perimeterInside) setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
+      if (!perimeterInsideLeft) setNextState(STATE_PERI_OUT_ROLL_TOINSIDE, rollDir);
       if ((millis() > (stateStartTime + MaxOdoStateDuration)) || (odometryRight >= stateEndOdometryRight) || (odometryLeft >= stateEndOdometryLeft) ) {
         setNextState(STATE_FORWARD_ODO, rollDir);
 
@@ -7173,27 +7372,7 @@ void Robot::loop()  {
       {
         if ((motorLeftPWMCurr == 0 ) && (motorRightPWMCurr == 0 )) { //wait until the 2 motor completly stop
           //need to adapt if station is traversante
-         // if (millis() >= delayToReadVoltageStation) { //wait 0.5 sec after all stop and before read voltage
-            //bber300
-            if (powerboard_I2c_line_Ok) chgVoltage = ChargeIna226.readBusVoltage() ;
-            if (chgVoltage > 5.0)  {
-              ShowMessageln ("Charge Voltage detected ");
-              setNextState(STATE_STATION, rollDir);// we are into the station
-              return;
-            }
-            else {
-              ShowMessageln ("No Voltage detected so certainly Obstacle ");
-              setNextState(STATE_PERI_OBSTACLE_REV, rollDir);// not into the station so avoid obstacle
-              return;
-            }
-          //}
-        }
-      }
-      if (millis() > (stateStartTime + MaxOdoStateDuration)) {//the motor have not enought power to reach the cible
-        //if (developerActive) {
-          ShowMessageln ("Warning can t make the station check in time ");
-        //}
-       // if (millis() >= delayToReadVoltageStation) { //wait 0.5 sec after all stop and before read voltage
+          // if (millis() >= delayToReadVoltageStation) { //wait 0.5 sec after all stop and before read voltage
           //bber300
           if (powerboard_I2c_line_Ok) chgVoltage = ChargeIna226.readBusVoltage() ;
           if (chgVoltage > 5.0)  {
@@ -7206,6 +7385,26 @@ void Robot::loop()  {
             setNextState(STATE_PERI_OBSTACLE_REV, rollDir);// not into the station so avoid obstacle
             return;
           }
+          //}
+        }
+      }
+      if (millis() > (stateStartTime + MaxOdoStateDuration)) {//the motor have not enought power to reach the cible
+        //if (developerActive) {
+        ShowMessageln ("Warning can t make the station check in time ");
+        //}
+        // if (millis() >= delayToReadVoltageStation) { //wait 0.5 sec after all stop and before read voltage
+        //bber300
+        if (powerboard_I2c_line_Ok) chgVoltage = ChargeIna226.readBusVoltage() ;
+        if (chgVoltage > 5.0)  {
+          ShowMessageln ("Charge Voltage detected ");
+          setNextState(STATE_STATION, rollDir);// we are into the station
+          return;
+        }
+        else {
+          ShowMessageln ("No Voltage detected so certainly Obstacle ");
+          setNextState(STATE_PERI_OBSTACLE_REV, rollDir);// not into the station so avoid obstacle
+          return;
+        }
         //}
       }
       motorControlOdo();
@@ -7274,7 +7473,7 @@ void Robot::loop()  {
         if ((motorLeftPWMCurr == 0 ) && (motorRightPWMCurr == 0 )) { //wait until the 2 motor completly stop
           smoothPeriMag = perimeter.getSmoothMagnitude(0);
 
-          if ((perimeterInside) && (smoothPeriMag > 250)) //check if signal here and inside need a big value to be sure it is not only noise
+          if ((perimeterInsideLeft) && (smoothPeriMag > 250)) //check if signal here and inside need a big value to be sure it is not only noise
           {
             ShowMessage("SIGNAL OK SmoothMagnitude =  ");
             ShowMessageln(smoothPeriMag);
@@ -7296,7 +7495,7 @@ void Robot::loop()  {
         }
         smoothPeriMag = perimeter.getSmoothMagnitude(0);
 
-        if ((perimeterInside) && (smoothPeriMag > 250)) //check if signal here and inside need a big value to be sure it is not only noise
+        if ((perimeterInsideLeft) && (smoothPeriMag > 250)) //check if signal here and inside need a big value to be sure it is not only noise
         {
           setNextState(STATE_STATION_FORW, rollDir);
         }
@@ -7352,7 +7551,7 @@ void Robot::loop()  {
     case STATE_ACCEL_FRWRD:
 
       motorControlOdo();
-      if (!perimeterInside) {
+      if (!perimeterInsideLeft) {
         ShowMessageln("Try to start at other location : We are not inside perimeter");
         setNextState(STATE_OFF, rollDir);
         //setNextState(STATE_PERI_OUT_STOP, rollDir);

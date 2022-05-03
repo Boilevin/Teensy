@@ -13,20 +13,23 @@ PerimeterClass Perimeter;
 ADC *adc = new ADC(); // adc object;
 #define USE_ADC_0
 #define USE_ADC_1
-#define BUFFER_SIZE 192  //sigcode 24 * 4 subsample *1.5 to scan on a full signal code
+#define BUFFER_SIZE 192  //sigcode 24 * 4 subsample * 2 to scan on 2 full signal code
 int16_t buffer_ADC_0[BUFFER_SIZE];
 int16_t buffer_adc_0_count = 0xffff;
 uint32_t delta_time_adc_0 = 0;
+elapsedMillis timed_read_elapsed_0;
 
 int16_t buffer_ADC_1[BUFFER_SIZE];
 int16_t buffer_adc_1_count = 0xffff;
 uint32_t delta_time_adc_1 = 0;
-elapsedMillis timed_read_elapsed;
+elapsedMillis timed_read_elapsed_1;
 //end adc var
 
 int subSample = 4;
 int16_t *samples;
-int sampleCount = 192;//ADCMan.getSampleCount(idxPin[0]);
+int sampleCount;//ADCMan.getSampleCount(idxPin[0]);
+
+
 
 int8_t sigcode_norm[] = { 1, 1, -1, -1, 1, -1, 1, -1, -1, 1, -1, 1, 1, -1, -1, 1, -1, -1, 1, -1, -1, 1, 1, -1 };
 int8_t sigcode_diff[] = { 1, 0, -1, 0, 1, -1, 1, -1, 0, 1, -1, 1, 0, -1, 0, 1, -1, 0, 1, -1, 0, 1, 0, -1 };
@@ -38,7 +41,7 @@ PerimeterClass::PerimeterClass() {
   //read2Coil=true;
   timedOutIfBelowSmag = 50;
   timeOutSecIfNotInside = 15;
-  callCounter = 0;
+  //callCounter = 0;
   mag[0] = mag[1] = 0;
   smoothMag[0] = smoothMag[1] = 100;
   filterQuality[0] = filterQuality[1] = 0;
@@ -56,16 +59,19 @@ static void PerimeterClass::adc1_isr() {//this is the main adc1 loop executed ea
   if (buffer_adc_1_count < BUFFER_SIZE) {
     buffer_ADC_1[buffer_adc_1_count++] = adc_val;
     if (buffer_adc_1_count == BUFFER_SIZE) {
-      delta_time_adc_1 = timed_read_elapsed;
+      /*
+        for (int i = 0; i < BUFFER_SIZE; i++) {
+        Serial.println(buffer_ADC_1[i]);
+        }
+      */
+      sampleCount = buffer_adc_1_count;
+      delta_time_adc_1 = timed_read_elapsed_1;
       Perimeter.matchedFilter(1);
       buffer_adc_1_count = 0;
     }
   }
-
   asm("DSB");
-
 }
-
 static void PerimeterClass::adc0_isr() { //this is the main adc0 loop executed each 24 microseconds
   //Serial.println(buffer_adc_0_count);
   uint16_t adc_val = adc->adc0->readSingle();
@@ -73,26 +79,23 @@ static void PerimeterClass::adc0_isr() { //this is the main adc0 loop executed e
     buffer_ADC_0[buffer_adc_0_count++] = adc_val;
     if (buffer_adc_0_count == BUFFER_SIZE) {
       /*
-            for (int i = 0; i < BUFFER_SIZE; i++) {
-
-              Serial.print(" ");
-              Serial.println(buffer_ADC_0[i]);
-            }
+        for (int i = 0; i < BUFFER_SIZE; i++) {
+        Serial.println(buffer_ADC_0[i]);
+        }
       */
-
-      delta_time_adc_0 = timed_read_elapsed;
+      sampleCount = buffer_adc_0_count;
+      delta_time_adc_0 = timed_read_elapsed_0;
       Perimeter.matchedFilter(0);
       buffer_adc_0_count = 0;
-
     }
   }
-
   asm("DSB");
-
 }
 
 
 void PerimeterClass::begin(byte idx0Pin, byte idx1Pin) {
+
+ 
 
   idxPin[0] = idx0Pin;
   idxPin[1] = idx1Pin;
@@ -101,7 +104,10 @@ void PerimeterClass::begin(byte idx0Pin, byte idx1Pin) {
   pinMode(idx0Pin, INPUT);
   pinMode(idx1Pin, INPUT);
 
-  Serial.println("Begin setup adc0");
+
+  Serial.print("Begin setup adc0 on pin:");
+  Serial.println(idx0Pin);
+
   ///// ADC0 ////
   adc->adc0->setAveraging(32); // set number of averages
   adc->adc0->setResolution(10); // set bits of resolution
@@ -115,11 +121,16 @@ void PerimeterClass::begin(byte idx0Pin, byte idx1Pin) {
   adc->adc0->startSingleRead(idx0Pin); // call this to setup everything before the Timer starts
   adc->adc0->enableInterrupts(adc0_isr);
   adc->adc0->startTimer(38462); //frequency in Hz
+  timed_read_elapsed_0 = 0;
   buffer_adc_0_count = 0;
   Serial.println("adc0 Timer Interrupt Started");
 
   if (read2Coil) {
-    Serial.println("Begin setup adc1");
+    delay(500);
+    Serial.print("Begin setup adc1 on pin:");
+    Serial.println(idx1Pin);
+
+
     ////// ADC1 /////
     adc->adc1->setAveraging(32); // set number of averages
     adc->adc1->setResolution(10); // set bits of resolution
@@ -131,7 +142,7 @@ void PerimeterClass::begin(byte idx0Pin, byte idx1Pin) {
     adc->adc1->startSingleRead(idx1Pin); // call this to setup everything before the Timer starts
     adc->adc1->enableInterrupts(adc1_isr);
     adc->adc1->startTimer(38462); //frequency in Hz
-    timed_read_elapsed = 0;
+    timed_read_elapsed_1 = 0;
     buffer_adc_1_count = 0;
     Serial.println("adc1 Timer Interrupt Started");
   }
@@ -170,7 +181,7 @@ void PerimeterClass::matchedFilter(byte idx) {
   signalAvg[idx] = 0;
   for (int i = 0; i < sampleCount; i++) {
     int16_t v = samples[i];
-    // Serial.print(v);
+    //Serial.println(v);
     // Serial.print(",");
     signalAvg[idx] += v;
     signalMin[idx] = min(signalMin[idx], v);
@@ -186,9 +197,9 @@ void PerimeterClass::matchedFilter(byte idx) {
 
   int8_t *sigcode = sigcode_norm;
   sigcode = sigcode_diff;
-  //sampleCount - sigcode_size * subSample= normalement 96  192-24*4
 
-  mag[idx] = corrFilter(sigcode, subSample, sigcode_size, samples, sampleCount - sigcode_size * subSample , filterQuality[idx]);
+
+  mag[idx] = corrFilter(sigcode, subSample, sigcode_size, samples, sampleCount - (sigcode_size * subSample) , filterQuality[idx]);
 
   if ((idx == 0) && swapCoilPolarityLeft) mag[idx] *= -1;
   if ((idx == 1) && swapCoilPolarityRight) mag[idx] *= -1;
@@ -207,7 +218,7 @@ void PerimeterClass::matchedFilter(byte idx) {
   }
 
   //ADCMan.restartConv(idxPin[idx]);
-  if (idx == 0) callCounter++;
+  //if (idx == 0) callCounter++;
 }
 
 void PerimeterClass::resetTimedOut() {
@@ -339,9 +350,10 @@ int16_t PerimeterClass::corrFilter(int8_t *H, int subsample, int M, int16_t *ip,
     ip++;
   }
   // normalize to 4095
-  sumMin = ((float)sumMin) / ((float)(Hsum * 127)) * 4095.0;
-  sumMax = ((float)sumMax) / ((float)(Hsum * 127)) * 4095.0;
-
+  /*
+    sumMin = ((float)sumMin) / ((float)(Hsum * 127)) * 4095.0;
+    sumMax = ((float)sumMax) / ((float)(Hsum * 127)) * 4095.0;
+  */
   // compute ratio min/max
   if (sumMax > -sumMin) {
     quality = ((float)sumMax) / ((float) - sumMin);

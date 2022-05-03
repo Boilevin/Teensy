@@ -1,6 +1,6 @@
 /*
 
-  choose your robot type, PCB version, baud rates, pin definitions etc.
+  choose your robot type, baud rates, pin definitions etc.
 
 */
 

@@ -46,7 +46,7 @@ class PerimeterClass
     boolean swapCoilPolarityRight;
     boolean read2Coil;
     unsigned long lastInsideTime[2];
-    //int subSample;
+   
  
   private:
 
@@ -57,7 +57,7 @@ class PerimeterClass
 
 
     byte idxPin[2]; // channel for idx
-    int callCounter;
+    //int callCounter;
     int16_t mag [2]; // perimeter magnitude per channel
     float smoothMag[2];
     float filterQuality[2];
