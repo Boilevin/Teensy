@@ -211,7 +211,7 @@ void setup() {
       delay(500);
       if (debug) Serial.print(".");
       reconnect_count = reconnect_count + 1;
-      if (reconnect_count > 10) {
+      if (reconnect_count > 20) {
         if (debug) {
           Serial.println(" ");
           Serial.println("*************************************************");
