@@ -11,6 +11,10 @@
 #include "NewPing.h"
 #include "Screen.h"
 
+//the SD card part
+#include <SD.h>
+#include <SPI.h>
+const int chipSelect = BUILTIN_SDCARD;
 
 //the watchdog part
 #include "Watchdog_t4.h"
@@ -382,12 +386,19 @@ void Robot::checkTimer() {
 void Robot::loadSaveRobotStats(boolean readflag) {
 
   int addr = ADDR_ROBOT_STATS;
-
+  
+  //create a new history file name to separate the data log on sd card
+  // sd.open need a char array to work
+  sprintf(historyFilenameChar,"%02u%02u%02u%02u%02u.txt",datetime.date.year,datetime.date.month,datetime.date.day,datetime.time.hour,datetime.time.minute);
+  ShowMessage(F("SD Card Filename : "));
+  ShowMessageln(historyFilenameChar);
+  
   if (readflag) {
     ShowMessage(F("Load Stats "));
   }
   else {
     ShowMessage(F("Save Stats "));
+
   }
 
   short magic = 0;
@@ -607,11 +618,11 @@ void Robot::rfidTagTraitement(unsigned long TagNr, byte statusCurr) {
         break;
       case AREA1:
         line01 = "#SENDER," + String(area1_ip) + ",A1";
-        Serial1.println(line01);
+        Bluetooth.println(line01);
         line01 = "#SENDER," + String(area2_ip) + ",B0";
-        Serial1.println(line01);
+        Bluetooth.println(line01);
         line01 = "#SENDER," + String(area3_ip) + ",B0";
-        Serial1.println(line01);
+        Bluetooth.println(line01);
 
         areaToGo = 1;
         ShowMessageln("Return to Station area ");
@@ -632,9 +643,9 @@ void Robot::rfidTagTraitement(unsigned long TagNr, byte statusCurr) {
       case AREA2:
         //send data to ESP32 to start AREA2 sender and stop AREA1 one
         line01 = "#SENDER," + String(area1_ip) + ",A0";
-        Serial1.println(line01);
+        Bluetooth.println(line01);
         line01 = "#SENDER," + String(area2_ip) + ",B1";
-        Serial1.println(line01);
+        Bluetooth.println(line01);
         if (areaToGo == 2) {
           ShowMessageln("Go to AREA2");
           motorSpeedMaxPwm = ptr->TagSpeed;
@@ -648,9 +659,9 @@ void Robot::rfidTagTraitement(unsigned long TagNr, byte statusCurr) {
 
       case AREA3:
         line01 = "#SENDER," + String(area1_ip) + ",A0";
-        Serial1.println(line01);
+        Bluetooth.println(line01);
         line01 = "#SENDER," + String(area3_ip) + ",B1";
-        Serial1.println(line01);
+        Bluetooth.println(line01);
         if (areaToGo == 3) {
           ShowMessageln("Go to AREA3");
           motorSpeedMaxPwm = ptr->TagSpeed;
@@ -663,11 +674,11 @@ void Robot::rfidTagTraitement(unsigned long TagNr, byte statusCurr) {
         break;
 
       case SPEED:
-        motorSpeedMaxPwm = ptr->TagSpeed;
+        ActualSpeedPeriPWM = ptr->TagSpeed;
         newtagDistance1 = ptr->TagDist1;
         whereToResetSpeed =  totalDistDrive + newtagDistance1; // when a speed tag is read it's where the speed is back to maxpwm value
         ShowMessage("Change to speed  : ");
-        ShowMessage(motorSpeedMaxPwm);
+        ShowMessage(ActualSpeedPeriPWM);
         ShowMessage(" for next ");
         ShowMessage(newtagDistance1);
         ShowMessageln(" centimeters");
@@ -2850,12 +2861,39 @@ void Robot::myCallback() {
 void Robot::setup()  {
   setDefaultTime();
   //  mower.h start before the robot setup
-  Serial.print("++++++++++++++* Start Robot Setup at ");
-  Serial.print(millis());
-  Serial.println(" ++++++++++++");
+  ShowMessage("++++++++++++++ Start Robot Setup at ");
+  ShowMessage(millis());
+  ShowMessageln(" ++++++++++++");
 
-  Serial.print("Version : ");
-  Serial.println(VER);
+  //initialise the date time part
+  ShowMessageln("Initialise date time library ");
+  setSyncProvider(getTeensy3Time);
+
+  if (timeStatus() != timeSet) {
+    ShowMessageln("Unable to sync with the RTC");
+  } else {
+    ShowMessageln("RTC has set the system time");
+  }
+ 
+  
+  ShowMessage("++++++++++++++ Initializing SD card...");
+
+  // see if the card is present and can be initialized:
+  if (!SD.begin(chipSelect)) {
+    ShowMessageln("SD Card failed, or not present");
+    sdCardReady = false;
+  }
+  else {
+    ShowMessageln("SD card Ok.");
+    sdCardReady = true;
+    sprintf(historyFilenameChar,"%02u%02u%02u%02u%02u.txt",datetime.date.year,datetime.date.month,datetime.date.day,datetime.time.hour,datetime.time.minute);
+    ShowMessage(F("SD Card Filename : "));
+    ShowMessageln(historyFilenameChar);
+  
+  }
+
+  ShowMessage("Version : ");
+  ShowMessageln(VER);
 
 
   if (ODOMETRY_ONLY_RISING)
@@ -2881,15 +2919,7 @@ void Robot::setup()  {
 
 
 
-  //initialise the date time part
-  Serial.println("Initialise date time library ");
-  setSyncProvider(getTeensy3Time);
-
-  if (timeStatus() != timeSet) {
-    Serial.println("Unable to sync with the RTC");
-  } else {
-    Serial.println("RTC has set the system time");
-  }
+  
 
 
 
@@ -2926,18 +2956,18 @@ void Robot::setup()  {
   }
   else
   {
-    Serial.println(" IMU is not activate ");
+    ShowMessageln(" IMU is not activate ");
   }
 
   if (perimeterUse) {
-    Serial.println(" ------- Initialize Perimeter Setting ------- ");
+    ShowMessageln(" ------- Initialize Perimeter Setting ------- ");
     // perimeter.changeArea(1);
     perimeter.begin(pinPerimeterLeft, pinPerimeterRight);
   }
 
   if (!buttonUse) {
     // robot has no ON/OFF button => start immediately
-    //setNextState(STATE_FORWARD_ODO, 0);
+    setNextState(STATE_FORWARD_ODO, 0);
   }
 
 
@@ -2946,20 +2976,20 @@ void Robot::setup()  {
 
   setBeeper(3000, 500, 250, 2000, 200);//beep for 3 sec
   gps.init();
-  Serial.println(F("START"));
-  Serial.print(F("Mower "));
-  Serial.println(VER);
+  ShowMessageln(F("START"));
+  ShowMessage(F("Mower "));
+  ShowMessageln(VER);
 
-  Serial.print(F("Config: "));
-  Serial.println(name);
-  Serial.println(F("press..."));
-  Serial.println(F("  d for menu"));
-  Serial.println(F("  v to change console output (sensor counters, values, perimeter etc.)"));
-  Serial.println(consoleModeNames[consoleMode]);
-  Serial.println ();
+  ShowMessage(F("Config: "));
+  ShowMessageln(name);
+  ShowMessageln(F("press..."));
+  ShowMessageln(F("  d for menu"));
+  ShowMessageln(F("  v to change console output (sensor counters, values, perimeter etc.)"));
+  ShowMessageln(consoleModeNames[consoleMode]);
+  
 
 
-  Serial.println ("Starting Ina226 current sensor ");
+  ShowMessageln ("Starting Ina226 current sensor ");
   MotLeftIna226.begin(0x41);
   ChargeIna226.begin(0x40);
   MotRightIna226.begin(0x44);
@@ -2967,38 +2997,38 @@ void Robot::setup()  {
   if (INA226_MOW2_PRESENT) Mow2Ina226.begin_I2C1(0x41);  //MOW2 is connect on I2C1
   if (INA226_MOW3_PRESENT) Mow3Ina226.begin_I2C1(0x44);  //MOW3 is connect on I2C1
 
-  Serial.println ("Checking  ina226 current sensor connection");
+  ShowMessageln ("Checking  ina226 current sensor connection");
   //check sense powerboard i2c connection
   powerboard_I2c_line_Ok = true;
   if (!ChargeIna226.isConnected(0x40)) {
-    Serial.println("INA226 Battery Charge is not OK");
+    ShowMessageln("INA226 Battery Charge is not OK");
     powerboard_I2c_line_Ok = false;
   }
   if (!MotRightIna226.isConnected(0x44)) {
-    Serial.println("INA226 Motor Right is not OK");
+    ShowMessageln("INA226 Motor Right is not OK");
     powerboard_I2c_line_Ok = false;
   }
   if (!MotLeftIna226.isConnected(0x41)) {
-    Serial.println("INA226 Motor Left is not OK");
+    ShowMessageln("INA226 Motor Left is not OK");
     powerboard_I2c_line_Ok = false;
   }
   if (!Mow1Ina226.isConnected_I2C1(0x40)) {
-    Serial.println("INA226 MOW1 is not OK");
+    ShowMessageln("INA226 MOW1 is not OK");
     powerboard_I2c_line_Ok = false;
   }
   if ((INA226_MOW2_PRESENT) && (!Mow2Ina226.isConnected_I2C1(0x41))) {
-    Serial.println("INA226 MOW2 is not OK");
+    ShowMessageln("INA226 MOW2 is not OK");
     powerboard_I2c_line_Ok = false;
   }
   if ((INA226_MOW3_PRESENT) && (!Mow3Ina226.isConnected_I2C1(0x44))) {
-    Serial.println("INA226 MOW3 is not OK");
+    ShowMessageln("INA226 MOW3 is not OK");
     powerboard_I2c_line_Ok = false;
   }
 
 
   if (powerboard_I2c_line_Ok)
   {
-    Serial.println ("Ina226 Begin OK ");
+    ShowMessageln ("Ina226 Begin OK ");
     // Configure INA226
 
 
@@ -3010,7 +3040,7 @@ void Robot::setup()  {
     if (INA226_MOW2_PRESENT) Mow2Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
     if (INA226_MOW3_PRESENT) Mow3Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
 
-    Serial.println ("Ina226 Configure OK ");
+    ShowMessageln ("Ina226 Configure OK ");
     // Calibrate INA226. Rshunt = 0.01 ohm, Max excepted current = 4A
     ChargeIna226.calibrate(0.02, 4);
     MotLeftIna226.calibrate(0.02, 4);
@@ -3020,12 +3050,12 @@ void Robot::setup()  {
     if (INA226_MOW2_PRESENT) Mow2Ina226.calibrate_I2C1(0.02, 4);
     if (INA226_MOW3_PRESENT) Mow3Ina226.calibrate_I2C1(0.02, 4);
 
-    Serial.println ("Ina226 Calibration OK ");
+    ShowMessageln ("Ina226 Calibration OK ");
   }
   else
   {
-    Serial.println ("************** WARNING **************");
-    Serial.println ("INA226 powerboard connection is not OK");
+    ShowMessageln ("************** WARNING **************");
+    ShowMessageln ("INA226 powerboard connection is not OK");
   }
 
 
@@ -3033,17 +3063,17 @@ void Robot::setup()  {
   //if wdt is not reset during the trigger duration a myCallback function start.
   // if after timeout wdt is always not reset tennsy reboot
 
-  Serial.println("Watchdog configuration start ");
+  ShowMessageln("Watchdog configuration start ");
   WDT_timings_t config;
   config.trigger = 2; /* in seconds, 0->128 */
   config.timeout = 10; /* in seconds, 0->128 */
   config.callback = myCallback;
   wdt.begin(config);
-  Serial.println("Watchdog configuration Finish ");
+  ShowMessageln("Watchdog configuration Finish ");
 
 
   nextTimeInfo = millis();
-  Serial.println("Setup finish");
+  ShowMessageln("Setup finish");
 
 
 }
@@ -3477,7 +3507,7 @@ void Robot::pfodSetDateTime(byte hr1, byte min1, byte sec1, byte day1, byte mont
   //mkTime(
   setTime(hr1, min1, sec1, day1, month1, year1); // Another way to set;
   Teensy3Clock.set(now()); // set the internal teensy RTC
-  Serial.println(now());
+  ShowMessageln(now());
 
   //setTime(hr,min,sec,day,month,yr); // Another way to set;
   //setTime(PfodDate);
@@ -3500,8 +3530,8 @@ void Robot::pfodSetDateTime(byte hr1, byte min1, byte sec1, byte day1, byte mont
 
 
 
-  Serial.print("Date change : ");
-  Serial.println(Teensy3Clock.get());
+  ShowMessage("Date change : ");
+  ShowMessageln(Teensy3Clock.get());
 }
 
 void Robot::readSensors() {
@@ -3565,9 +3595,9 @@ void Robot::readSensors() {
 
     //for signal debug
     /*
-      Serial.print(perimeterMagRight);
-      Serial.print(",");
-      Serial.println(perimeterMag);
+      ShowMessage(perimeterMagRight);
+      ShowMessage(",");
+      ShowMessageln(perimeterMag);
     */
 
     perimeterMedian.add(perimeterMag);
@@ -3604,9 +3634,9 @@ void Robot::readSensors() {
 
     }
     /*
-      Serial.print("sig timeout ---> ");
-      Serial.print(perimeter.signalTimedOut(0));
-      Serial.println("   rr");
+      ShowMessage("sig timeout ---> ");
+      ShowMessage(perimeter.signalTimedOut(0));
+      ShowMessageln("   rr");
     */
 
     /*
@@ -3826,13 +3856,13 @@ void Robot::setNextState(byte stateNew, byte dir) {
       //readDHT22();
       ShowMessageln("Start sender1");
       line01 = "#SENDER," + String(area1_ip) + ",A1";
-      Serial1.println(line01);
+      Bluetooth.println(line01);
       ShowMessageln("Stop sender2");
       line01 = "#SENDER," + String(area2_ip) + ",B0";
-      Serial1.println(line01);
+      Bluetooth.println(line01);
       ShowMessageln("Stop sender3");
       line01 = "#SENDER," + String(area3_ip) + ",B0";
-      Serial1.println(line01);
+      Bluetooth.println(line01);
       setBeeper(600, 40, 5, 500, 0 );
       MaxStateDuration = 6000; // 6 secondes beep and pause before rev
       break;
@@ -5057,20 +5087,41 @@ void Robot::setNextState(byte stateNew, byte dir) {
 }
 
 
+void Robot::writeOnSD(String message) {
+  if (sdCardReady) {
+    //filename is reset into :loadSaveRobotStats
+    File dataFile = SD.open(historyFilenameChar, FILE_WRITE);
+    if (dataFile) {
+      dataFile.print(message);
+      dataFile.close();
+    }
+  }
+}
 
-
-
+void Robot::writeOnSDln(String message) {
+ if (sdCardReady) {
+    //filename is reset into :loadSaveRobotStats
+    File dataFile = SD.open(historyFilenameChar, FILE_WRITE);
+    if (dataFile) {
+      dataFile.println(message);
+      dataFile.close();
+    }
+  }
+}
 
 
 
 
 void Robot::ShowMessage(String message) {
+  writeOnSD (message);
   Serial.print (message);
   if (ConsoleToPfod) {
     Bluetooth.print (message);
+
   }
 }
 void Robot::ShowMessageln(String message) {
+  writeOnSDln (message);
   Serial.println(message);
   if (ConsoleToPfod) {
     Bluetooth.println(message);
@@ -5078,12 +5129,14 @@ void Robot::ShowMessageln(String message) {
 }
 
 void Robot::ShowMessage(float value) {
+  writeOnSD (value);
   Serial.print (value);
   if (ConsoleToPfod) {
     Bluetooth.print (value);
   }
 }
 void Robot::ShowMessageln(float value) {
+  writeOnSDln (value);
   Serial.println(value);
   if (ConsoleToPfod) {
     Bluetooth.println(value);
@@ -5826,7 +5879,7 @@ void Robot::loop()  {
   if ((useMqtt) && (millis() > next_time_refresh_mqtt)) {
     next_time_refresh_mqtt = millis() + 3000;
     String line01 = "#RMSTA," + String(statusNames[statusCurr]) + "," + String(stateNames[stateCurr]) + "," + String(temperatureTeensy) + "," + String(batVoltage) + "," + String(loopsPerSec)  ;
-    Serial1.println(line01);
+    Bluetooth.println(line01);
 
 
   }

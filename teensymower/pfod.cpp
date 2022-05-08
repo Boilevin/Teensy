@@ -775,7 +775,7 @@ void RemoteControl::sendRfidDetailMenu(int rfidDetailIdx, boolean update) {
   serialPort->print(String(robot->statusNameList(robot->ptr->TagMowerStatus)));
   serialPort->print(F("|yw5~ToDo : "));
   serialPort->print(String(robot->rfidToDoNameList(robot->ptr->TagToDo)));
-  sendSlider("yw6", F("Speed "), robot->ptr->TagSpeed, "", 1, 255, 60);
+  sendSlider("yw6", F("Speed "), robot->ptr->TagSpeed, "", 1, 255, 0);
   sendSlider("yw7", F("Angle1 "), robot->ptr->TagAngle1, "", 1, 180, -180);
   sendSlider("yw8", F("Dist 1 "), robot->ptr->TagDist1, "", 1, 1000, 50);
   sendSlider("yw9", F("Angle2 "), robot->ptr->TagAngle2, "", 1, 180, -180);
