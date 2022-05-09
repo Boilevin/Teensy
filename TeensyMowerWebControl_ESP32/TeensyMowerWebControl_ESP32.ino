@@ -49,7 +49,7 @@ const char* mqtt_id = "Mower";
 
 #define MAX_CONFIG_LEN  100
 #define MSG_HEADER "[WSB]"
-#define VERSION "Ber Version vom 07.05.2022 "
+#define VERSION " Version vom 09.05.2022 "
 #define CONFIG_MSG_START "config:"
 
 #define SET_IP_SETTING  1  //true=IP-Settings from azurit-programm, false=IP-Settings by user/esp
