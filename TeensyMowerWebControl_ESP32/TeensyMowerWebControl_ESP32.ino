@@ -2,22 +2,34 @@
 #include <WebServer.h>
 #include <HTTPClient.h>
 #include <FS.h>
+#include <SD.h>
+#include <SPI.h>
 #include <detail/RequestHandlersImpl.h>
 #include <Ticker.h>
 #include <SPIFFS.h>
 #include <esp_wifi.h>
+#include <ArduinoOTA.h>                // OTA Upload via ArduinoIDE
 
-//bber1
 //*********RFID**************//
 #include "PN5180.h"
 #include "PN5180ISO15693.h"
-#define rfid_board_IsPluged false //Set to true or false according your hardware
+
+//******** YOUR WIFI  ************///
+IPAddress myIP(10, 0, 0, 123);
+IPAddress network_gateway(10, 0, 0, 1);
+IPAddress network_subnet(255, 255, 255, 0);
+IPAddress network_dns(10, 0, 0, 1);
+char *wifi_network_ssid     = "your ssid";
+char *wifi_network_password = "your pass";
+boolean useMqtt = false ; //Set to true only if you have a mosquito broker running in your house 
+#define rfid_board_IsPluged false //Set to true or false according your hardware PN5180 can read RFID card
+
 #define debug_rfid true
+#define debug_mqtt true
 
 
 //*********MQTT*************//
 #include "PubSubClient.h"
-boolean useMqtt = false ; //Set to true only if you have a mosquito broker running in your house or false
 const char* mower_name = "Rl1000";//your mower name : help if you have many mower connected to the same broker
 const char* mqtt_server = "10.0.0.8";
 const uint16_t mqtt_port = 1883;
@@ -30,8 +42,8 @@ const char* mqtt_batteryTopic = "/Battery";
 const char* mqtt_idleTopic = "/Idle";
 const char* mqtt_statusTopic = "/Status";
 const char* mqtt_stateTopic = "/State";
-const char* mqtt_id = "MowerMi632";
-#define debug_mqtt true
+const char* mqtt_id = "Mower";
+
 
 #define LED 2
 
@@ -55,12 +67,6 @@ const char* mqtt_id = "MowerMi632";
 #define BAUDRATE_ESP_to_PCB 19200
 #define BAUDRATE_ESP_to_USB 115200
 
-IPAddress myIP(10, 0, 0, 123);
-IPAddress network_gateway(10, 0, 0, 1);
-IPAddress network_subnet(255, 255, 255, 0);
-IPAddress network_dns(10, 0, 0, 1);
-char *wifi_network_ssid     = "SSID";
-char *wifi_network_password = "PASSWORD";
 
 bool wifiConnected = false;
 int connectCnt = 0;
@@ -83,7 +89,7 @@ unsigned long next_mqtt_test_connection;
 #define SLIDER  2
 #define PLOT    3
 
-#define DEBUG 0
+#define DEBUG 1
 
 #define PARAMID_SSID    0
 #define PARAMID_PASSWD  1
@@ -145,6 +151,55 @@ String lastMSG = "";
 long timer1s = 0UL;
 long counter = 0UL;
 
+void listDir(fs::FS &fs, const char * dirname, uint8_t levels) {
+  Serial.printf("Listing directory: %s\n", dirname);
+
+  File root = fs.open(dirname);
+  if (!root) {
+    Serial.println("Failed to open directory");
+    return;
+  }
+  if (!root.isDirectory()) {
+    Serial.println("Not a directory");
+    return;
+  }
+
+  File file = root.openNextFile();
+  while (file) {
+    if (file.isDirectory()) {
+      Serial.print("  DIR : ");
+      Serial.println(file.name());
+      if (levels) {
+        listDir(fs, file.name(), levels - 1);
+      }
+    } else {
+      Serial.print("  FILE: ");
+      Serial.print(file.name());
+      Serial.print("  SIZE: ");
+      Serial.println(file.size());
+    }
+    file = root.openNextFile();
+  }
+}
+
+void appendFile(fs::FS &fs, const char * path, const char * message) {
+  Serial.printf("Appending to file: %s\n", path);
+
+  File file = fs.open(path, FILE_APPEND);
+  if (!file) {
+    Serial.println("Failed to open file for appending");
+    return;
+  }
+  if (file.print(message)) {
+    Serial.println("Message appended");
+  } else {
+    Serial.println("Append failed");
+  }
+  file.close();
+}
+
+
+
 void setup() {
   // Configure Serial Port
   Serial_ESP_to_USB.begin(BAUDRATE_ESP_to_USB);
@@ -165,13 +220,54 @@ void setup() {
   Serial_ESP_to_USB.println(MSG_HEADER""VERSION);
 
   connectWIFI();
+  WiFi.setSleep(false); //SD
 
   setLedSequence(ledSeq_connecting);
 
-  if (!SPIFFS.begin()) {
-    debugln("SPIFFS not initialized! Stop!");
-    while (1) yield();
+    
+  if(!SD.begin()){
+        Serial_ESP_to_USB.println(MSG_HEADER" Card Mount Failed");
+        if (!SPIFFS.begin()) {
+            Serial_ESP_to_USB.println(MSG_HEADER" SPIFFS not initialized! Stop!");
+            //while (1) yield();
+        }
+        else {
+          // Die Abfrage auf die reine URL '/' wird auf '/index.html' im SPIFFS umgelenkt
+          server.serveStatic("/", SPIFFS, "/index.html");
+          Serial_ESP_to_USB.println(MSG_HEADER" SPIFFS initialized!");
+        }
+        //return;
   }
+  else {
+        uint8_t cardType = SD.cardType();
+      
+        if(cardType == CARD_NONE){
+            Serial_ESP_to_USB.println(MSG_HEADER" No SD card attached");
+            //return;
+        }
+      
+        Serial_ESP_to_USB.print(MSG_HEADER" SD Card Type: ");
+        if(cardType == CARD_MMC){
+            Serial_ESP_to_USB.println(MSG_HEADER" MMC");
+        } else if(cardType == CARD_SD){
+            Serial_ESP_to_USB.println(MSG_HEADER" SDSC");
+        } else if(cardType == CARD_SDHC){
+            Serial_ESP_to_USB.println(MSG_HEADER" SDHC");
+        } else {
+            Serial_ESP_to_USB.println(MSG_HEADER" UNKNOWN");
+        }
+      
+        uint64_t cardSize = SD.cardSize() / (1024 * 1024);
+        Serial_ESP_to_USB.printf("SD Card Size: %lluMB\n", cardSize);
+        listDir(SD, "/", 3);
+       
+      
+        Serial_ESP_to_USB.printf(MSG_HEADER" Total space: %lluMB\n", SD.totalBytes() / (1024 * 1024));
+        Serial_ESP_to_USB.printf(MSG_HEADER" Used space: %lluMB\n", SD.usedBytes() / (1024 * 1024));
+        
+        // Die Abfrage auf die reine URL '/' wird auf '/index.html' umgelenkt
+        server.serveStatic("/", SD, "/index.html");
+  } 
 
   // add handler for webserver
   server.onNotFound([]() {
@@ -196,7 +292,7 @@ void setup() {
   if (DEBUG) Serial_ESP_to_USB.println("Starting PFODServeur on port 8881");
   PFODserver.begin();
   PFODserver.setNoDelay(true);
-
+ArduinoOTASetup();
 
   //bber1
 //BT seial for Pfod init
@@ -234,7 +330,9 @@ void loop() {
   Check_WIFI();
   server.handleClient();  //Webserver
   handlePFODclient();
- 
+
+  ArduinoOTA.handle();                 // OTA Upload via ArduinoIDE
+
 
   if (millis() > timer1s + 1000UL) {
     timer1s = millis();
@@ -317,7 +415,49 @@ void flushInput(void) {
   while (Serial_ESP_to_PCB.available())
     Serial_ESP_to_PCB.read();
 }
+void ArduinoOTASetup()
+{
+  // Port defaults to 3232
+  // ArduinoOTA.setPort(3232);
 
+  // Hostname defaults to esp3232-[MAC]
+  // ArduinoOTA.setHostname("myesp32");
+
+  // No authentication by default
+  // ArduinoOTA.setPassword("admin");
+
+  // Password can be set with it's md5 value as well
+  // MD5(admin) = 21232f297a57a5a743894a0e4a801fc3
+  // ArduinoOTA.setPasswordHash("21232f297a57a5a743894a0e4a801fc3");
+
+  ArduinoOTA
+    .onStart([]() {
+      String type;
+      if (ArduinoOTA.getCommand() == U_FLASH)
+        type = "sketch";
+      else // U_SPIFFS
+        type = "filesystem";
+
+      // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+      Serial_ESP_to_USB.println("Start updating " + type);
+    })
+    .onEnd([]() {
+      Serial_ESP_to_USB.println("\nEnd");
+    })
+    .onProgress([](unsigned int progress, unsigned int total) {
+      Serial_ESP_to_USB.printf("Progress: %u%%\r", (progress / (total / 100)));
+    })
+    .onError([](ota_error_t error) {
+      Serial_ESP_to_USB.printf("Error[%u]: ", error);
+      if (error == OTA_AUTH_ERROR) Serial_ESP_to_USB.println("Auth Failed");
+      else if (error == OTA_BEGIN_ERROR) Serial_ESP_to_USB.println("Begin Failed");
+      else if (error == OTA_CONNECT_ERROR) Serial_ESP_to_USB.println("Connect Failed");
+      else if (error == OTA_RECEIVE_ERROR) Serial_ESP_to_USB.println("Receive Failed");
+      else if (error == OTA_END_ERROR) Serial_ESP_to_USB.println("End Failed");
+    });
+
+  ArduinoOTA.begin();
+}
 //bber2
 //*********MQTT*************//
 void receivedCallback(char* topic, byte* payload, unsigned int payload_length) { //data coming from mqtt
