@@ -43,7 +43,7 @@
 */
 
 // code version
-#define VER "1.35-Teensyber GY-521"
+#define VER "1.36-Teensyber GY-521"
 
 
 // sensors
@@ -607,7 +607,7 @@ class Robot
     int perimeterTrackRollTime ; // perimeter tracking roll time (ms)
     int perimeterTrackRevTime ; // perimeter tracking reverse time (ms)
     PID perimeterPID ;             // perimeter PID controller
-    int perimeterMag ;             // perimeter magnitude
+    int perimeterMagLeft ;             // perimeter magnitude
     int perimeterMagRight ;             // perimeter magnitude
     byte areaInMowing;              //it's the area in mowing nr
     boolean perimeterInsideLeft ;      // is inside perimeter?
@@ -620,7 +620,7 @@ class Robot
     unsigned long trackingPerimeterTransitionTimeOut;
     unsigned long trackingErrorTimeOut;
     boolean trakBlockInnerWheel;
-    float perimeterNoise; //compute each 2 seconde the diff between max and min Mag value help on position of motor wire and ferrite in the chassis
+    float perimeterNoiseLeft; //compute each 2 seconde the diff between max and min Mag value help on position of motor wire and ferrite in the chassis
     //add BB
     int leftSpeedperi;
     int rightSpeedperi;
@@ -641,7 +641,7 @@ class Robot
     int DistPeriObstacleAvoid;
     int DistPeriObstacleForw;
     int DistPeriOutStop;
-    int perimeterMagMaxValue;
+    int perimeterMagLeftMaxValue;
     int Tempovar;
     boolean lastPerimeterTrackInside; // was inside or outside
     float PeriCoeffAccel;
@@ -759,6 +759,8 @@ class Robot
     boolean UseBumperDock ;  //bumper is pressed when docking or not
     boolean autoResetActive;       // at the edn of the charging all is rebbot to avoid error after 1 or 2 weeks ON
     byte dockingSpeed ;  //speed docking is (percent of maxspeed) when sonar detect something while tracking
+    byte checkDockingSpeed ;  //station check speed mower force in station
+
     unsigned long totalDistDrive;  //use to check when to leave the wire in start timer mode
     unsigned long nextTimeBattery ; // delay between 2 battery reading
     unsigned long nextTimeCheckBattery; // check the battery state
