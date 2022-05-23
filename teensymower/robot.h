@@ -37,10 +37,16 @@
 #include "imu.h"
 #include "perimeter.h"
 
+//the SD card part
+#include <SD.h>
+#include <SPI.h>
+const int chipSelect = BUILTIN_SDCARD;
 /*
   Generic robot class - subclass to implement concrete hardware!
 
 */
+
+
 
 // code version
 #define VER "1.36-Teensyber GY-521"
@@ -222,6 +228,8 @@ class Robot
   public:
     String name;
     boolean sdCardReady;
+    int totalLineOnFile;
+    
     char historyFilenameChar[25]; // need a char array for sd card open
     boolean developerActive;
     boolean ConsoleToPfod;
@@ -343,11 +351,21 @@ class Robot
       struct rfid_list *next;
     };
 
-    //typedef struct rfid_list;
-
     struct rfid_list *head = NULL;
-
     struct rfid_list *ptr = NULL;
+
+    
+//bber400 gps
+    byte gpsPointElementCount = 0;
+    struct gpsPoint {
+      byte gpsAreaNr;
+      byte gpsAreaPointNr;
+      float Pt_lon;
+      float Pt_lat;
+      struct gpsPoint *next;
+    };
+    struct gpsPoint *headGpsPoint = NULL;
+    struct gpsPoint *ptrGpsPoint = NULL;
 
 
     // --------- wheel motor state ----------------------------
@@ -620,7 +638,7 @@ class Robot
     unsigned long trackingPerimeterTransitionTimeOut;
     unsigned long trackingErrorTimeOut;
     boolean trakBlockInnerWheel;
-    float perimeterNoiseLeft; //compute each 2 seconde the diff between max and min Mag value help on position of motor wire and ferrite in the chassis
+    float perimeterNoise; //compute each 2 seconde the diff between max and min Mag value help on position of motor wire and ferrite in the chassis
     //add BB
     int leftSpeedperi;
     int rightSpeedperi;
@@ -641,7 +659,7 @@ class Robot
     int DistPeriObstacleAvoid;
     int DistPeriObstacleForw;
     int DistPeriOutStop;
-    int perimeterMagLeftMaxValue;
+    int perimeterMagMaxValue;
     int Tempovar;
     boolean lastPerimeterTrackInside; // was inside or outside
     float PeriCoeffAccel;
@@ -757,10 +775,9 @@ class Robot
     int stationForwDist    ;    // charge station forward distance cm
     byte stationCheckDist   ;    // charge station check distance cm
     boolean UseBumperDock ;  //bumper is pressed when docking or not
-    boolean autoResetActive;       // at the edn of the charging all is rebbot to avoid error after 1 or 2 weeks ON
+    boolean autoResetActive;       // at the end of the charging all is rebbot to avoid error after 1 or 2 weeks ON
     byte dockingSpeed ;  //speed docking is (percent of maxspeed) when sonar detect something while tracking
     byte checkDockingSpeed ;  //station check speed mower force in station
-
     unsigned long totalDistDrive;  //use to check when to leave the wire in start timer mode
     unsigned long nextTimeBattery ; // delay between 2 battery reading
     unsigned long nextTimeCheckBattery; // check the battery state
@@ -820,7 +837,7 @@ class Robot
     // robot main loop
     virtual void loop();
     virtual void resetIdleTime();
-
+    virtual void resetWatchdogForPfod();
 
 
     // state machine

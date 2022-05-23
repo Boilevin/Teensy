@@ -35,7 +35,7 @@ Mower::Mower() {
 
 
 
-  name = "MI632";
+  name = "teensyTable";
   // ------- wheel motors -----------------------------
   motorRightSwapDir     = false;    // inverse right motor direction?
   motorLeftSwapDir      = true;    // inverse left motor direction?
@@ -151,7 +151,7 @@ Mower::Mower() {
   RollTimeFor45Deg = 1000; //time while roll in peri obstacle avoid if no Odometry
   circleTimeForObstacle = 4000; //time while arc circle in peri obstacle avoid if no Odometry
   DistPeriObstacleAvoid = 100; //distance while arc circle in peri obstacle avoid
-  perimeterMagLeftMaxValue = 5000; // Maximum value return when near the perimeter wire (use for tracking and slowing when near wire
+  perimeterMagMaxValue = 5000; // Maximum value return when near the perimeter wire (use for tracking and slowing when near wire
   //perimeter.read2Coil = false;
   areaToGo = 1;//initialise the areatogo to the station area
 

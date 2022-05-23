@@ -11,10 +11,7 @@
 #include "NewPing.h"
 #include "Screen.h"
 
-//the SD card part
-#include <SD.h>
-#include <SPI.h>
-const int chipSelect = BUILTIN_SDCARD;
+
 
 //the watchdog part
 #include "Watchdog_t4.h"
@@ -164,8 +161,9 @@ Robot::Robot() {
   imuRollDir = LEFT;
   rollDir = LEFT;
 
-  perimeterMagRight = 0;
+
   perimeterMagLeft = 0;
+  perimeterMagRight = 0;
   perimeterInsideLeft = false;
   perimeterInsideRight = false;
   perimeterCounter = 0;
@@ -260,6 +258,7 @@ Robot::Robot() {
   MyrpiStatusSync = false;
   ConsoleToPfod = false;
   freeboolean = false;
+  totalLineOnFile=0;
 }
 
 
@@ -386,13 +385,14 @@ void Robot::checkTimer() {
 void Robot::loadSaveRobotStats(boolean readflag) {
 
   int addr = ADDR_ROBOT_STATS;
-  
+
   //create a new history file name to separate the data log on sd card
   // sd.open need a char array to work
-  sprintf(historyFilenameChar,"%02u%02u%02u%02u%02u.txt",datetime.date.year,datetime.date.month,datetime.date.day,datetime.time.hour,datetime.time.minute);
-  ShowMessage(F("SD Card Filename : "));
-  ShowMessageln(historyFilenameChar);
-  
+  sprintf(historyFilenameChar, "%02u%02u%02u%02u%02u.txt", datetime.date.year, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
+  if (sdCardReady) {
+    ShowMessage(F("SD Card Filename : "));
+    ShowMessageln(historyFilenameChar);
+  }
   if (readflag) {
     ShowMessage(F("Load Stats "));
   }
@@ -1028,7 +1028,7 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, DistPeriOutRev);
   eereadwrite(readflag, addr, motorRightOffsetFwd);
   eereadwrite(readflag, addr, motorRightOffsetRev);
-  eereadwrite(readflag, addr, perimeterMagLeftMaxValue);
+  eereadwrite(readflag, addr, perimeterMagMaxValue);
   eereadwrite(readflag, addr, SpeedOdoMin);
   eereadwrite(readflag, addr, SpeedOdoMax);
   eereadwrite(readflag, addr, yawSet1);
@@ -1064,6 +1064,7 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, useMqtt);
   eereadwrite(readflag, addr, stationHeading);
   eereadwrite(readflag, addr, checkDockingSpeed);
+
 
   if (readflag)
   {
@@ -1237,8 +1238,8 @@ void Robot::printSettingSerial() {
   ShowMessageln(trackingPerimeterTransitionTimeOut);
   ShowMessage  ("trackingErrorTimeOut     : ");
   ShowMessageln(trackingErrorTimeOut);
-  ShowMessage  ("perimeterMagLeftMaxValue     : ");
-  ShowMessageln(perimeterMagLeftMaxValue);
+  ShowMessage  ("perimeterMagMaxValue     : ");
+  ShowMessageln(perimeterMagMaxValue);
   ShowMessage  ("swapCoilPolarityRight    : ");
   //watchdogReset();
   ShowMessageln(perimeter.swapCoilPolarityRight);
@@ -1366,7 +1367,7 @@ void Robot::printSettingSerial() {
   ShowMessageln(UseBumperDock);
   ShowMessage  (F("dockingSpeed       : "));
   ShowMessageln(dockingSpeed);
-  ShowMessage  (F("checkDockingSpeed       : "));
+   ShowMessage (F("checkDockingSpeed  : "));
   ShowMessageln(checkDockingSpeed);
   ShowMessage  (F("autoResetActive    : "));
   ShowMessageln(autoResetActive);
@@ -1843,7 +1844,8 @@ void Robot::OdoRampCompute() { //execute only one time when a new state executio
     MaxOdoStateDuration = 3000 + max(movingTimeRight, movingTimeLeft); //add 3 secondes to the max moving duration of the 2 wheels
   }
   //check to set the correct heading
-  imuDriveHeading = imu.ypr.yaw / PI * 180; //normal mowing heading
+  //imuDriveHeading = imu.ypr.yaw / PI * 180; //normal mowing heading
+
   if (statusCurr == BACK_TO_STATION) {  //possible heading change
     imuDriveHeading = periFindDriveHeading / PI * 180;
   }
@@ -2255,11 +2257,11 @@ void Robot::motorControlPerimeter() {
   nextTimeMotorPerimeterControl = millis() + 15; //bb read the perimeter each 15 ms
   //never stop the PID compute while turning for the new transition
   //use the perimeterMagLeft as cible to smooth the tracking
-  //Value reference perimeterMagLeftMaxValue , maybe need to be calculate in mower setting up procedure
+  //Value reference perimeterMagMaxValue , maybe need to be calculate in mower setting up procedure
 
 
 
-  perimeterPID.x = 5 * (double(perimeterMagLeft) / perimeterMagLeftMaxValue);
+  perimeterPID.x = 5 * (double(perimeterMagLeft) / perimeterMagMaxValue);
   if (perimeterInsideLeft)  perimeterPID.w = -0.5;
   else     perimeterPID.w = 0.5;
 
@@ -2418,7 +2420,7 @@ void Robot::motorControlPerimeter() {
     setMotorPWM( rightSpeedperi, leftSpeedperi);
   }
 
-  if (abs(perimeterMagLeft) < perimeterMagLeftMaxValue / 4) { //250 can be replace by timedOutIfBelowSmag to be tested
+  if (abs(perimeterMagLeft) < perimeterMagMaxValue / 4) { //250 can be replace by timedOutIfBelowSmag to be tested
     perimeterLastTransitionTime = millis(); //initialise perimeterLastTransitionTime if perfect sthraith line
 
   }
@@ -2434,11 +2436,11 @@ void Robot::motorControlPerimeter2Coil() {
   if (millis() < nextTimeMotorPerimeterControl) return;
   nextTimeMotorPerimeterControl = millis() + 15; //bb read the perimeter each 15 ms
   //never stop the PID compute while turning for the new transition
-  //use the perimeterMagRight as cible to smooth the tracking
-  //Value reference perimeterMagLeftMaxValue , maybe need to be calculate in mower setting up procedure
+  //use the PerimeterMagRight as cible to smooth the tracking
+  //Value reference perimeterMagMaxValue , maybe need to be calculate in mower setting up procedure
 
 
-  perimeterPID.x = 5 * (double(perimeterMagRight) / perimeterMagLeftMaxValue);
+  perimeterPID.x = 5 * (double(perimeterMagRight) / perimeterMagMaxValue);
   if (perimeterInsideRight)  perimeterPID.w = -0.5;
   else     perimeterPID.w = 0.5;
 
@@ -2598,7 +2600,7 @@ void Robot::motorControlPerimeter2Coil() {
     setMotorPWM( rightSpeedperi, leftSpeedperi);
   }
 
-  if (abs(perimeterMagRight) < perimeterMagLeftMaxValue / 4) { //250 can be replace by timedOutIfBelowSmag to be tested
+  if (abs(perimeterMagRight) < perimeterMagMaxValue / 4) { //250 can be replace by timedOutIfBelowSmag to be tested
     perimeterLastTransitionTime = millis(); //initialise perimeterLastTransitionTime if perfect sthraith line
 
   }
@@ -2845,9 +2847,13 @@ void Robot::OdoLeftCountInt() {
 }
 
 void Robot::myCallback() {
+  /*
+    robot.ShowMessageln("warning Watchdog detect that loops take too long duration ");
+    robot.ShowMessageln("Tennsy can automaticly reboot if issue is not reset ");
+  */
+  Serial.println("warning Watchdog detect that loops take too long duration ");
+  Serial.println("Tennsy can automaticly reboot if issue is not reset ");
 
-  robot.ShowMessageln("warning Watchdog detect that loops take too long duration ");
-  robot.ShowMessageln("Tennsy can automaticly reboot if issue is not reset ");
   // try to stop everything imediatly
   robot.setNextState(STATE_OFF, 0);
   return;
@@ -2876,10 +2882,10 @@ void Robot::setup()  {
   } else {
     ShowMessageln("RTC has set the system time");
   }
- 
-  
-  ShowMessage("++++++++++++++ Initializing SD card...");
 
+
+  ShowMessageln("++++++++++++++ Initializing SD card...");
+/*
   // see if the card is present and can be initialized:
   if (!SD.begin(chipSelect)) {
     ShowMessageln("SD Card failed, or not present");
@@ -2888,11 +2894,29 @@ void Robot::setup()  {
   else {
     ShowMessageln("SD card Ok.");
     sdCardReady = true;
-    sprintf(historyFilenameChar,"%02u%02u%02u%02u%02u.txt",datetime.date.year,datetime.date.month,datetime.date.day,datetime.time.hour,datetime.time.minute);
+    sprintf(historyFilenameChar, "%02u%02u%02u%02u%02u.txt", datetime.date.year, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
     ShowMessage(F("SD Card Filename : "));
     ShowMessageln(historyFilenameChar);
-  
+
   }
+
+*/
+  
+    // see if the card is present and can be initialized:
+    if (!SD.sdfs.begin(SdioConfig(DMA_SDIO))) {
+      ShowMessageln("SD Card failed, or not present");
+      sdCardReady = false;
+    }
+    else {
+      ShowMessageln("SD card Ok.");
+      sdCardReady = true;
+      sprintf(historyFilenameChar, "%02u%02u%02u%02u%02u.txt", datetime.date.year, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
+      ShowMessage(F("SD Card Filename : "));
+      ShowMessageln(historyFilenameChar);
+
+    }
+
+  
 
   ShowMessage("Version : ");
   ShowMessageln(VER);
@@ -2921,7 +2945,7 @@ void Robot::setup()  {
 
 
 
-  
+
 
 
 
@@ -2988,7 +3012,7 @@ void Robot::setup()  {
   ShowMessageln(F("  d for menu"));
   ShowMessageln(F("  v to change console output (sensor counters, values, perimeter etc.)"));
   ShowMessageln(consoleModeNames[consoleMode]);
-  
+
 
 
   ShowMessageln ("Starting Ina226 current sensor ");
@@ -3079,7 +3103,16 @@ void Robot::setup()  {
 
 
 }
-
+void Robot::resetWatchdogForPfod() {
+  wdt.feed();
+  delay(200);
+  wdt.feed();
+  //delay(500);
+  //wdt.feed();
+  //delay(500);
+  //wdt.feed();
+  // delay(500);
+}
 
 void Robot::printOdometry() {
   ShowMessage(F("ODO,"));
@@ -3604,7 +3637,7 @@ void Robot::readSensors() {
 
     perimeterMedian.add(perimeterMagLeft);
     if (perimeterMedian.isFull()) {
-      perimeterNoiseLeft = perimeterMedian.getHighest() - perimeterMedian.getLowest();
+      perimeterNoise = perimeterMedian.getHighest() - perimeterMedian.getLowest();
       perimeterMedian.clear();
     }
 
@@ -4532,9 +4565,16 @@ void Robot::setNextState(byte stateNew, byte dir) {
       break;
 
     case STATE_PERI_OUT_ROLL: //roll left or right in normal mode
+  
+      if (motorRollDegMin > motorRollDegMax) ShowMessageln("Warning : Roll deg Min > Roll deg Max ????? ");
       if (mowPatternCurr == MOW_RANDOM) AngleRotate = random(motorRollDegMin, motorRollDegMax);
 
+      ShowMessage("Heading : ");
+      ShowMessage((imu.ypr.yaw / PI * 180.0));
+
       if (dir == RIGHT) {
+        ShowMessage(" Rot Angle : ");
+        ShowMessageln(AngleRotate);
         // if (mowPatternCurr == MOW_ZIGZAG) AngleRotate = imu.scale180(imuDriveHeading + 135); //need limit value to valib the rebon
         UseAccelLeft = 1;
         //bb6
@@ -4544,11 +4584,13 @@ void Robot::setNextState(byte stateNew, byte dir) {
         UseBrakeRight = 1;
         motorLeftSpeedRpmSet = motorSpeedMaxRpm ;
         motorRightSpeedRpmSet = -motorSpeedMaxRpm;
-        Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
+        Tempovar = 2 * 36000 / AngleRotate; //need a value*100 for integer division later
         stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
         stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
 
       } else {
+        ShowMessage(" Rot Angle : ");
+        ShowMessageln(-1 * AngleRotate);
         // if (mowPatternCurr == MOW_ZIGZAG) AngleRotate = imu.scale180(imuDriveHeading - 135); //need limit value to valib the rebon
         UseAccelLeft = 0;
         UseBrakeLeft = 1;
@@ -4557,7 +4599,7 @@ void Robot::setNextState(byte stateNew, byte dir) {
         UseBrakeRight = 0;
         motorLeftSpeedRpmSet = -motorSpeedMaxRpm ;
         motorRightSpeedRpmSet = motorSpeedMaxRpm;
-        Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
+        Tempovar = 2 * 36000 / AngleRotate; //need a value*100 for integer division later
         stateEndOdometryRight = odometryRight + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) ;
         stateEndOdometryLeft = odometryLeft - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) ;
       }
@@ -4663,7 +4705,8 @@ void Robot::setNextState(byte stateNew, byte dir) {
       OdoRampCompute();
       break;
     case STATE_PERI_OUT_FORW:  //Accel after roll so the 2 wheel have the same speed when reach the forward state
-
+      ShowMessage("New heading :");
+      ShowMessageln((imu.ypr.yaw / PI * 180.0));
       if ((mowPatternCurr == MOW_LANES) || (mowPatternCurr == MOW_ZIGZAG)) {
         PrevStateOdoDepassLeft = odometryLeft - stateEndOdometryLeft;
         PrevStateOdoDepassRight = odometryRight - stateEndOdometryRight;
@@ -5097,16 +5140,26 @@ void Robot::writeOnSD(String message) {
       dataFile.print(message);
       dataFile.close();
     }
+    totalLineOnFile = totalLineOnFile + 1;
+    if (totalLineOnFile >= 1000) { // create a new log file if too long
+      totalLineOnFile = 0;
+      sprintf(historyFilenameChar, "%02u%02u%02u%02u%02u.txt", datetime.date.year, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
+    }
   }
 }
 
 void Robot::writeOnSDln(String message) {
- if (sdCardReady) {
+  if (sdCardReady) {
     //filename is reset into :loadSaveRobotStats
     File dataFile = SD.open(historyFilenameChar, FILE_WRITE);
     if (dataFile) {
       dataFile.println(message);
       dataFile.close();
+    }
+    totalLineOnFile = totalLineOnFile + 1;
+    if (totalLineOnFile >= 1000) { // create a new log file if too long
+      totalLineOnFile = 0;
+      sprintf(historyFilenameChar, "%02u%02u%02u%02u%02u.txt", datetime.date.year, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
     }
   }
 }
@@ -5563,8 +5616,8 @@ void Robot::checkPerimeterBoundary() {
     //bber200
     //speed coeff between 0.7 and 1 according 50% of perimetermagmax
     if ((millis() >= nextTimeCheckperimeterSpeedCoeff) && (reduceSpeedNearPerimeter)) {
-      //int miniValue = (int)perimeterMagLeftMaxValue / 2;
-      // perimeterSpeedCoeff = (float) map(perimeter.getSmoothMagnitude(0), miniValue, perimeterMagLeftMaxValue, 100, 70) / 100;
+      //int miniValue = (int)perimeterMagMaxValue / 2;
+      // perimeterSpeedCoeff = (float) map(perimeter.getSmoothMagnitude(0), miniValue, perimeterMagMaxValue, 100, 70) / 100;
       if (perimeterSpeedCoeff < 0.7) {
         perimeterSpeedCoeff = 0.7;
         nextTimeCheckperimeterSpeedCoeff = millis() + 500; //avoid speed coeff increase when mower go accross the wire
@@ -5584,7 +5637,6 @@ void Robot::checkPerimeterBoundary() {
         ShowMessageln(millis());
         //reinit spirale mowing
         spiraleNbTurn = 0;
-
         highGrassDetect = false; //stop the spirale
         setNextState(STATE_PERI_OUT_STOP, rollDir);
         return;
@@ -5991,7 +6043,7 @@ void Robot::loop()  {
   }
 
   if (millis() >= nextTimePfodLoop) {
-    nextTimePfodLoop = millis() + 100;
+    nextTimePfodLoop = millis() + 1;
     rc.run();
 
   }

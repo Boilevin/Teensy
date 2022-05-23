@@ -185,8 +185,7 @@ unsigned long GPS::parse_degrees()  // term=5000.0095 (50° 00' 0.0095*60'')
 // Processes a just-completed term
 // Returns true if new sentence has just passed checksum test and is validated
 bool GPS::term_complete()
-{
-  //ShowMessageln("compl");
+{ 
   if (_is_checksum_term)
   {
     byte checksum = 16 * from_hex(_term[0]) + from_hex(_term[1]);
@@ -244,6 +243,7 @@ bool GPS::term_complete()
       _sentence_type = _GPS_SENTENCE_GPGGA;
     else
       _sentence_type = _GPS_SENTENCE_OTHER;
+       
     return false;
   }
 

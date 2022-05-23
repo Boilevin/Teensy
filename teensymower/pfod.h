@@ -37,29 +37,10 @@
 #ifndef PFOD_H
 #define PFOD_H
 
-
-#include "drivers.h"
+//#include <Arduino.h>
 #include "pid.h"
-
-/* The Modifications are made by Fürst Ruprecht for azuritBer and TeensyMower -Software made by the great Softwareengineer Bernard from France 
- * See :  https://github.com/Boilevin
- * Visit us at : https://www.diy-robot-lawn-mower.com/
- * Select your setting by removing // at the appropriate place. 
- * Attention: the compiler only checks whether the keyword is defined/existing. 
- * It does not check the correctness. Therefore true / false has no meaning for the function but only for the syntax.
-*/
-
-#define STANDARD true           //if you are NOT Fürst Ruprecht
-//#define FUERSTRUPRECHT true     //if you are Fürst Ruprecht
-//#define USECONSOLE true         //if you want to send the arduino-console-Output to your mobile/tablet
-								  // you must have the ShowMessage() function in your main-code	
-//#define USEPFOD true            //if you use the arduino-pfod-V3-app
-
-#if not defined(TEENSYDUINO)  //(DUE) 
-  #include <Arduino.h>    
-  #include "perimeter.h"
-#endif
-
+#include "drivers.h"
+//#include "perimeter.h"
 
 // pfodApp state
 enum { PFOD_OFF, PFOD_MENU, PFOD_CONSOLE,
@@ -79,12 +60,14 @@ class RemoteControl
     void processPI(String RpiCmd, float v1, float v2, float v3) ;
     void run();
     byte pfodState;
-    
+
   private:
     HardwareSerial* serialPort;
     Robot *robot;
     boolean pfodCmdComplete;
     String pfodCmd;
+    String logFileNameArray[51];
+    
     int rfidDetailIdx;
     int testmode;
     unsigned long nextPlotTime;
@@ -93,13 +76,11 @@ class RemoteControl
     float value2;
     float value3;
     boolean dataFromPi;
-	#if not defined(TEENSYDUINO)
-		int8_t perimeterCapture[RAW_SIGNAL_SAMPLE_SIZE];
-	#endif	
+    // int8_t perimeterCapture[RAW_SIGNAL_SAMPLE_SIZE];
     int perimeterCaptureIdx;
     float stringToFloat(String &s);
     byte rfid_pos_into_list;
-    
+
     // generic
     void sendYesNo(int value);
     void sendOnOff(int value);
@@ -116,9 +97,8 @@ class RemoteControl
     void processSlider(String result, long &value, double scale);
     void processSlider(String result, int &value, double scale);
     void processSlider(String result, byte &value, double scale);
-    void processSlider(String result, short &value, double scale);	
-		void processSlider(String result, unsigned long &value, double scale);
-	
+    void processSlider(String result, short &value, double scale);
+    void processSlider(String result, unsigned long &value, double scale);
 
     // send timer menu details
     void sendTimer(ttimer_t timer);
@@ -147,14 +127,10 @@ class RemoteControl
     void sendMotorMenu(boolean update);
     void sendMowMenu(boolean update);
     void sendBumperMenu(boolean update);
-	#if not defined(TEENSYDUINO)
-		void sendDropMenu(boolean update);
-	#endif
+
     void sendSonarMenu(boolean update);
     void sendPerimeterMenu(boolean update);
-  #if not defined(TEENSYDUINO)
-		void sendLawnSensorMenu(boolean update);
-	#endif	
+
     void sendImuMenu(boolean update);
     void sendRemoteMenu(boolean update);
     void sendBatteryMenu(boolean update);
@@ -163,7 +139,7 @@ class RemoteControl
     void sendRainMenu(boolean update);
     void sendGPSMenu(boolean update);
     void sendRFIDMenu(boolean update);
-    void sendRfidDetailMenu(int rfidDetailIdx,boolean update);
+    void sendRfidDetailMenu(int rfidDetailIdx, boolean update);
 
     void sendDateTimeMenu(boolean update);
     void sendFactorySettingsMenu(boolean update);
@@ -177,14 +153,12 @@ class RemoteControl
     void processBumperMenu(String pfodCmd);
     void processSonarMenu(String pfodCmd);
     void processPerimeterMenu(String pfodCmd);
-  #if not defined(TEENSYDUINO)
-		void processLawnSensorMenu(String pfodCmd);
-		void processDropMenu(String pfodCmd);
-	#endif	
-    void processRainMenu(String pfodCmd);    
+
+    void processRainMenu(String pfodCmd);
+
     void processGPSMenu(String pfodCmd);
     void processRFIDMenu(String pfodCmd);
-    void processRfidDetailMenu(int rfidDetailIdx,String pfodCmd);
+    void processRfidDetailMenu(int rfidDetailIdx, String pfodCmd);
     void processImuMenu(String pfodCmd);
     void processRemoteMenu(String pfodCmd);
     void processBatteryMenu(String pfodCmd);
@@ -193,19 +167,21 @@ class RemoteControl
     void processDateTimeMenu(String pfodCmd);
     void processFactorySettingsMenu(String pfodCmd);
     void processInfoMenu(String pfodCmd);
-	#if defined(useStepperMenu)
-		void sendStepperMenu(boolean update);
-		void processStepperMenu(String pfodCmd);
-	#endif	
-	#if defined(USECONSOLE)		
-		void sendConsoleMenu(boolean update);
-  #endif;
 
     // timer
     void sendTimerDetailMenu(int timerIdx, boolean update);
     void processTimerDetailMenu(String pfodCmd);
     void sendTimerMenu(boolean update);
     void processTimerMenu(String pfodCmd);
+
+
+    void sendSdCardLogMenu(boolean update);
+    void processSdCardLogMenu(String pfodCmd);
+
+    void sendSdCardLogDetailMenu(String logFileName);
+    //void processSdCardLogDetailMenu(int rfidDetailIdx,String pfodCmd);
+   
+
 };
 
 

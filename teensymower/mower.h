@@ -47,7 +47,7 @@
 #define RaspberryPIPort Serial  //The PI is connected over USB cable
 
 #define Bluetooth Serial1  // Ardumower default OK for ESP32 or HC05
-#define BLUETOOTH_BAUDRATE  19200     // baudrate used for communication with Bluetooth module (Ardumower default: 19200)
+#define BLUETOOTH_BAUDRATE  115200     // baudrate used for communication with Bluetooth module (Ardumower default: 19200)
 
 #define GpsPort Serial3  // GPS 
 
