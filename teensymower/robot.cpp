@@ -257,6 +257,8 @@ Robot::Robot() {
 
   MyrpiStatusSync = false;
   ConsoleToPfod = false;
+  sdcardToPfod = false;
+  
   freeboolean = false;
   totalLineOnFile=0;
 }
@@ -388,9 +390,11 @@ void Robot::loadSaveRobotStats(boolean readflag) {
 
   //create a new history file name to separate the data log on sd card
   // sd.open need a char array to work
-  sprintf(historyFilenameChar, "%02u%02u%02u%02u%02u.txt", datetime.date.year, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
+    
+  sprintf(historyFilenameChar, "%02d%02d%02d%02d%02d.txt", datetime.date.year-2000, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
+  
   if (sdCardReady) {
-    ShowMessage(F("SD Card Filename : "));
+    ShowMessage(F("Log Filename : "));
     ShowMessageln(historyFilenameChar);
   }
   if (readflag) {
@@ -2881,6 +2885,12 @@ void Robot::setup()  {
     ShowMessageln("Unable to sync with the RTC");
   } else {
     ShowMessageln("RTC has set the system time");
+    datetime.date.day = day();
+    datetime.date.month = month();
+    datetime.date.year = year();
+    datetime.time.hour = hour();
+    datetime.time.minute = minute();
+    datetime.date.dayOfWeek = getDayOfWeek(month(), day(), year(), 0);
   }
 
 
@@ -2894,8 +2904,8 @@ void Robot::setup()  {
   else {
     ShowMessageln("SD card Ok.");
     sdCardReady = true;
-    sprintf(historyFilenameChar, "%02u%02u%02u%02u%02u.txt", datetime.date.year, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
-    ShowMessage(F("SD Card Filename : "));
+    sprintf(historyFilenameChar, "%02u%02u%02u%02u%02u.txt", datetime.date.year-2000, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
+    ShowMessage(F("Log Filename : "));
     ShowMessageln(historyFilenameChar);
 
   }
@@ -2910,10 +2920,11 @@ void Robot::setup()  {
     else {
       ShowMessageln("SD card Ok.");
       sdCardReady = true;
-      sprintf(historyFilenameChar, "%02u%02u%02u%02u%02u.txt", datetime.date.year, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
-      ShowMessage(F("SD Card Filename : "));
+      /*
+      sprintf(historyFilenameChar, "%02u%02u%02u%02u%02u.txt", datetime.date.year-2000, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
+      ShowMessage(F("Log Filename : "));
       ShowMessageln(historyFilenameChar);
-
+*/
     }
 
   
@@ -5143,7 +5154,7 @@ void Robot::writeOnSD(String message) {
     totalLineOnFile = totalLineOnFile + 1;
     if (totalLineOnFile >= 1000) { // create a new log file if too long
       totalLineOnFile = 0;
-      sprintf(historyFilenameChar, "%02u%02u%02u%02u%02u.txt", datetime.date.year, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
+      sprintf(historyFilenameChar, "%02u%02u%02u%02u%02u.txt", datetime.date.year-2000, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
     }
   }
 }
@@ -5159,7 +5170,7 @@ void Robot::writeOnSDln(String message) {
     totalLineOnFile = totalLineOnFile + 1;
     if (totalLineOnFile >= 1000) { // create a new log file if too long
       totalLineOnFile = 0;
-      sprintf(historyFilenameChar, "%02u%02u%02u%02u%02u.txt", datetime.date.year, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
+      sprintf(historyFilenameChar, "%02u%02u%02u%02u%02u.txt", datetime.date.year-2000, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
     }
   }
 }
@@ -5930,7 +5941,7 @@ void Robot::loop()  {
   stateTime = millis() - stateStartTime;
   int steer;
 
-  if ((useMqtt) && (millis() > next_time_refresh_mqtt)) {
+  if ((useMqtt) && (!sdcardToPfod) && (!ConsoleToPfod) && (millis() > next_time_refresh_mqtt)) {
     next_time_refresh_mqtt = millis() + 3000;
     String line01 = "#RMSTA," + String(statusNames[statusCurr]) + "," + String(stateNames[stateCurr]) + "," + String(temperatureTeensy) + "," + String(batVoltage) + "," + String(loopsPerSec)  ;
     Bluetooth.println(line01);
@@ -5951,7 +5962,8 @@ void Robot::loop()  {
 
 
   rc.readSerial();// see the readserial function into pfod.cpp
-
+  rc.run();
+  
   readSensors();
   readAllTemperature();
   checkRobotStats();
@@ -6042,11 +6054,9 @@ void Robot::loop()  {
     loopsPerSecCounter = 0;
   }
 
-  if (millis() >= nextTimePfodLoop) {
-    nextTimePfodLoop = millis() + 1;
-    rc.run();
+    
 
-  }
+  
 
   // state machine - things to do *PERMANENTLY* for current state
   // robot state machine

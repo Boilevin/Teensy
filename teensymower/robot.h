@@ -230,9 +230,11 @@ class Robot
     boolean sdCardReady;
     int totalLineOnFile;
     
-    char historyFilenameChar[25]; // need a char array for sd card open
+    char historyFilenameChar[15]; // need a char array for sd card open
     boolean developerActive;
     boolean ConsoleToPfod;
+    boolean sdcardToPfod; // use to stop mqtt message went list a file in pfod raw data mode
+    
     // --------- state machine --------------------------
     byte stateCurr;
     byte stateLast;

@@ -545,7 +545,6 @@ void RemoteControl::sendBumperMenu(boolean update) {
   if (update) serialPort->print("{:"); else serialPort->print(F("{.Bumper`1000"));
   serialPort->print(F("|b00~Bumper Use "));
   sendYesNo(robot->bumperUse);
-  serialPort->println(F("|b01~Counter l , r "));
   serialPort->print(robot->bumperLeftCounter);
   serialPort->print(" , ");
   serialPort->print(robot->bumperRightCounter);
@@ -756,125 +755,107 @@ void RemoteControl::processGPSMenu(String pfodCmd) {
 }
 
 void RemoteControl::sendSdCardLogMenu(boolean update) {
+  // list the sdcard root dir and create an array logFileNameArray with filename
+  // array is used to manage the pfod id H00 to H98 and to show the detail menu of the correct file
+  // H99 is reverver to erase log
   if (update) serialPort->print("{:"); else serialPort->println(F("{.Sdcard`20000"));
-  int myidx = 0;
-  String myidxString ;
+  int myFileIndex = 0;
+  String myFileidxString ;
   for (int i = 0; i < 20; i++) {
     logFileNameArray[i] = "";
   }
   File root = SD.open("/");
   File entry = root.openNextFile(); // remove title from list
-  while (myidx <= 20) { //show the 20 last log file
+  while (myFileIndex <= 50) { //show the 50 last log file
     File entry = root.openNextFile();
+
     if (! entry) {
       break;
     }
     serialPort->print(F("|H"));
     // add leading 0 for later have H00 ....H08....H12 etc..
-    if (myidx < 10) {
-      myidxString = "0" + String(myidx);
+    if (myFileIndex < 10) {
+      myFileidxString = "0" + String(myFileIndex);
     }
     else {
-      myidxString = String(myidx);
+      myFileidxString = String(myFileIndex);
     }
-    serialPort->print(myidxString);
+    serialPort->print(myFileidxString);
     serialPort->print("~");
-    serialPort->print(String(entry.name())); //name of file
-    logFileNameArray[myidx] = String(entry.name());
-    myidx = myidx + 1;
+    String readableFileText = String(entry.name()).substring(4, 6) + "/" +  String(entry.name()).substring(2, 4);
+    readableFileText = readableFileText + "  " + String(entry.name()).substring(6, 8) + ":" +  String(entry.name()).substring(8, 10);
+    // readableFileText = readableFileText + "  " + entry.size();
+
+    //serialPort->print(String(entry.name())); //true name of file
+    serialPort->print(readableFileText); //name of file in readable format dd/MM hh:mm
+    logFileNameArray[myFileIndex] = String(entry.name());
+    myFileIndex = myFileIndex + 1;
     entry.close();
     delay(10);// add for slow  wifi support
   }
+  serialPort->print(F("|H99~ ** ERASE SD CARD **"));
   serialPort->println(F("}"));
 }
 
 
 
 void RemoteControl::processSdCardLogMenu(String pfodCmd) {
+  // menu H99 is reserve for format sd card other H00 to H98 are the index of file name list
   int SdCardFileIdx;
+  if (pfodCmd.startsWith("H99")) {
+    //Serial.println (" ERASE SD CARD ");
+    File root = SD.open("/");
+    File entry = root.openNextFile(); // remove title from list
+    while (1) { //loop for all file on root
+      File entry = root.openNextFile();
+      if (! entry) {
+        return;
+      }
+      SD.remove(entry.name());
+      // Serial.print(entry.name());
+      //Serial.println(" delete");
+    }
+    return;
+  }
+
   if (pfodCmd.startsWith("H")) {
-    //search the raw location of the click
+    //search the index location of the click (selected file
     SdCardFileIdx = int(pfodCmd[2] - '0') + 10 * int(pfodCmd[1] - '0');
-  }
-  //sendSdCardLogDetailMenu(logFileNameArray[SdCardFileIdx]);
 
-  String logFileName = logFileNameArray[SdCardFileIdx];
+    String logFileName = logFileNameArray[SdCardFileIdx];
 
-  serialPort->print("{=Log}");
-  pfodState = PFOD_CONSOLE;
+    serialPort->print("{=Log}");
+   // pfodState = PFOD_CONSOLE;
 
-  File myFile;
-  myFile = SD.open(logFileName.c_str());
+    File myFile;
+    myFile = SD.open(logFileName.c_str());
 
-  if (myFile) {
-    serialPort->println("Start of log");
-    serialPort->println(logFileName);
-    serialPort->println("************");
+    if (myFile) {
+      serialPort->println("Start of log");
+      //serialPort->println(logFileName);
+      serialPort->println("");
 
-    int count = 0;
-    // read from the file until there's nothing else in it:
-    while (myFile.available()) {
-      count++;
-      serialPort->write(myFile.read());
-      if (count >= 50) {
-        count = 0;
-        robot->resetWatchdogForPfod();
+      int count = 0;
+      // read from the file until there's nothing else in it:
+      while (myFile.available()) {
+        count++;
+        serialPort->write(myFile.read());
+        if (count >= 100) {
+          count = 0;
+          robot->resetWatchdogForPfod();
+        }
       }
+      myFile.close();
+      serialPort->println("");
+      serialPort->println("End of log");
+    } else {
+      // if the file didn't open, print an error:
+      serialPort->println("error opening file : ");
+      serialPort->println(logFileName);
+
     }
-    myFile.close();
-    serialPort->println("End of log");
-  } else {
-    // if the file didn't open, print an error:
-    serialPort->println("error opening file : ");
-    serialPort->println(logFileName);
-
   }
-  /*
-    serialPort->println("");
-    sendSdCardLogMenu(true);
-  */
-
-
 }
-
-void RemoteControl::sendSdCardLogDetailMenu(String logFileName) {
-  serialPort->print("{=Log}");
-  pfodState = PFOD_CONSOLE;
-
-  File myFile;
-  myFile = SD.open(logFileName.c_str());
-
-  if (myFile) {
-    serialPort->println("Start of log");
-    serialPort->println(logFileName);
-    serialPort->println("************");
-
-    int count = 0;
-    // read from the file until there's nothing else in it:
-    while (myFile.available()) {
-      count++;
-      serialPort->write(myFile.read());
-      if (count >= 200) {
-        count = 0;
-        robot->resetWatchdogForPfod();
-      }
-    }
-    myFile.close();
-    serialPort->println("End of log");
-  } else {
-    // if the file didn't open, print an error:
-    serialPort->println("error opening file : ");
-    serialPort->println(logFileName);
-
-  }
-  /*
-    serialPort->println("");
-    sendSdCardLogMenu(true);
-  */
-}
-
-
-
 
 void RemoteControl::sendRFIDMenu(boolean update) {
   if (update) serialPort->print("{:"); else serialPort->print(F("{.RFID`1000"));
@@ -1228,7 +1209,7 @@ void RemoteControl::sendStationMenu(boolean update) {
   sendSlider("k02", F("Accel Distance after Roll"), robot->stationForwDist, "", 1, 200, 0);
   sendSlider("k03", F("Station check Distance"), robot->stationCheckDist, "", 1, 20, 0);
   sendSlider("k07", F("Station check Speed"), robot->checkDockingSpeed, "", 0.1, 10, 0);
-  sendSlider("k06", F("Sonar Docking Speed % of MaxSpeed"), robot->dockingSpeed, "", 1, 100, 20); 
+  sendSlider("k06", F("Sonar Docking Speed % of MaxSpeed"), robot->dockingSpeed, "", 1, 100, 20);
   sendSlider("k04", F("Station Heading"), robot->stationHeading , "", 1, 180, 0);
 
   serialPort->println("}");
@@ -2169,6 +2150,7 @@ boolean RemoteControl::readSerial() {
 
       if (pfodCmd == ".") {
         robot->ConsoleToPfod = false;
+        robot->sdcardToPfod = false;
         sendMainMenu(false);
       }
       else if (pfodCmd == "C") {
@@ -2251,9 +2233,7 @@ boolean RemoteControl::readSerial() {
       else if (pfodCmd == "i") sendTimerMenu(false);
       else if (pfodCmd == "in") sendInfoMenu(false);
       else if (pfodCmd == "H") sendSdCardLogMenu(false);
-
-
-
+      
       else if (pfodCmd.startsWith("a")) processMotorMenu(pfodCmd);
       else if (pfodCmd.startsWith("b")) processBumperMenu(pfodCmd);
       else if (pfodCmd.startsWith("c")) processCompassMenu(pfodCmd);
@@ -2263,6 +2243,7 @@ boolean RemoteControl::readSerial() {
       else if (pfodCmd.startsWith("g")) processImuMenu(pfodCmd);
       else if (pfodCmd.startsWith("h")) processRemoteMenu(pfodCmd);
       else if (pfodCmd.startsWith("H")) {
+        robot->sdcardToPfod = true;
         pfodState = PFOD_CONSOLE;
         processSdCardLogMenu(pfodCmd);
       }
