@@ -755,46 +755,91 @@ void RemoteControl::processGPSMenu(String pfodCmd) {
 }
 
 void RemoteControl::sendSdCardLogMenu(boolean update) {
-  // list the sdcard root dir and create an array logFileNameArray with filename
+  // list the sdcard root dir and create a 2D orderer DESC  array logFileNameArray with filename and readable name
   // array is used to manage the pfod id H00 to H98 and to show the detail menu of the correct file
-  // H99 is reverver to erase log
+  // H99 is menu reservation  to erase all SD file
+  //int32_t logfiledateArray[1000];
   if (update) serialPort->print("{:"); else serialPort->println(F("{.Sdcard`20000"));
   int myFileIndex = 0;
+  int totalFileOnSD = 0;
+  int totalFileOnArray = 0;
   String myFileidxString ;
-  for (int i = 0; i < 20; i++) {
-    logFileNameArray[i] = "";
+  String readableFileText ;
+  for (int i = 0; i < 50; i++) {
+    logFileNameArray[i][1] = "";
+    logFileNameArray[i][2] = "";
   }
-  File root = SD.open("/");
-  File entry = root.openNextFile(); // remove title from list
-  while (myFileIndex <= 50) { //show the 50 last log file
-    File entry = root.openNextFile();
-
+  File root;
+  File entry;
+  //count the number of file present on SD Card to later read only the last 50 file in DESC order
+  root = SD.open("/");
+  entry = root.openNextFile(); // remove title from list
+  while (entry) { 
+    entry = root.openNextFile();
+    totalFileOnSD = totalFileOnSD + 1;
+  }
+  
+  myFileIndex = 0;
+  root = SD.open("/");
+  entry = root.openNextFile(); // remove title from list
+  // fill ordered 50 value 2D array with idx,logFileName,readableFileText
+  while (myFileIndex < totalFileOnSD) {
+    entry = root.openNextFile();
     if (! entry) {
       break;
     }
-    serialPort->print(F("|H"));
-    // add leading 0 for later have H00 ....H08....H12 etc..
-    if (myFileIndex < 10) {
-      myFileidxString = "0" + String(myFileIndex);
+    if (myFileIndex > totalFileOnSD - 50) {
+      readableFileText = String(entry.name()).substring(4, 6) + "/" +  String(entry.name()).substring(2, 4);
+      readableFileText = readableFileText + "  " + String(entry.name()).substring(6, 8) + ":" +  String(entry.name()).substring(8, 10);
+      logFileNameArray[50 - myFileIndex][1] = String(entry.name());
+      logFileNameArray[50 - myFileIndex][2] = readableFileText;
+      totalFileOnArray = totalFileOnArray + 1;
     }
-    else {
-      myFileidxString = String(myFileIndex);
-    }
-    serialPort->print(myFileidxString);
-    serialPort->print("~");
-    String readableFileText = String(entry.name()).substring(4, 6) + "/" +  String(entry.name()).substring(2, 4);
-    readableFileText = readableFileText + "  " + String(entry.name()).substring(6, 8) + ":" +  String(entry.name()).substring(8, 10);
-    // readableFileText = readableFileText + "  " + entry.size();
-
-    //serialPort->print(String(entry.name())); //true name of file
-    serialPort->print(readableFileText); //name of file in readable format dd/MM hh:mm
-    logFileNameArray[myFileIndex] = String(entry.name());
+    /*
+      Serial.print(myFileIndex);
+      Serial.print(" ");
+      Serial.print(50 - myFileIndex);
+      Serial.print(" ");
+      Serial.println(logFileNameArray[50 - myFileIndex][1]);
+    */
     myFileIndex = myFileIndex + 1;
-    entry.close();
-    delay(10);// add for slow  wifi support
+  }
+  //Serial.print("TotalFileOnSD : ");
+  //Serial.println(totalFileOnSD);
+  //Serial.println(totalFileOnArray);
+  myFileIndex = 0;
+
+  // send data to pfod
+  byte myIdxPfodRaw;
+  for (myIdxPfodRaw = 0; myIdxPfodRaw < 50; myIdxPfodRaw++)
+  {
+    if (logFileNameArray[myIdxPfodRaw][1] != "") {
+      /*
+      Serial.print(myIdxPfodRaw);
+      Serial.print(" -> ");
+      Serial.print(logFileNameArray[myIdxPfodRaw][1]);
+      Serial.print("  ");
+      Serial.println(logFileNameArray[myIdxPfodRaw][2]);
+*/
+
+      serialPort->print(F("|H"));
+      // add leading 0 for later have H00 ....H08....H12 etc..
+      if (myIdxPfodRaw < 10) {
+        myFileidxString = "0" + String(myIdxPfodRaw);
+      }
+      else {
+        myFileidxString = String(myIdxPfodRaw);
+      }
+      serialPort->print(myFileidxString);
+      serialPort->print("~");
+      serialPort->print(logFileNameArray[myIdxPfodRaw][2]); //name of file in readable format dd/MM hh:mm
+      delay(10);// add for very slow  wifi support (ESP32 can take time to send data over wifi and it teensy can overload the ESP 32 serial buffer
+    }
+
   }
   serialPort->print(F("|H99~ ** ERASE SD CARD **"));
   serialPort->println(F("}"));
+
 }
 
 
@@ -822,10 +867,10 @@ void RemoteControl::processSdCardLogMenu(String pfodCmd) {
     //search the index location of the click (selected file
     SdCardFileIdx = int(pfodCmd[2] - '0') + 10 * int(pfodCmd[1] - '0');
 
-    String logFileName = logFileNameArray[SdCardFileIdx];
+    String logFileName = logFileNameArray[SdCardFileIdx][1];
 
     serialPort->print("{=Log}");
-   // pfodState = PFOD_CONSOLE;
+    // pfodState = PFOD_CONSOLE;
 
     File myFile;
     myFile = SD.open(logFileName.c_str());
@@ -2233,7 +2278,7 @@ boolean RemoteControl::readSerial() {
       else if (pfodCmd == "i") sendTimerMenu(false);
       else if (pfodCmd == "in") sendInfoMenu(false);
       else if (pfodCmd == "H") sendSdCardLogMenu(false);
-      
+
       else if (pfodCmd.startsWith("a")) processMotorMenu(pfodCmd);
       else if (pfodCmd.startsWith("b")) processBumperMenu(pfodCmd);
       else if (pfodCmd.startsWith("c")) processCompassMenu(pfodCmd);

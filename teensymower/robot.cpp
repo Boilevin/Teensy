@@ -258,9 +258,9 @@ Robot::Robot() {
   MyrpiStatusSync = false;
   ConsoleToPfod = false;
   sdcardToPfod = false;
-  
+
   freeboolean = false;
-  totalLineOnFile=0;
+  totalLineOnFile = 0;
 }
 
 
@@ -390,9 +390,9 @@ void Robot::loadSaveRobotStats(boolean readflag) {
 
   //create a new history file name to separate the data log on sd card
   // sd.open need a char array to work
-    
-  sprintf(historyFilenameChar, "%02d%02d%02d%02d%02d.txt", datetime.date.year-2000, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
-  
+
+  sprintf(historyFilenameChar, "%02d%02d%02d%02d%02d.txt", datetime.date.year - 2000, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
+
   if (sdCardReady) {
     ShowMessage(F("Log Filename : "));
     ShowMessageln(historyFilenameChar);
@@ -1371,7 +1371,7 @@ void Robot::printSettingSerial() {
   ShowMessageln(UseBumperDock);
   ShowMessage  (F("dockingSpeed       : "));
   ShowMessageln(dockingSpeed);
-   ShowMessage (F("checkDockingSpeed  : "));
+  ShowMessage (F("checkDockingSpeed  : "));
   ShowMessageln(checkDockingSpeed);
   ShowMessage  (F("autoResetActive    : "));
   ShowMessageln(autoResetActive);
@@ -1848,7 +1848,7 @@ void Robot::OdoRampCompute() { //execute only one time when a new state executio
     MaxOdoStateDuration = 3000 + max(movingTimeRight, movingTimeLeft); //add 3 secondes to the max moving duration of the 2 wheels
   }
   //check to set the correct heading
-  //imuDriveHeading = imu.ypr.yaw / PI * 180; //normal mowing heading
+  imuDriveHeading = imu.ypr.yaw / PI * 180; //normal mowing heading
 
   if (statusCurr == BACK_TO_STATION) {  //possible heading change
     imuDriveHeading = periFindDriveHeading / PI * 180;
@@ -2329,7 +2329,7 @@ void Robot::motorControlPerimeter() {
     if (millis() > perimeterLastTransitionTime + trackingErrorTimeOut) {
       if (perimeterInsideLeft) {
         ShowMessageln("Tracking Fail and we are inside, So start to find again the perimeter");
-        //   periFindDriveHeading = imu.ypr.yaw;
+        periFindDriveHeading = imu.ypr.yaw;
         setNextState(STATE_PERI_FIND, 0);
       }
       else
@@ -2509,7 +2509,7 @@ void Robot::motorControlPerimeter2Coil() {
     if (millis() > perimeterLastTransitionTime + trackingErrorTimeOut) {
       if (perimeterInsideRight) {
         ShowMessageln("Tracking Fail and we are inside, So start to find again the perimeter");
-        //   periFindDriveHeading = imu.ypr.yaw;
+        periFindDriveHeading = imu.ypr.yaw;
         setNextState(STATE_PERI_FIND, 0);
       }
       else
@@ -2894,40 +2894,50 @@ void Robot::setup()  {
   }
 
 
-  ShowMessageln("++++++++++++++ Initializing SD card...");
-/*
-  // see if the card is present and can be initialized:
-  if (!SD.begin(chipSelect)) {
-    ShowMessageln("SD Card failed, or not present");
-    sdCardReady = false;
-  }
-  else {
-    ShowMessageln("SD card Ok.");
-    sdCardReady = true;
-    sprintf(historyFilenameChar, "%02u%02u%02u%02u%02u.txt", datetime.date.year-2000, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
-    ShowMessage(F("Log Filename : "));
-    ShowMessageln(historyFilenameChar);
-
-  }
-
-*/
-  
+  ShowMessageln("------------------- Initializing SD card... ---------------------");
+  /*
     // see if the card is present and can be initialized:
-    if (!SD.sdfs.begin(SdioConfig(DMA_SDIO))) {
+    if (!SD.begin(chipSelect)) {
       ShowMessageln("SD Card failed, or not present");
       sdCardReady = false;
     }
     else {
       ShowMessageln("SD card Ok.");
       sdCardReady = true;
-      /*
       sprintf(historyFilenameChar, "%02u%02u%02u%02u%02u.txt", datetime.date.year-2000, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
       ShowMessage(F("Log Filename : "));
       ShowMessageln(historyFilenameChar);
-*/
+
     }
 
-  
+  */
+
+  // see if the card is present and can be initialized:
+  if (!SD.sdfs.begin(SdioConfig(DMA_SDIO))) {
+    ShowMessageln("SD Card failed, or not present");
+    sdCardReady = false;
+  }
+  else {
+    sprintf(historyFilenameChar, "%02d%02d%02d%02d%02d.txt", datetime.date.year - 2000, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
+    sdCardReady = true;
+    ShowMessage("SD card Ok  ");
+    //count the number of file present on SD Card
+    int totalFileOnSD = 0;
+    File root = SD.open("/");
+    File entry = root.openNextFile();
+    while (entry) {
+      entry = root.openNextFile();
+      totalFileOnSD = totalFileOnSD + 1;
+    }
+    ShowMessage(String(totalFileOnSD));
+    ShowMessageln(" Log file present on SD Card");
+    if (totalFileOnSD >= 2000) {
+      ShowMessageln("Warning More than 2000 file present on SD Card !!!");
+      ShowMessageln("It can slow down all process !!! ");
+    }
+  }
+
+
 
   ShowMessage("Version : ");
   ShowMessageln(VER);
@@ -3506,7 +3516,7 @@ void Robot::checkButton() {
           statusCurr = BACK_TO_STATION;
           buttonCounter = 0;
           if (RaspberryPIUse) MyRpi.SendStatusToPi();
-          //periFindDriveHeading = imu.ypr.yaw;
+          periFindDriveHeading = imu.ypr.yaw;
           setNextState(STATE_PERI_FIND, 0);
           return;
         }
@@ -4373,8 +4383,8 @@ void Robot::setNextState(byte stateNew, byte dir) {
       AngleRotate = newtagRotAngle1;
       newtagRotAngle1Radian = newtagRotAngle1 * PI / 180.0;
       ShowMessage("Actual Heading ");
-      //ShowMessageln(imu.ypr.yaw * 180 / PI);
-      //periFindDriveHeading = scalePI(imu.ypr.yaw + newtagRotAngle1Radian);
+      ShowMessageln(imu.ypr.yaw * 180 / PI);
+      periFindDriveHeading = scalePI(imu.ypr.yaw + newtagRotAngle1Radian);
       ShowMessage("New PeriFind Heading ");
       ShowMessageln(periFindDriveHeading * 180 / PI);
       Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
@@ -4576,7 +4586,7 @@ void Robot::setNextState(byte stateNew, byte dir) {
       break;
 
     case STATE_PERI_OUT_ROLL: //roll left or right in normal mode
-  
+
       if (motorRollDegMin > motorRollDegMax) ShowMessageln("Warning : Roll deg Min > Roll deg Max ????? ");
       if (mowPatternCurr == MOW_RANDOM) AngleRotate = random(motorRollDegMin, motorRollDegMax);
 
@@ -5154,7 +5164,7 @@ void Robot::writeOnSD(String message) {
     totalLineOnFile = totalLineOnFile + 1;
     if (totalLineOnFile >= 1000) { // create a new log file if too long
       totalLineOnFile = 0;
-      sprintf(historyFilenameChar, "%02u%02u%02u%02u%02u.txt", datetime.date.year-2000, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
+      sprintf(historyFilenameChar, "%02u%02u%02u%02u%02u.txt", datetime.date.year - 2000, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
     }
   }
 }
@@ -5170,7 +5180,7 @@ void Robot::writeOnSDln(String message) {
     totalLineOnFile = totalLineOnFile + 1;
     if (totalLineOnFile >= 1000) { // create a new log file if too long
       totalLineOnFile = 0;
-      sprintf(historyFilenameChar, "%02u%02u%02u%02u%02u.txt", datetime.date.year-2000, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
+      sprintf(historyFilenameChar, "%02u%02u%02u%02u%02u.txt", datetime.date.year - 2000, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
     }
   }
 }
@@ -5239,7 +5249,7 @@ void Robot::checkBattery() {
       statusCurr = BACK_TO_STATION;
       areaToGo = 1;
       if (RaspberryPIUse) MyRpi.SendStatusToPi();
-      //periFindDriveHeading = imu.ypr.yaw;
+      periFindDriveHeading = imu.ypr.yaw;
       setNextState(STATE_PERI_FIND, 0);
     }
 
@@ -5702,7 +5712,7 @@ void Robot::checkRain() {
     ShowMessageln(F("RAIN"));
     areaToGo = 1;
     if (perimeterUse) {
-      // periFindDriveHeading = imu.ypr.yaw;
+      periFindDriveHeading = imu.ypr.yaw;
       setNextState(STATE_PERI_FIND, 0);
     }
     else {
@@ -5963,7 +5973,7 @@ void Robot::loop()  {
 
   rc.readSerial();// see the readserial function into pfod.cpp
   rc.run();
-  
+
   readSensors();
   readAllTemperature();
   checkRobotStats();
@@ -6054,9 +6064,9 @@ void Robot::loop()  {
     loopsPerSecCounter = 0;
   }
 
-    
 
-  
+
+
 
   // state machine - things to do *PERMANENTLY* for current state
   // robot state machine

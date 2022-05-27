@@ -66,7 +66,7 @@ class RemoteControl
     Robot *robot;
     boolean pfodCmdComplete;
     String pfodCmd;
-    String logFileNameArray[51];
+    String logFileNameArray [51][2];
     
     int rfidDetailIdx;
     int testmode;
