@@ -169,6 +169,9 @@ Robot::Robot() {
   perimeterCounter = 0;
   perimeterLastTransitionTime = 0;
   perimeterTriggerTime = 0;
+  perimeterLeftTriggerTime = 0;
+  perimeterRightTriggerTime = 0;
+
   areaInMowing = 1;
   perimeterSpeedCoeff = 1;
 
@@ -3635,45 +3638,35 @@ void Robot::readSensors() {
   //perimeter
   if ((stateCurr != STATE_STATION) && (stateCurr != STATE_STATION_CHARGING) && (perimeterUse) && (millis() >= nextTimePerimeter)) {
     nextTimePerimeter = millis() +  15;
-
+    //right coil
     if (perimeter.read2Coil) {
       perimeterMagRight = perimeter.getMagnitude(1);
       if ((perimeter.isInside(1) != perimeterInsideRight)) {
+        perimeterRightTriggerTime = millis();
         perimeterLastTransitionTime = millis();
         perimeterInsideRight = perimeter.isInside(1);
       }
-
-
-
     }
-
+    //left coil
     perimeterMagLeft = perimeter.getMagnitude(0);
-
-    //for signal debug
-    /*
-      ShowMessage(perimeterMagRight);
-      ShowMessage(",");
-      ShowMessageln(perimeterMagLeft);
-    */
-
     perimeterMedian.add(perimeterMagLeft);
     if (perimeterMedian.isFull()) {
       perimeterNoise = perimeterMedian.getHighest() - perimeterMedian.getLowest();
       perimeterMedian.clear();
     }
 
-
     if ((perimeter.isInside(0) != perimeterInsideLeft)) {
       perimeterCounter++;
+      perimeterLeftTriggerTime = millis();
       perimeterLastTransitionTime = millis();
       perimeterInsideLeft = perimeter.isInside(0);
     }
 
-    if ((!perimeterInsideLeft) && (perimeterTriggerTime == 0)) {
+    if (((!perimeterInsideLeft) || (!perimeterInsideRight)) && (perimeterTriggerTime == 0)) {
       // set perimeter trigger time
 
       //bber2
-      //use smooth to avoid big area transition, in the middle of the area with noise the mag can change from + to -
+      //use smooth on left coil only  to avoid big area transition, in the middle of the area with noise the mag can change from + to -
       smoothPeriMag = perimeter.getSmoothMagnitude(0);
       if (smoothPeriMag > perimeterTriggerMinSmag) {
         perimeterTriggerTime = millis();
@@ -3689,29 +3682,6 @@ void Robot::readSensors() {
       }
 
     }
-    /*
-      ShowMessage("sig timeout ---> ");
-      ShowMessage(perimeter.signalTimedOut(0));
-      ShowMessageln("   rr");
-    */
-
-    /*
-
-    */
-    //bber300
-    /*
-      if (perimeter.signalTimedOut(0) || ((perimeter.read2Coil) && perimeter.signalTimedOut(1) ))  {
-      //bber2
-      if ((stateCurr == STATE_FORWARD_ODO) || (stateCurr == STATE_PERI_FIND) || (stateCurr == STATE_MOW_SPIRALE))   { // all the other state are distance limited
-        //need to find a way in tracking mode maybe timeout error if the tracking is perfect, the mower is so near the wire than the mag is near 0 (adjust the timedOutIfBelowSmag)
-        //if ((stateCurr == STATE_FORWARD_ODO) || (stateCurr == STATE_PERI_FIND) || (stateCurr == STATE_PERI_TRACK) || (stateCurr == STATE_MOW_SPIRALE))   { // all the other state are distance limited
-        ShowMessageln("Error: perimeter too far away");
-        addErrorCounter(ERR_PERIMETER_TIMEOUT);
-        setNextState(STATE_ERROR, 0);
-        return;
-      }
-      }
-    */
 
   }
 
@@ -5130,9 +5100,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
   stateLast = stateCurr;
   stateCurr = stateNext;
   perimeterTriggerTime = 0;
-  //ShowMessage (F(statusNames[statusCurr]));
-  //ShowMessage (" / ");
-  //ShowMessageln (F(stateNames[stateCurr]));
   ShowMessage (F(statusNames[statusCurr]));
   ShowMessage (" / ");
   ShowMessageln (F(stateNames[stateCurr]));
@@ -5630,15 +5597,13 @@ void Robot::checkPerimeterBoundary() {
     if (rollDir == LEFT) rollDir = RIGHT; //invert the next rotate
     else rollDir = LEFT;
     ShowMessage(millis());
-    ShowMessageln(" Rotation direction Left / Right change ");
+    ShowMessageln(" Rotation direction change ");
   }
   //bber2
   if ((stateCurr == STATE_FORWARD_ODO) || (stateCurr == STATE_MOW_SPIRALE) ) {
     //bber200
     //speed coeff between 0.7 and 1 according 50% of perimetermagmax
     if ((millis() >= nextTimeCheckperimeterSpeedCoeff) && (reduceSpeedNearPerimeter)) {
-      //int miniValue = (int)perimeterMagMaxValue / 2;
-      // perimeterSpeedCoeff = (float) map(perimeter.getSmoothMagnitude(0), miniValue, perimeterMagMaxValue, 100, 70) / 100;
       if (perimeterSpeedCoeff < 0.7) {
         perimeterSpeedCoeff = 0.7;
         nextTimeCheckperimeterSpeedCoeff = millis() + 500; //avoid speed coeff increase when mower go accross the wire
@@ -5659,7 +5624,31 @@ void Robot::checkPerimeterBoundary() {
         //reinit spirale mowing
         spiraleNbTurn = 0;
         highGrassDetect = false; //stop the spirale
-        setNextState(STATE_PERI_OUT_STOP, rollDir);
+        if (stateCurr == STATE_MOW_SPIRALE) {
+          setNextState(STATE_PERI_OUT_STOP, 0); //rollDir is always left when spirale mowing ?????
+        }
+        else {
+
+          if (perimeterRightTriggerTime <= perimeterLeftTriggerTime) { // the right coil detect the wire before the left one
+            if (mowPatternCurr == MOW_RANDOM) {
+              rollDir = RIGHT;
+              setNextState(STATE_PERI_OUT_STOP, rollDir); //rollDir change
+            }
+            else {
+              setNextState(STATE_PERI_OUT_STOP, rollDir); //rollDir don't change in lane mode
+            }
+          }
+          else {
+            if (mowPatternCurr == MOW_RANDOM) {
+              rollDir = LEFT;
+              setNextState(STATE_PERI_OUT_STOP, rollDir); //rollDir change
+            }
+            else {
+              setNextState(STATE_PERI_OUT_STOP, rollDir); //rollDir don't change in lane mode
+            }
+          }
+
+        }
         return;
       }
     }
@@ -7019,10 +7008,6 @@ void Robot::loop()  {
         if  (abs(accelGyroYawMedian.getHighest() - accelGyroYawMedian.getLowest()) < 4 * maxDriftPerSecond * PI / 180) { //drift is OK restart mowing
           if (CompassUse) {
             imu.CompassGyroOffset = distancePI( scalePI(accelGyroYawMedian.getMedian() -  imu.CompassGyroOffset), compassYawMedian.getMedian()); //change the Gyro offset according to Compass Yaw
-          }
-          else
-          {
-            imu.CompassGyroOffset = 0;
           }
           ShowMessageln("Drift is OK");
           setBeeper(0, 0, 0, 0, 0); //stop sound immediatly

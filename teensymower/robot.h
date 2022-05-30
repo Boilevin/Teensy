@@ -49,7 +49,7 @@ const int chipSelect = BUILTIN_SDCARD;
 
 
 // code version
-#define VER "1.36-Teensyber GY-521"
+#define VER "1.38-Teensyber GY-521"
 
 
 // sensors
@@ -633,6 +633,8 @@ class Robot
     boolean perimeterInsideLeft ;      // is inside perimeter?
     boolean perimeterInsideRight ;      // is inside perimeter?
     unsigned long perimeterTriggerTime; // time to trigger perimeter transition (timeout)
+    unsigned long perimeterLeftTriggerTime; // time to trigger left perimeter transition (timeout)
+    unsigned long perimeterRightTriggerTime; // time to trigger right perimeter transition (timeout)
     int perimeterTriggerMinSmag;   // perimeter trigger minimum smag use on center of big area ,the Smag can be 200 and transition can occur
     unsigned long perimeterLastTransitionTime;
     int perimeterCounter ;         // counts perimeter transitions
