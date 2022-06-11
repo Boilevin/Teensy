@@ -198,16 +198,17 @@ Mower::Mower() {
   batSwitchOffIfIdle = 300;      // switch off battery if idle (minutes)
   batFactor       = 1.00;     //not use
   batChgFactor    = 1.00;     //not use
-  batFull          = 29.4;     // battery reference Voltage (fully charged) PLEASE ADJUST IF USING A DIFFERENT BATTERY VOLTAGE! FOR a 12V SYSTEM TO 14.4V
+  batFull          = 29.4;     // battery reference Voltage (fully charged) use to adjust the pfod slider limit and oled screen bat logo 
+  batVoltageToStationStart = 28.0;  // minimum battery Voltage to allow mower start by timer
   batChargingCurrentMax = 2; // maximum current your charger can devliver
-  batFullCurrent  = 0.05;      // current flowing when battery is fully charged
+  batFullCurrent  = 0.05;      // stop charging below this current value
   startChargingIfBelow = 25.0; // start charging if battery Voltage is below
   chargingTimeout = 36000000; // safety timer for charging (ms)  10 hrs
 
   batSenseFactor  = 1.11;         // charge current conversion factor   - Empfindlichkeit nimmt mit ca. 39/V Vcc ab
-  chgSense        = 185.0;      // mV/A empfindlichkeit des Ladestromsensors in mV/A (FÃ¼r ACS712 5A = 185)
-  chgChange       = 0;          // Messwertumkehr von - nach +         1 oder 0
-  chgNull         = 2;          // Nullduchgang abziehen (1 oder 2)
+  //chgSense        = 185.0;      // mV/A empfindlichkeit des Ladestromsensors in mV/A (FÃ¼r ACS712 5A = 185)
+  //chgChange       = 0;          // Messwertumkehr von - nach +         1 oder 0
+  //chgNull         = 2;          // Nullduchgang abziehen (1 oder 2)
   // ------  charging station ---------------------------
   stationRevDist     = 50;    // charge station reverse 50 cm
   stationRollAngle    = 45;    // charge station roll after reverse

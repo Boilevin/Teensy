@@ -49,7 +49,7 @@ const int chipSelect = BUILTIN_SDCARD;
 
 
 // code version
-#define VER "1.38-Teensyber GY-521"
+#define VER "1.39-Teensyber GY-521"
 
 
 // sensors
@@ -250,10 +250,13 @@ class Robot
     const char* statusName();
     char* rfidToDoName();
 
+    //const String area1_ip="10.0.0.150";
+    //const String area2_ip="10.0.0.151";
+    //const String area3_ip="10.0.0.158";
 
-    char* area1_ip = "10.0.0.151";
-    char* area2_ip = "10.0.0.150";
-    char* area3_ip = "10.0.0.158";
+   // char* area1_ip = "10.0.0.151";
+   // char* area2_ip = "10.0.0.150";
+   // char* area3_ip = "10.0.0.158";
 
     boolean Enable_Screen ;
 
@@ -312,11 +315,10 @@ class Robot
     int stateEndOdometryRight;  // use to mesure the distance when rev roll etc ...
     int stateEndOdometryLeft;
     int stateStartOdometryLeft;  // use to calculate the accel
-    int lastStartOdometryRight;
-    int lastStartOdometryLeft;  // use to calculate the accel
+   
     int stateStartOdometryRight;
     int PeriOdoIslandDiff; //use to check if island while tracking
-    float straightLineTheta; //angle read by odometry during the last lane to verify the IMU drift
+    //float straightLineTheta; //angle read by odometry during the last lane to verify the IMU drift
     int DistPeriOutRev; // Distance in CM when reach perimeter
     int DistPeriObstacleRev; // Distance in CM when prei rev obstacle
     int DistPeriOutForw;//Distance in CM after roll to accel
@@ -758,22 +760,25 @@ class Robot
     int batSwitchOffIfIdle;      // switch off battery if idle for minutes
     float batFactor       ;     // battery conversion factor
     float batChgFactor       ;     // battery conversion factor
-    float batFull         ;      // battery reference Voltage (fully charged)
     float batChargingCurrentMax ; // maximum current your charger can devliver
+    float batFull         ;      // battery reference Voltage (fully charged)
     float batFullCurrent   ; // current flowing when battery is fully charged
+    float batVoltageToStationStart; // // start timer mowing at this voltage (avoid wait for 100 % charge)
+    
     float startChargingIfBelow; // start charging if battery Voltage is below
     unsigned long chargingTimeout; // safety timer for charging
     float stationHeading    ;       // station heading to init the YAW when leave station (in radian)
     float batSenseFactor       ;     // charge current conversion factor
-    float chgSense        ;       // mV/A empfindlichkeit des Ladestromsensors in mV/A (FÃ¼r ACS712 5A = 185)
-    char chgChange        ;       // messwertumkehr von - nach +         1oder 0
+    //float chgSense        ;       // mV/A empfindlichkeit des Ladestromsensors in mV/A (FÃ¼r ACS712 5A = 185)
+    //char chgChange        ;       // messwertumkehr von - nach +         1oder 0
     float batVoltage ;  // battery voltage (Volt)
+ 
     // byte chgSelection     ;       // Senor Auswahl
-    float batRefFactor ;
+    //float batRefFactor ;
     float batCapacity ; // battery capacity (mAh)
     float chgVoltage ;  // charge voltage (Volt)
     float chgCurrent ;  // charge current  (Ampere)
-    int chgNull;        // Nulldurchgang Ladestromsensor
+    //int chgNull;        // Nulldurchgang Ladestromsensor
     byte stationRevDist     ;    // charge station reverse distance cm
     byte stationRollAngle    ;    // charge station roll angle
     int stationForwDist    ;    // charge station forward distance cm

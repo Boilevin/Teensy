@@ -1572,6 +1572,7 @@ void RemoteControl::sendCommandMenu(boolean update) {
   serialPort->print(F("|rh~Go to Station"));
   //serialPort->print(F("|rk~Start Tracking"));
   serialPort->print(F("|rt~Power OFF PCB"));
+  /*
   serialPort->print(F("|r1~User switch 1 is "));
   sendOnOff(robot->userSwitch1);
   serialPort->print(F("|r2~User switch 2 is "));
@@ -1588,9 +1589,9 @@ void RemoteControl::sendCommandMenu(boolean update) {
 
   serialPort->print(F("|rf1~UserOut3 ON "));
   serialPort->print(F("|rf0~UserOut3 OFF "));
-
-  serialPort->print("}");
-  serialPort->println();
+*/
+  serialPort->println("}");
+  
 }
 
 void RemoteControl::processCommandMenu(String pfodCmd) {

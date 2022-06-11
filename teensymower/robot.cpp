@@ -187,7 +187,7 @@ Robot::Robot() {
   sonarSpeedCoeff = 1;
 
   batVoltage = 0;
-  batRefFactor = 0;
+  //batRefFactor = 0;
   batCapacity = 0;
   lastTimeBatCapacity = 0;
   chgVoltage = 0;
@@ -624,11 +624,11 @@ void Robot::rfidTagTraitement(unsigned long TagNr, byte statusCurr) {
         //not use
         break;
       case AREA1:
-        line01 = "#SENDER," + String(area1_ip) + ",A1";
+        line01 = "#SENDER," + area1_ip + ",A1";
         Bluetooth.println(line01);
-        line01 = "#SENDER," + String(area2_ip) + ",B0";
+        line01 = "#SENDER," + area2_ip + ",B0";
         Bluetooth.println(line01);
-        line01 = "#SENDER," + String(area3_ip) + ",B0";
+        line01 = "#SENDER," + area3_ip + ",B0";
         Bluetooth.println(line01);
 
         areaToGo = 1;
@@ -649,9 +649,9 @@ void Robot::rfidTagTraitement(unsigned long TagNr, byte statusCurr) {
         break;
       case AREA2:
         //send data to ESP32 to start AREA2 sender and stop AREA1 one
-        line01 = "#SENDER," + String(area1_ip) + ",A0";
+        line01 = "#SENDER," + area1_ip + ",A0";
         Bluetooth.println(line01);
-        line01 = "#SENDER," + String(area2_ip) + ",B1";
+        line01 = "#SENDER," + area2_ip + ",B1";
         Bluetooth.println(line01);
         if (areaToGo == 2) {
           ShowMessageln("Go to AREA2");
@@ -665,9 +665,9 @@ void Robot::rfidTagTraitement(unsigned long TagNr, byte statusCurr) {
         break;
 
       case AREA3:
-        line01 = "#SENDER," + String(area1_ip) + ",A0";
+        line01 = "#SENDER," + area1_ip + ",A0";
         Bluetooth.println(line01);
-        line01 = "#SENDER," + String(area3_ip) + ",B1";
+        line01 = "#SENDER," + area3_ip + ",B1";
         Bluetooth.println(line01);
         if (areaToGo == 3) {
           ShowMessageln("Go to AREA3");
@@ -1071,6 +1071,7 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, useMqtt);
   eereadwrite(readflag, addr, stationHeading);
   eereadwrite(readflag, addr, checkDockingSpeed);
+  eereadwrite(readflag, addr, batVoltageToStationStart);
 
 
   if (readflag)
@@ -1340,7 +1341,8 @@ void Robot::printSettingSerial() {
   ShowMessageln( batChgFactor);
   ShowMessage  (F("batFull              : "));
   ShowMessageln( batFull);
-  //watchdogReset();
+  ShowMessage  (F("batVoltageToStationStart: "));
+  ShowMessageln(batVoltageToStationStart);
   ShowMessage  (F("batChargingCurrentMax: "));
   ShowMessageln(batChargingCurrentMax);
   ShowMessage  (F("batFullCurrent       : "));
@@ -1353,12 +1355,12 @@ void Robot::printSettingSerial() {
   ShowMessageln(stationHeading);
   ShowMessage  (F("batSenseFactor       : "));
   ShowMessageln( batSenseFactor);
-  ShowMessage  (F("chgSense             : "));
-  ShowMessageln(chgSense);
-  ShowMessage  (F("chgChange            : "));
-  ShowMessageln(chgChange);
-  ShowMessage  (F("chgNull              : "));
-  ShowMessageln(chgNull);
+  //ShowMessage  (F("chgSense             : "));
+  //ShowMessageln(chgSense);
+  //ShowMessage  (F("chgChange            : "));
+  //ShowMessageln(chgChange);
+  //ShowMessage  (F("chgNull              : "));
+  //ShowMessageln(chgNull);
   //watchdogReset();
   // ------  charging station -----------------------------------------------------
   ShowMessageln(F("---------- charging station ----------------------------------"));
@@ -1763,9 +1765,7 @@ void Robot::OdoRampCompute() { //execute only one time when a new state executio
 
   stateStartOdometryLeft = odometryLeft;
   stateStartOdometryRight = odometryRight;
-  lastStartOdometryRight = odometryRight;
-  lastStartOdometryLeft = odometryLeft;
-  straightLineTheta = 0;
+
   motorRightPID.reset();
   PwmRightSpeed = min(motorSpeedMaxPwm, max(-motorSpeedMaxPwm, map(motorRightSpeedRpmSet, -motorSpeedMaxRpm, motorSpeedMaxRpm, -motorSpeedMaxPwm, motorSpeedMaxPwm)));
   PwmLeftSpeed = min(motorSpeedMaxPwm, max(-motorSpeedMaxPwm, map(motorLeftSpeedRpmSet, -motorSpeedMaxRpm, motorSpeedMaxRpm, -motorSpeedMaxPwm, motorSpeedMaxPwm)));
@@ -2064,7 +2064,7 @@ void Robot::motorControlOdo() {
       imuDirPID.max_output = motorSpeedMaxPwm / 2;
       imuDirPID.compute();
 
-      if ((millis() - stateStartTime) < 1000) { // acceleration and more influence of PID vs speed
+      if ((millis() - stateStartTime) < 1000) { // do not use rpm adjust during acceleration 
         //bber402
 
         rightSpeed =  rightSpeed - (66 - (millis() - stateStartTime) / 30);
@@ -2084,7 +2084,7 @@ void Robot::motorControlOdo() {
         motorRightPID.compute();
         //ShowMessageln(motorRightPID.y);
         motorRpmCoeff = (100 + motorRightPID.y) / 100;
-        if (motorRpmCoeff < 0.50) motorRpmCoeff = 0.50;
+        if (motorRpmCoeff < 0.10) motorRpmCoeff = 0.10;
         if (motorRpmCoeff > 2.00) motorRpmCoeff = 2.00;
 
 
@@ -2099,30 +2099,7 @@ void Robot::motorControlOdo() {
 
 
 
-      //not use ??------------------------------------------------------------try to find the yaw with the odometry-------------------------------------
-      if (((millis() - stateStartTime) > 2000) && (millis() >= nextTimePidCompute)) { //compute  the yaw with the odometry only after 2 sec
-        float odoTheta;
-        int odoDiffRightLeft;
-        nextTimePidCompute = millis() + 800; //not to short to have enought ticks
-        //stateStartOdometryLeft = stateStartOdometryLeft + ((odometryRight - stateStartOdometryRight) - (odometryLeft - stateStartOdometryLeft)); // very important change the odo to retrieve the line to avoid drift
-        odoDiffRightLeft = ((odometryRight - lastStartOdometryRight) - (odometryLeft - lastStartOdometryLeft));
-        lastStartOdometryRight = odometryRight;
-        lastStartOdometryLeft = odometryLeft;
-        odoTheta = asin( 2 * odoDiffRightLeft / odometryTicksPerCm  / odometryWheelBaseCm);
-        straightLineTheta += odoTheta;
-        /*
-          ShowMessage(" odoDiffRightLeft  ");
-          ShowMessage(odoDiffRightLeft);
-          ShowMessage(" 2* odoDiffRightLeft /odometryTicksPerCm  / odometryWheelBaseCm ");
-          ShowMessage(2* odoDiffRightLeft /odometryTicksPerCm  / odometryWheelBaseCm);
-          ShowMessage(" odoTheta  ");
-          ShowMessage(odoTheta,4);
-          ShowMessage(" straightLineTheta  ");
-          ShowMessageln(straightLineTheta,4);
-        */
-      }
-      //----------------------------------------------------------------------------------------------------------------------------------------------------------------
-
+      
     }
     else
       //// NORMAL MOWING OR PERIFIND
@@ -2150,7 +2127,7 @@ void Robot::motorControlOdo() {
         motorRightPID.compute();
         //ShowMessageln(motorRightPID.y);
         motorRpmCoeff = (100 + motorRightPID.y) / 100;
-        if (motorRpmCoeff < 0.50) motorRpmCoeff = 0.50;
+        if (motorRpmCoeff < 0.10) motorRpmCoeff = 0.10;
         if (motorRpmCoeff > 2.00) motorRpmCoeff = 2.00;
 
         if ((sonarSpeedCoeff != 1) || (!autoAdjustSlopeSpeed)) { //do not change speed if sonar is activate
@@ -3450,7 +3427,7 @@ void Robot::checkButton() {
       // ON/OFF button released
       ShowMessage(F("Button Release counter : "));
       ShowMessageln(buttonCounter);
-      if ((statusCurr == NORMAL_MOWING) || (statusCurr == SPIRALE_MOWING) || (stateCurr == STATE_ERROR) || (statusCurr == WIRE_MOWING) || (statusCurr == BACK_TO_STATION) || (statusCurr == TRACK_TO_START)) {
+      if ((statusCurr == MANUAL) || (statusCurr == NORMAL_MOWING) || (statusCurr == SPIRALE_MOWING) || (stateCurr == STATE_ERROR) || (statusCurr == WIRE_MOWING) || (statusCurr == BACK_TO_STATION) || (statusCurr == TRACK_TO_START)) {
         ShowMessageln(F("ButtonPressed Stop Mowing and Reset Error"));
         motorMowEnable = false;
         buttonCounter = 0;
@@ -3825,10 +3802,15 @@ void Robot::setNextState(byte stateNew, byte dir) {
       ShowMessage(actualLenghtByLane);
       ShowMessage(" change : ");
       ShowMessageln(justChangeLaneDir);
-
-
-      UseAccelRight = 0;
-      UseAccelLeft = 0;
+      if (mowPatternCurr == MOW_LANES) { //motor are stop at this moment
+        UseAccelRight = 1;
+        UseAccelLeft = 1;
+      }
+      else
+      {
+        UseAccelRight = 0;
+        UseAccelLeft = 0;
+      }
       UseBrakeLeft = 0;
       UseBrakeRight = 0;
       motorRightSpeedRpmSet = motorSpeedMaxRpm ;
@@ -3881,13 +3863,13 @@ void Robot::setNextState(byte stateNew, byte dir) {
       nextTimeToDmpAutoCalibration = millis() + delayBetweenTwoDmpAutocalib * 1000; //set the next time for calib
       //readDHT22();
       ShowMessageln("Start sender1");
-      line01 = "#SENDER," + String(area1_ip) + ",A1";
+      line01 = "#SENDER," + area1_ip + ",A1";
       Bluetooth.println(line01);
       ShowMessageln("Stop sender2");
-      line01 = "#SENDER," + String(area2_ip) + ",B0";
+      line01 = "#SENDER," + area2_ip + ",B0";
       Bluetooth.println(line01);
       ShowMessageln("Stop sender3");
-      line01 = "#SENDER," + String(area3_ip) + ",B0";
+      line01 = "#SENDER," + area3_ip + ",B0";
       Bluetooth.println(line01);
       setBeeper(600, 40, 5, 500, 0 );
       MaxStateDuration = 6000; // 6 secondes beep and pause before rev
@@ -5280,10 +5262,12 @@ void Robot::checkRobotStats() {
   //---------------stats Battery---------------------------------------------------------
   if ((stateCurr == STATE_STATION_CHARGING) && (stateTime >= 60000)) { // count only if mower is charged longer then 60sec
     statsBatteryChargingCounter++; // temporary counter
+
     if (statsBatteryChargingCounter == 1) statsBatteryChargingCounterTotal += 1;
     statsBatteryChargingCapacityTrip = batCapacity;
     statsBatteryChargingCapacityTotal += (batCapacity - lastTimeBatCapacity); // summ up only the difference between actual batCapacity and last batCapacity
     lastTimeBatCapacity = batCapacity;
+
   }
   else {                        // resets values to 0 when mower is not charging
     statsBatteryChargingCounter = 0;
@@ -5583,7 +5567,7 @@ void Robot::checkStuckOnIsland() {
     if ((odometryLeft - odometryRight) - PeriOdoIslandDiff > 6 * odometryTicksPerRevolution) {
       ShowMessageln("Right wheel is 6 full revolution more than left one --> Island  ??? ");
       newtagRotAngle1 = 90;
-      setNextState(STATE_PERI_STOP_TOROLL, 0);
+      setNextState(STATE_PERI_STOP_TOROLL, 1);
       return;
     }
   }
@@ -5961,7 +5945,7 @@ void Robot::loop()  {
 
 
   rc.readSerial();// see the readserial function into pfod.cpp
-  rc.run();
+
 
   readSensors();
   readAllTemperature();
@@ -6053,7 +6037,7 @@ void Robot::loop()  {
     loopsPerSecCounter = 0;
   }
 
-
+  rc.run();
 
 
 
