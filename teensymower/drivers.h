@@ -109,7 +109,7 @@ double distancePI(double x, double w);
 
 // motor drivers
 void setPwmFrequency(int pin, int divisor);
-void setBL500W(int pinDir, int pinPWM, int pinEnable, int speed);
+void setZSX11HV1(int pinDir, int pinPWM, int pinEnable, int speed);
 void setL298N(int pinDir, int pinPWM, int pinEnable, int speed);
 void setRomeoMotor(int pinDir, int pinPWM, int speed);
 void setMC33926(int pinDir, int pinPWM, int speed);

@@ -610,8 +610,8 @@ void RemoteControl::sendPerimeterMenu(boolean update) {
   sendSlider("e11", F("Transition timeout"), robot->trackingPerimeterTransitionTimeOut, "", 1, 5000, 1);
   sendSlider("e12", F("Track error timeout"), robot->trackingErrorTimeOut, "", 1, 10000, 1);
   sendPIDSlider("e07", F("Track"), robot->perimeterPID, 0.1, 52);
-  serialPort->print(F("|e10~Swap Left coil polarity "));
-  sendYesNo(robot->perimeter.swapCoilPolarityLeft);
+ // serialPort->print(F("|e10~Swap Left coil polarity "));
+ // sendYesNo(robot->perimeter.swapCoilPolarityLeft);
   serialPort->print(F("|e22~Swap Right coil polarity "));
   sendYesNo(robot->perimeter.swapCoilPolarityRight);
   serialPort->print(F("|e23~Read The 2 Coils "));
@@ -644,7 +644,7 @@ void RemoteControl::processPerimeterMenu(String pfodCmd) {
     robot->perimeter.begin(pinPerimeterLeft, pinPerimeterRight);
   }
 
-  else if (pfodCmd.startsWith("e10")) robot->perimeter.swapCoilPolarityLeft = !robot->perimeter.swapCoilPolarityLeft;
+  //else if (pfodCmd.startsWith("e10")) robot->perimeter.swapCoilPolarityLeft = !robot->perimeter.swapCoilPolarityLeft;
   else if (pfodCmd.startsWith("e22")) robot->perimeter.swapCoilPolarityRight = !robot->perimeter.swapCoilPolarityRight;
   else if (pfodCmd.startsWith("e23")) robot->perimeter.read2Coil = !robot->perimeter.read2Coil;
 

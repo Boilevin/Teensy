@@ -100,22 +100,36 @@ String date2str(date_t date) {
   return s;
 }
 
-// brushless BL500W motor driver
-//+5V --> 5V OUTPUT
-//EL <-- shunt with the +5V of the motor driver
-//ZF <-- Direction HIGH=Forward/GND=Backwards
-//VR <-- Analog 0..5V (PWM)
-//GND <--> GND
+// brushless ZSX11HV1 motor driver
+//NEED A SHUNT ON DRIVER J1 NEAR BIG CAPACITOR AND POTI TO full counter clock wise
+//5V --> NOT CONNECTED
+//0-5v --> NOT CONNECTED
+//GND <-- TO J8 GND
+//DIR <-- Direction TO J8 PIN DIR
+//BRAKE <-- Brake TO J8 PIN EN
+//STOP <-- NOT CONNECTED
+//G --> NOT CONNECTED
+//P --> SPEED TO J8 PIN PWM
+//V --> NOT CONNECTED
+//S --> ODO TO J1 ODO 
+//G --> NOT CONNECTED
 
-void setBL500W(int pinDir, int pinPWM, int pinEnable, int speed) {
+void setZSX11HV1(int pinDir, int pinPWM, int pinEnable, int speed) {
   
   if (speed < 0) {
+    digitalWrite(pinEnable, LOW) ;
     digitalWrite(pinDir, LOW) ;
     analogWrite(pinPWM, ((byte)abs(speed)));
   }
-  else {
+  if (speed > 0) {
+    digitalWrite(pinEnable, LOW) ;
     digitalWrite(pinDir, HIGH) ;
     analogWrite(pinPWM, ((byte)abs(speed)));
+  }
+  if (speed == 0) {
+    analogWrite(pinPWM, 0);
+    //delay(2);
+    digitalWrite(pinEnable, HIGH) ; // active the brake function of the motor driver   
   }
 }
 

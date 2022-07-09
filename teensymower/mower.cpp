@@ -39,7 +39,7 @@ Mower::Mower() {
   // ------- wheel motors -----------------------------
   motorRightSwapDir     = false;    // inverse right motor direction?
   motorLeftSwapDir      = true;    // inverse left motor direction?
-  
+
   //Enable_Screen = false;  // a OLED 0.96 is connected to I2C2
 
   motorAccel       = 1500;  // motor wheel acceleration - only functional when odometry is not in use (warning: do not set too low)
@@ -120,6 +120,8 @@ Mower::Mower() {
 
 
   // ------ perimeter ---------------------------------
+  perimeter.swapCoilPolarityLeft = false;
+  perimeter.swapCoilPolarityRight = false;
   perimeterUse       = 1;      // use perimeter?
   perimeterTriggerMinSmag = 50;      // perimeter minimum smag to use on big area
   //perimeterOutRollTimeMax  = 2000;   // free
@@ -198,7 +200,7 @@ Mower::Mower() {
   batSwitchOffIfIdle = 300;      // switch off battery if idle (minutes)
   batFactor       = 1.00;     //not use
   batChgFactor    = 1.00;     //not use
-  batFull          = 29.4;     // battery reference Voltage (fully charged) use to adjust the pfod slider limit and oled screen bat logo 
+  batFull          = 29.4;     // battery reference Voltage (fully charged) use to adjust the pfod slider limit and oled screen bat logo
   batVoltageToStationStart = 28.0;  // minimum battery Voltage to allow mower start by timer
   batChargingCurrentMax = 2; // maximum current your charger can devliver
   batFullCurrent  = 0.05;      // stop charging below this current value
@@ -296,8 +298,8 @@ void Mower::setup() {
   analogWriteFrequency(pinMotorMowPWM, 20000);//default value
   analogWriteFrequency(pinMotorMowDir, 20000);
   if (MOW_MOTOR_DRIVER == 1) {
-    analogWriteFrequency(pinMotorMowPWM, PWM_FREQUENCY_BL500W);
-    analogWriteFrequency(pinMotorMowDir, PWM_FREQUENCY_BL500W);
+    analogWriteFrequency(pinMotorMowPWM, PWM_FREQUENCY_ZSX11HV1);
+    analogWriteFrequency(pinMotorMowDir, PWM_FREQUENCY_ZSX11HV1);
   }
   if (MOW_MOTOR_DRIVER == 2) {
     analogWriteFrequency(pinMotorMowPWM, PWM_FREQUENCY_L298N);
@@ -317,8 +319,8 @@ void Mower::setup() {
   analogWriteFrequency(pinMotorLeftPWM, 10000);//default value
   analogWriteFrequency(pinMotorLeftDir, 10000);
   if (LEFT_MOTOR_DRIVER == 1) {
-    analogWriteFrequency(pinMotorLeftPWM, PWM_FREQUENCY_BL500W);
-    analogWriteFrequency(pinMotorLeftDir, PWM_FREQUENCY_BL500W);
+    analogWriteFrequency(pinMotorLeftPWM, PWM_FREQUENCY_ZSX11HV1);
+    analogWriteFrequency(pinMotorLeftDir, PWM_FREQUENCY_ZSX11HV1);
   }
   if (LEFT_MOTOR_DRIVER == 2) {
     analogWriteFrequency(pinMotorLeftPWM, PWM_FREQUENCY_L298N);
@@ -338,8 +340,8 @@ void Mower::setup() {
   analogWriteFrequency(pinMotorRightPWM, 10000);//default value
   analogWriteFrequency(pinMotorRightDir, 10000);
   if (RIGHT_MOTOR_DRIVER == 1) {
-    analogWriteFrequency(pinMotorRightPWM, PWM_FREQUENCY_BL500W);
-    analogWriteFrequency(pinMotorRightDir, PWM_FREQUENCY_BL500W);
+    analogWriteFrequency(pinMotorRightPWM, PWM_FREQUENCY_ZSX11HV1);
+    analogWriteFrequency(pinMotorRightDir, PWM_FREQUENCY_ZSX11HV1);
   }
   if (RIGHT_MOTOR_DRIVER == 2) {
     analogWriteFrequency(pinMotorRightPWM, PWM_FREQUENCY_L298N);
@@ -492,19 +494,19 @@ void Mower::setActuator(char type, int value) {
     //case ACT_MOTOR_MOW: setL298N(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, value); break;// Motortreiber einstellung - bei Bedarf Ã¤ndern z.B setL298N auf setMC33926
 
     case ACT_MOTOR_MOW:
-      if (MOW_MOTOR_DRIVER == 1) setBL500W(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, abs(value));
+      if (MOW_MOTOR_DRIVER == 1) setZSX11HV1(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, abs(value));
       if (MOW_MOTOR_DRIVER == 2) setL298N(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, abs(value));
       if (MOW_MOTOR_DRIVER == 3) setBTS7960(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, abs(value));
       break;
 
     case ACT_MOTOR_LEFT:
-      if (LEFT_MOTOR_DRIVER == 1) setBL500W(pinMotorLeftDir, pinMotorLeftPWM, pinMotorLeftEnable, value);
+      if (LEFT_MOTOR_DRIVER == 1) setZSX11HV1(pinMotorLeftDir, pinMotorLeftPWM, pinMotorLeftEnable, value);
       if (LEFT_MOTOR_DRIVER == 2) setL298N(pinMotorLeftDir, pinMotorLeftPWM, pinMotorLeftEnable, value);
       if (LEFT_MOTOR_DRIVER == 3) setBTS7960(pinMotorLeftDir, pinMotorLeftPWM, pinMotorLeftEnable, value);
       break;
 
     case ACT_MOTOR_RIGHT:
-      if (RIGHT_MOTOR_DRIVER == 1) setBL500W(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value);
+      if (RIGHT_MOTOR_DRIVER == 1) setZSX11HV1(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value);
       if (RIGHT_MOTOR_DRIVER == 2) setL298N(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value);
       if (RIGHT_MOTOR_DRIVER == 3) setBTS7960(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value);
       break;

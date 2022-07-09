@@ -17,14 +17,14 @@ const String area2_ip = "10.0.0.151";
 const String area3_ip = "10.0.0.158";
 
 //*****************possible list of motor driver set to :****************
-// 1 for brushless BL500W Driver
+// 1 for brushless ZS-X11H v1 Driver
 // 2 for DC L298N Driver
 // 3 for DC BTS7960 Driver
 #define LEFT_MOTOR_DRIVER 1  //never mix BL and DC on drive motor
 #define RIGHT_MOTOR_DRIVER 1
 #define MOW_MOTOR_DRIVER 1
 
-#define PWM_FREQUENCY_BL500W  20000 //
+#define PWM_FREQUENCY_ZSX11HV1  20000 //
 #define PWM_FREQUENCY_L298N  10000
 #define PWM_FREQUENCY_BTS7960  10000
 
