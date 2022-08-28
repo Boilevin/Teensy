@@ -49,7 +49,7 @@ const int chipSelect = BUILTIN_SDCARD;
 
 
 // code version
-#define VER "1.39-Teensyber GY-521"
+#define VER "1.414-Teensyber"
 
 
 // sensors
@@ -199,6 +199,9 @@ enum {
   STATE_ACCEL_FRWRD, // when start from calib or off need to accel before motorodo
   STATE_ENDLANE_STOP, //when mower is at the end of the lane avoid to reverse before roll
   STATE_START_FROM_STATION, //when mower is station and a start command is receive need to start again IMU ,perimeter signal etc....
+  STATE_BUMPER_REV,   // rev when bumper is hit
+  STATE_WAIT_COVER,  // on start wait until user close the security cover
+
 };
 
 // status mode
@@ -229,12 +232,12 @@ class Robot
     String name;
     boolean sdCardReady;
     int totalLineOnFile;
-    
+
     char historyFilenameChar[15]; // need a char array for sd card open
     boolean developerActive;
     boolean ConsoleToPfod;
     boolean sdcardToPfod; // use to stop mqtt message went list a file in pfod raw data mode
-    
+
     // --------- state machine --------------------------
     byte stateCurr;
     byte stateLast;
@@ -254,9 +257,9 @@ class Robot
     //const String area2_ip="10.0.0.151";
     //const String area3_ip="10.0.0.158";
 
-   // char* area1_ip = "10.0.0.151";
-   // char* area2_ip = "10.0.0.150";
-   // char* area3_ip = "10.0.0.158";
+    // char* area1_ip = "10.0.0.151";
+    // char* area2_ip = "10.0.0.150";
+    // char* area3_ip = "10.0.0.158";
 
     boolean Enable_Screen ;
 
@@ -315,7 +318,7 @@ class Robot
     int stateEndOdometryRight;  // use to mesure the distance when rev roll etc ...
     int stateEndOdometryLeft;
     int stateStartOdometryLeft;  // use to calculate the accel
-   
+
     int stateStartOdometryRight;
     int PeriOdoIslandDiff; //use to check if island while tracking
     //float straightLineTheta; //angle read by odometry during the last lane to verify the IMU drift
@@ -358,8 +361,8 @@ class Robot
     struct rfid_list *head = NULL;
     struct rfid_list *ptr = NULL;
 
-    
-//bber400 gps
+
+    //bber400 gps
     byte gpsPointElementCount = 0;
     struct gpsPoint {
       byte gpsAreaNr;
@@ -533,10 +536,20 @@ class Robot
     boolean bumperUse       ;      // has bumpers?
     boolean tiltUse       ;      // has tilt sensor?
     boolean tilt;
-    int bumperLeftCounter ;
+    boolean coverIsClosed;
+    
+    int bumper_rev_distance ;
     boolean bumperLeft ;
-    int bumperRightCounter ;
+    int bumperLeftCounter ;
     boolean bumperRight ;
+    int bumperRightCounter ;
+    boolean bumperRearRight ;
+    int bumperRearRightCounter ;
+    boolean bumperRearLeft ;
+    int bumperRearLeftCounter ;
+
+
+
     unsigned long nextTimeBumper ;
     // --------- drop state ---------------------------
     // bumper state (true = pressed)                                                                                                  // Dropsensor - Absturzsensor vorhanden ?
@@ -764,7 +777,7 @@ class Robot
     float batFull         ;      // battery reference Voltage (fully charged)
     float batFullCurrent   ; // current flowing when battery is fully charged
     float batVoltageToStationStart; // // start timer mowing at this voltage (avoid wait for 100 % charge)
-    
+
     float startChargingIfBelow; // start charging if battery Voltage is below
     unsigned long chargingTimeout; // safety timer for charging
     float stationHeading    ;       // station heading to init the YAW when leave station (in radian)
@@ -772,7 +785,7 @@ class Robot
     //float chgSense        ;       // mV/A empfindlichkeit des Ladestromsensors in mV/A (FÃ¼r ACS712 5A = 185)
     //char chgChange        ;       // messwertumkehr von - nach +         1oder 0
     float batVoltage ;  // battery voltage (Volt)
- 
+
     // byte chgSelection     ;       // Senor Auswahl
     //float batRefFactor ;
     float batCapacity ; // battery capacity (mAh)

@@ -1,6 +1,6 @@
 /*
 
-  choose your robot type, baud rates, pin definitions etc.
+  choose your robot type, PCB version, baud rates, pin definitions etc.
 
 */
 
@@ -11,10 +11,10 @@
 #include "robot.h"
 #include "drivers.h"
 
-
 const String area1_ip = "10.0.0.150";
 const String area2_ip = "10.0.0.151";
 const String area3_ip = "10.0.0.158";
+
 
 //*****************possible list of motor driver set to :****************
 // 1 for brushless ZS-X11H v1 Driver
@@ -25,14 +25,17 @@ const String area3_ip = "10.0.0.158";
 #define MOW_MOTOR_DRIVER 1
 
 #define PWM_FREQUENCY_ZSX11HV1  20000 //
-#define PWM_FREQUENCY_L298N  10000
+#define PWM_FREQUENCY_L298N  10000 
 #define PWM_FREQUENCY_BTS7960  10000
 
 
 #define BUMPER_IS_SWITCH false  // set to true if the bumper is a single ON/OFF switch
 #define BUMPER_REAR_EXIST false  // set to true to manage the rear bumper connected on CAN3 J20 connector
+#define BUMPER_ARE_NORMALY_CLOSED false  // set to true if the bumper contact is closed when nothing is hit
 
 #define START_BUTTON_IS_NC true //if button is normaly closed
+
+#define MOWER_HAVE_SECURITY_COVER false // mower can have a cover that stop the mowing cycle but power still on the PCB,mower only start after closing the cover
 
 #define INA226_MOW2_PRESENT false
 #define INA226_MOW3_PRESENT false
@@ -96,8 +99,11 @@ const String area3_ip = "10.0.0.158";
 #define pinOdometryRight 11   // right odometry sensor  
 #define pinRain 39                 // rain sensor
 #define pinUserOut1 13          // remote control mower motor
-#define pinUserOut2 32          // remote control steering 
+#define pinUserOut2 13          // remote control steering 
 #define pinUserOut3 A16        // remote control speed
+#define pinCover 32            // cover contact
+
+
 
 // ------- ultrasonic config ---------------------------------------------------------
 #define NO_ECHO 0

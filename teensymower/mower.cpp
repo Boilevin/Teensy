@@ -35,11 +35,11 @@ Mower::Mower() {
 
 
 
-  name = "teensyTable";
+  name = "MI632";
   // ------- wheel motors -----------------------------
   motorRightSwapDir     = false;    // inverse right motor direction?
   motorLeftSwapDir      = true;    // inverse left motor direction?
-
+  
   //Enable_Screen = false;  // a OLED 0.96 is connected to I2C2
 
   motorAccel       = 1500;  // motor wheel acceleration - only functional when odometry is not in use (warning: do not set too low)
@@ -120,8 +120,6 @@ Mower::Mower() {
 
 
   // ------ perimeter ---------------------------------
-  perimeter.swapCoilPolarityLeft = false;
-  perimeter.swapCoilPolarityRight = false;
   perimeterUse       = 1;      // use perimeter?
   perimeterTriggerMinSmag = 50;      // perimeter minimum smag to use on big area
   //perimeterOutRollTimeMax  = 2000;   // free
@@ -200,10 +198,9 @@ Mower::Mower() {
   batSwitchOffIfIdle = 300;      // switch off battery if idle (minutes)
   batFactor       = 1.00;     //not use
   batChgFactor    = 1.00;     //not use
-  batFull          = 29.4;     // battery reference Voltage (fully charged) use to adjust the pfod slider limit and oled screen bat logo
-  batVoltageToStationStart = 28.0;  // minimum battery Voltage to allow mower start by timer
+  batFull          = 29.4;     // battery reference Voltage (fully charged) PLEASE ADJUST IF USING A DIFFERENT BATTERY VOLTAGE! FOR a 12V SYSTEM TO 14.4V
   batChargingCurrentMax = 2; // maximum current your charger can devliver
-  batFullCurrent  = 0.05;      // stop charging below this current value
+  batFullCurrent  = 0.05;      // current flowing when battery is fully charged
   startChargingIfBelow = 25.0; // start charging if battery Voltage is below
   chargingTimeout = 36000000; // safety timer for charging (ms)  10 hrs
 
@@ -218,7 +215,6 @@ Mower::Mower() {
   stationCheckDist   = 2;    // charge station  check distance to be sure voltage is OK cm
   UseBumperDock = true; //bumper is pressed when docking or not
   dockingSpeed   =  60;   //speed docking is (percent of maxspeed)
-  checkDockingSpeed   =  5;   //speed check docking RPM
   autoResetActive  = 0;       // after charging reboot or not
   stationHeading  = 0;  //heading of the charging station to use when no compass
 
@@ -360,6 +356,12 @@ void Mower::setup() {
 
   // button
   pinMode(pinButton, INPUT_PULLUP);
+
+  // cover
+  if (MOWER_HAVE_SECURITY_COVER){
+    pinMode(pinCover, INPUT_PULLUP);
+  }
+  
 
   // bumpers
   if (BUMPER_IS_SWITCH) {

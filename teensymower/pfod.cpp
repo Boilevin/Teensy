@@ -390,7 +390,7 @@ void RemoteControl::sendMotorMenu(boolean update) {
   sendSlider("a19", F("Roll Degrees min"), robot->motorRollDegMin, "", 1, 90, 1);
   sendSlider("a07", F("Roll Degrees max"), robot->motorRollDegMax, "", 1, 180, 1);
 
-  sendSlider("a08", F("Rev Distance / Perimeter"), robot->DistPeriOutRev, "", 1, 100, 1);
+  sendSlider("a08", F("Rev Distance / Perimeter"), robot->DistPeriOutRev, "", 1, 50, 0);
 
   sendSlider("a09", F("Stop Distance / Perimeter"), robot->DistPeriOutStop, "", 1, 30, 1);
   sendPIDSlider("a14", "RPM", robot->motorLeftPID, 0.01, 3.0);
@@ -455,7 +455,7 @@ void RemoteControl::processMotorMenu(String pfodCmd) {
     robot->motorLeftSpeedRpmSet = 100;//robot->motorSpeedMaxRpm;
     robot->motorRightSpeedRpmSet = 100;//robot->motorSpeedMaxRpm;
     robot->setNextState(STATE_CALIB_MOTOR_SPEED, robot->rollDir);
-    sendTestOdoMenu(false);
+    
   }
 
 
@@ -526,15 +526,25 @@ void RemoteControl::processMowMenu(String pfodCmd) {
 
 void RemoteControl::sendBumperMenu(boolean update) {
   if (update) serialPort->print("{:"); else serialPort->print(F("{.Bumper`1000"));
-  serialPort->print(F("|b00~Bumper Use "));
+  serialPort->println(F("|b00~Bumper Use "));
   sendYesNo(robot->bumperUse);
+  serialPort->println();
+  serialPort->println(F("Forw Count l, r "));
   serialPort->print(robot->bumperLeftCounter);
   serialPort->print(" , ");
   serialPort->print(robot->bumperRightCounter);
-  //serialPort->println(F("|b02~Value l, r "));
-  //serialPort->print(robot->bumperLeft);
-  //serialPort->print(" , ");
-  //serialPort->print(robot->bumperRight);
+  serialPort->println();
+  serialPort->println(F("Rear Count l, r "));
+  serialPort->print(robot->bumperRearLeftCounter);
+  serialPort->print(" , ");
+  serialPort->print(robot->bumperRearRightCounter);
+
+
+  
+
+  sendSlider("b05", F("Rev distance"), robot->bumper_rev_distance, "", 1, 50, 5);
+  
+  
   serialPort->println(F("|b03~Button Use "));
   sendYesNo(robot->buttonUse);
   serialPort->println("}");
@@ -542,7 +552,8 @@ void RemoteControl::sendBumperMenu(boolean update) {
 
 void RemoteControl::processBumperMenu(String pfodCmd) {
   if (pfodCmd == "b00") robot->bumperUse = !robot->bumperUse;
-  if (pfodCmd == "b03") robot->buttonUse = !robot->buttonUse;
+  else if (pfodCmd == "b03") robot->buttonUse = !robot->buttonUse;
+  else if (pfodCmd.startsWith ("b05")) processSlider(pfodCmd, robot->bumper_rev_distance, 1);
   sendBumperMenu(true);
 }
 
@@ -1529,7 +1540,7 @@ void RemoteControl::processFactorySettingsMenu(String pfodCmd) {
 
 void RemoteControl::sendInfoMenu(boolean update) {
   if (update) serialPort->print("{:"); else serialPort->print(F("{.Info`1000"));
-  serialPort->print(F("|v00~Ardumower "));
+  serialPort->print(F("|v00~Ver "));
   serialPort->print(VER);
   serialPort->print(F("|v01~Developer "));
   sendYesNo(robot->developerActive);
@@ -1643,6 +1654,13 @@ void RemoteControl::processCommandMenu(String pfodCmd) {
     robot->setNextState(STATE_PERI_STOP_TOROLL, 0);
     sendCommandMenu(true);
 
+  }
+  else if (pfodCmd == "rk") {
+    // cmd: track perimeter
+    robot->periFindDriveHeading = scalePI(robot->imu.ypr.yaw);
+    robot->statusCurr = TRACK_TO_START;
+    robot->setNextState(STATE_PERI_FIND, 0);
+    sendCommandMenu(true);
   } 
   else if (pfodCmd.startsWith("rl")) {
     processSlider(pfodCmd, robot->imu.CompassGyroOffset, 0.01);
@@ -1651,6 +1669,7 @@ void RemoteControl::processCommandMenu(String pfodCmd) {
     robot->statusCurr = NORMAL_MOWING;
     robot->mowPatternDuration = 0;
     robot->motorMowEnable = true;
+    robot->actualLenghtByLane = robot->maxLenghtByLane; //initialise lenght lane
     if ((robot->stateCurr == STATE_STATION) || (robot->stateCurr == STATE_STATION_CHARGING)) {
       //bber40
       robot->ShowMessageln("MANUAL START FROM STATION");
@@ -1676,7 +1695,8 @@ void RemoteControl::processCommandMenu(String pfodCmd) {
         robot->statusCurr = TRACK_TO_START; //status change later into STATE_PERI_STOP_TOTRACK
         robot->setNextState(STATE_PERI_FIND, 0);
       }
-      else {
+      else 
+      {
         robot->setNextState(STATE_ACCEL_FRWRD, 0);
       }
 

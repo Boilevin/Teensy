@@ -67,7 +67,7 @@ const char* stateNames[] = {"OFF", "RC", "FORW", "ROLL", "REV", "CIRC", "ERR", "
                             "STOPTOTRACK", "AUTOCALIB", "ROLLTOFINDYAW", "TESTMOTOR", "FINDYAWSTOP", "STOPONBUMPER",
                             "STOPCALIB", "SONARTRIG", "STOPSPIRAL", "MOWSPIRAL", "ROT360", "NEXTSPIRE", "ESCAPLANE",
                             "TRACKSTOP", "ROLLTOTAG", "STOPTONEWAREA", "ROLL1TONEWAREA", "DRIVE1TONEWAREA", "ROLL2TONEWAREA", "DRIVE2TONEWAREA", "WAITSIG2", "STOPTONEWAREA", "ROLLSTOPTOTRACK",
-                            "STOPTOFASTSTART", "CALIBMOTORSPEED", "ACCELFRWRD", "ENDLANE", "STARTSTATION",
+                            "STOPTOFASTSTART", "CALIBMOTORSPEED", "ACCELFRWRD", "ENDLANE", "STARTSTATION", "BUMPREV" , "WAITCOVER"
                            };
 
 const char* statusNames[] = {"WAIT", "NORMALMOWING", "SPIRALEMOWING", "BACKTOSTATION", "TRACKTOSTART", "MANUAL", "REMOTE", "ERROR", "STATION", "TESTING", "SIGWAIT" , "WIREMOWING"
@@ -122,7 +122,6 @@ Robot::Robot() {
   rotateLeft = true;
   moveRightFinish = false;
   moveLeftFinish = false;
-
   motorRpmCoeff = 1;
 
   remoteSteer = remoteSpeed = remoteMow = remoteSwitch = 0;
@@ -151,6 +150,9 @@ Robot::Robot() {
 
   bumperLeftCounter = bumperRightCounter = 0;
   bumperLeft = bumperRight = false;
+
+  bumperRearLeftCounter = bumperRearRightCounter = 0;
+  bumperRearLeft = bumperRearRight = false;
 
   gpsLat = gpsLon = gpsX = gpsY = 0;
 
@@ -1072,6 +1074,10 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, stationHeading);
   eereadwrite(readflag, addr, checkDockingSpeed);
   eereadwrite(readflag, addr, batVoltageToStationStart);
+  eereadwrite(readflag, addr, bumper_rev_distance);
+
+
+
 
 
   if (readflag)
@@ -1188,6 +1194,10 @@ void Robot::printSettingSerial() {
   ShowMessageln("---------- bumper -----------------");
   ShowMessage  ("bumperUse           : ");
   ShowMessageln(bumperUse);
+  ShowMessage  ("bumper_rev_distance : ");
+  ShowMessageln(bumper_rev_distance);
+
+
 
 
   // ------ rain -------------------------------------
@@ -2064,7 +2074,7 @@ void Robot::motorControlOdo() {
       imuDirPID.max_output = motorSpeedMaxPwm / 2;
       imuDirPID.compute();
 
-      if ((millis() - stateStartTime) < 1000) { // do not use rpm adjust during acceleration 
+      if ((millis() - stateStartTime) < 1000) { // do not use rpm adjust during acceleration
         //bber402
 
         rightSpeed =  rightSpeed - (66 - (millis() - stateStartTime) / 30);
@@ -2099,7 +2109,7 @@ void Robot::motorControlOdo() {
 
 
 
-      
+
     }
     else
       //// NORMAL MOWING OR PERIFIND
@@ -2811,14 +2821,8 @@ void Robot::setUserOut() {
 */
 
 void Robot::OdoRightCountInt() {
-  // Pulse1 = micros() - Pulse2;
-  // if (Pulse1 > 10  ) { // debounce for 120uS
-  //   Pulse2 = micros();
-  if (robot.motorRightPWMCurr > 0 ) robot.odometryRight++; else robot.odometryRight--;
-  // }
+  if (robot.motorRightPWMCurr >= 0 ) robot.odometryRight++; else robot.odometryRight--;
   asm("dsb");
-
-
 }
 void Robot::OdoLeftCountInt() {
   // Pulse01 = micros() - Pulse02;
@@ -3437,7 +3441,6 @@ void Robot::checkButton() {
       if  ((stateCurr == STATE_OFF) || (stateCurr == STATE_STATION)) {
         if (buttonCounter == 1) {
           motorMowEnable = true;
-          ShowMessageln("MANUAL START FROM STATION");
           statusCurr = NORMAL_MOWING;
           findedYaw = 999;
           imuDirPID.reset();
@@ -3454,12 +3457,20 @@ void Robot::checkButton() {
           if (RaspberryPIUse)  MyRpi.SendStatusToPi();
 
           if (stateCurr == STATE_STATION) {
+            ShowMessageln("MANUAL START FROM STATION");
             setActuator(ACT_CHGRELAY, 0);
             setNextState(STATE_START_FROM_STATION, 1);
           }
 
           else {
-            setNextState(STATE_ACCEL_FRWRD, 0);
+            ShowMessageln("MANUAL START");
+            if (MOWER_HAVE_SECURITY_COVER) {
+              setNextState(STATE_WAIT_COVER, 0);
+            }
+            else {
+              setNextState(STATE_ACCEL_FRWRD, 0);
+            }
+
             return;
           }
 
@@ -3479,7 +3490,13 @@ void Robot::checkButton() {
           }
 
           else {
-            setNextState(STATE_ACCEL_FRWRD, 0);
+
+            if (MOWER_HAVE_SECURITY_COVER) {
+              setNextState(STATE_WAIT_COVER, 0);
+            }
+            else {
+              setNextState(STATE_ACCEL_FRWRD, 0);
+            }
             return;
           }
 
@@ -3497,13 +3514,19 @@ void Robot::checkButton() {
           buttonCounter = 0;
           if (RaspberryPIUse) MyRpi.SendStatusToPi();
           periFindDriveHeading = imu.ypr.yaw;
-          setNextState(STATE_PERI_FIND, 0);
+          if (MOWER_HAVE_SECURITY_COVER) {
+            setNextState(STATE_WAIT_COVER, 0);
+          }
+          else {
+            setNextState(STATE_PERI_FIND, 0);
+          }
+
           return;
         }
-      }
-      buttonCounter = 0;
-    }
 
+        buttonCounter = 0;
+      }
+    }
   }
 }
 
@@ -3662,23 +3685,105 @@ void Robot::readSensors() {
 
   }
 
-  if ((bumperUse) && (millis() >= nextTimeBumper)) {
-    nextTimeBumper = millis() + 100;
 
-    if (digitalRead(pinBumperLeft) == 0) {
-      //ShowMessageln("Bumper left trigger");
-      bumperLeftCounter++;
-      bumperLeft = true;
+  if (MOWER_HAVE_SECURITY_COVER) {
+
+    if (digitalRead(pinCover) == 0) {
+      coverIsClosed = true;
+    }
+    else
+    {
+      coverIsClosed = false;
+      if (stateCurr != STATE_WAIT_COVER) {
+        if (stateCurr != STATE_OFF) {
+          ShowMessageln("Cover Open ");
+          if ((statusCurr == MANUAL) || (statusCurr == NORMAL_MOWING) || (statusCurr == SPIRALE_MOWING) || (stateCurr == STATE_ERROR) || (statusCurr == WIRE_MOWING) || (statusCurr == BACK_TO_STATION) || (statusCurr == TRACK_TO_START)) {
+            ShowMessageln(F("Stop Mowing and Reset Error"));
+            motorMowEnable = false;
+            buttonCounter = 0;
+            setNextState(STATE_OFF, 0);
+            return;
+          }
+        }
+      }
     }
 
-    if (digitalRead(pinBumperRight) == 0) {
-      //ShowMessageln("Bumper right trigger");
-      bumperRightCounter++;
-      bumperRight = true;
-    }
 
   }
 
+
+  if ((bumperUse) && (millis() >= nextTimeBumper)) {
+    nextTimeBumper = millis() + 30;
+
+
+
+    // front bumper
+
+    if (BUMPER_ARE_NORMALY_CLOSED) {
+      if (digitalRead(pinBumperLeft) == 1) {
+        //ShowMessageln("Bumper left trigger");
+        bumperLeftCounter++;
+        bumperLeft = true;
+      }
+
+      if (digitalRead(pinBumperRight) == 1) {
+        //ShowMessageln("Bumper right trigger");
+        bumperRightCounter++;
+        bumperRight = true;
+      }
+    }
+    else
+    {
+      if (digitalRead(pinBumperLeft) == 0) {
+        //ShowMessageln("Bumper left trigger");
+        bumperLeftCounter++;
+        bumperLeft = true;
+      }
+
+      if (digitalRead(pinBumperRight) == 0) {
+        //ShowMessageln("Bumper right trigger");
+        bumperRightCounter++;
+        bumperRight = true;
+      }
+
+    }
+
+    // rear bumper
+    if (BUMPER_ARE_NORMALY_CLOSED) {
+      if (digitalRead(pinBumperRearLeft) == 1) {
+        //ShowMessageln("Bumper left trigger");
+        bumperRearLeftCounter++;
+        bumperRearLeft = true;
+      }
+
+      if (digitalRead(pinBumperRearRight) == 1) {
+        //ShowMessageln("Bumper right trigger");
+        bumperRearRightCounter++;
+        bumperRearRight = true;
+      }
+    }
+    else
+    {
+      if (digitalRead(pinBumperRearLeft) == 0) {
+        //ShowMessageln("Bumper left trigger");
+        bumperRearLeftCounter++;
+        bumperRearLeft = true;
+      }
+
+      if (digitalRead(pinBumperRearRight) == 0) {
+        //ShowMessageln("Bumper right trigger");
+        bumperRearRightCounter++;
+        bumperRearRight = true;
+      }
+
+    }
+
+
+
+
+
+
+  }
   if (millis() >= nextTimeRTC) {
     //for pfod use : need to adjust the datetime var each second for example
     nextTimeRTC = millis() + 1000;
@@ -4491,6 +4596,45 @@ void Robot::setNextState(byte stateNew, byte dir) {
 
       break;
 
+
+    case STATE_BUMPER_REV: //in normal mowing reverse after the bumper trigger
+      setBeeper(0, 0, 0, 0, 0);
+
+      if (rollDir == RIGHT) {
+        UseAccelLeft = 1;
+        UseBrakeLeft = 1;
+        UseAccelRight = 1;
+        if (mowPatternCurr == MOW_LANES)   UseBrakeRight = 1;
+        else UseBrakeRight = 0;
+      }
+      else
+      {
+        UseAccelLeft = 1;
+        if (mowPatternCurr == MOW_LANES)  UseBrakeLeft = 1;
+        else UseBrakeLeft = 0;
+        UseAccelRight = 1;
+        UseBrakeRight = 1;
+      }
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm;
+      stateEndOdometryRight = odometryRight - (odometryTicksPerCm * bumper_rev_distance);
+      stateEndOdometryLeft = odometryLeft - (odometryTicksPerCm * bumper_rev_distance);
+      /*
+            ShowMessage("REV left E/A : ");
+            ShowMessage(stateEndOdometryLeft);
+            ShowMessage(" / ");
+            ShowMessageln(odometryLeft);
+            ShowMessage("right E/A : ");
+            ShowMessage(stateEndOdometryRight);
+            ShowMessage(" / ");
+            ShowMessageln(odometryRight);
+      */
+
+
+
+      OdoRampCompute();
+      break;
+
+
     case STATE_PERI_OUT_REV: //in normal mowing reverse after the wire trigger
       setBeeper(0, 0, 0, 0, 0);
       //perimeter.lastInsideTime[0] = millis(); //use to avoid perimetertimeout when mower outside perimeter
@@ -5052,6 +5196,11 @@ void Robot::setNextState(byte stateNew, byte dir) {
 
       break;
 
+    case STATE_WAIT_COVER:
+
+      ShowMessageln("Close cover to start");
+      break;
+
     //bber202
     case STATE_ACCEL_FRWRD:
       //use to start mow motor at low speed and limit noise on perimeter reading on startup
@@ -5063,10 +5212,12 @@ void Robot::setNextState(byte stateNew, byte dir) {
       UseBrakeLeft = 0;
       UseAccelRight = 1;
       UseBrakeRight = 0;
+
       motorRightSpeedRpmSet = motorSpeedMaxRpm / 2 ;
       motorLeftSpeedRpmSet = motorSpeedMaxRpm / 2 ;
       stateEndOdometryRight = odometryRight + int(odometryTicksPerRevolution / 4) ;
       stateEndOdometryLeft = odometryLeft + int(odometryTicksPerRevolution / 4) ;
+
       OdoRampCompute();
 
       break;
@@ -5500,7 +5651,7 @@ void Robot::checkBumpers() {
 
   */
 
-  if ((bumperLeft || bumperRight)) {
+  if ((bumperLeft || bumperRight || bumperRearLeft || bumperRearRight)) {
     if (statusCurr == MANUAL) {
       ShowMessageln("Bumper trigger in Manual mode ?????????");
       setNextState(STATE_OFF, 0); //the bumper stop all in manual mode
@@ -5512,7 +5663,7 @@ void Robot::checkBumpers() {
       motorLeftRpmCurr = motorRightRpmCurr = 0 ;
       motorLeftPWMCurr = motorRightPWMCurr = 0;
       setMotorPWM(0, 0);
-      if (bumperLeft) {
+      if (bumperLeft || bumperRearLeft) {
         ShowMessageln("Bumper left trigger");
         reverseOrBidir(LEFT);
       } else {
@@ -5527,7 +5678,7 @@ void Robot::checkBumpers() {
 
 // check bumpers while tracking perimeter
 void Robot::checkBumpersPerimeter() {
-  if ((bumperLeft || bumperRight)) { // the bumper is used to detect the station
+  if ((bumperLeft || bumperRight || bumperRearLeft || bumperRearRight)) { // the bumper is used to detect the station
     motorLeftRpmCurr = motorRightRpmCurr = 0 ;
     setMotorPWM(0, 0);//stop immediatly and station check to see if voltage on pin
     ShowMessageln("Bump on Something check for station");
@@ -5588,6 +5739,14 @@ void Robot::checkPerimeterBoundary() {
     //bber200
     //speed coeff between 0.7 and 1 according 50% of perimetermagmax
     if ((millis() >= nextTimeCheckperimeterSpeedCoeff) && (reduceSpeedNearPerimeter)) {
+      int miniValue = (int)perimeterMagMaxValue / 5;
+      if (perimeter.getSmoothMagnitude(0) > perimeter.getSmoothMagnitude(1)) {
+        perimeterSpeedCoeff = (float) map(perimeter.getSmoothMagnitude(0), miniValue, perimeterMagMaxValue, 100, 70) / 100;
+      }
+      else {
+        perimeterSpeedCoeff = (float) map(perimeter.getSmoothMagnitude(1), miniValue, perimeterMagMaxValue, 100, 70) / 100;
+      }
+
       if (perimeterSpeedCoeff < 0.7) {
         perimeterSpeedCoeff = 0.7;
         nextTimeCheckperimeterSpeedCoeff = millis() + 500; //avoid speed coeff increase when mower go accross the wire
@@ -5893,6 +6052,23 @@ void Robot::readAllTemperature() {
     temperatureTeensy = InternalTemperature.readTemperatureC();
     imu.readImuTemperature();
 
+    if ((temperatureTeensy >= 0.8 * maxTemperature) && (stateCurr != STATE_OFF)) { // at 80% of max temp mower try to find the station
+      ShowMessageln("Temperature is 80 % of max ");
+      ShowMessageln("Mower search the station ");
+      ShowMessage("Maxi Setting = ");
+      ShowMessage(maxTemperature);
+      ShowMessage(" Actual Temperature = ");
+      ShowMessageln(temperatureTeensy);
+      nextTimeReadTemperature = nextTimeReadTemperature + 180000; // do not read again the temp for the next 3 minute and set the idle bat to 2 minute to poweroff the PCB
+      periFindDriveHeading = scalePI(imu.ypr.yaw);
+      areaToGo = 1;
+      whereToStart = 99999;
+      nextTimeTimer = millis() + 3600000;
+      statusCurr = BACK_TO_STATION;
+      setNextState(STATE_PERI_FIND, 0);
+      return;
+    }
+
     if (temperatureTeensy >= maxTemperature) {
       ShowMessageln("Temperature too high ***************");
       ShowMessageln("PCB AutoStop in the next 2 minutes *");
@@ -6128,13 +6304,14 @@ void Robot::loop()  {
       //manage the imu////////////////////////////////////////////////////////////
       if (imuUse ) {
         //when findedYaw = 999 it's mean that the lane is changed and the imu need to be adjusted to the compass
-        if ((findedYaw == 999) && (imu.ypr.yaw > 0) && ((millis() - stateStartTime) > 4000) && ((millis() - stateStartTime) < 5000) && (mowPatternCurr == MOW_LANES)) { //try to find compass yaw
+        //Avoid to stop near perimeter to avoid periout error at the end of calibration
+        if ((findedYaw == 999) && (imu.ypr.yaw > 0) && (abs(perimeterMagLeft) <= perimeterMagMaxValue / 2) && ((millis() - stateStartTime) > 4000) && ((millis() - stateStartTime) < 5000) && (mowPatternCurr == MOW_LANES)) { //try to find compass yaw
           setNextState(STATE_STOP_TO_FIND_YAW, rollDir);
           return;
         }
 
         //-----------here and before reverse the mower is stop so mark a pause to autocalibrate DMP-----------
-        if ((millis() > nextTimeToDmpAutoCalibration) && (mowPatternCurr == MOW_LANES) && (imu.ypr.yaw > 0) && ((millis() - stateStartTime) > 4000) && ((millis() - stateStartTime) < 5000)  ) {
+        if ((millis() > nextTimeToDmpAutoCalibration) && (abs(perimeterMagLeft) <= perimeterMagMaxValue / 2) && (mowPatternCurr == MOW_LANES) && (imu.ypr.yaw > 0) && ((millis() - stateStartTime) > 4000) && ((millis() - stateStartTime) < 5000)  ) {
           setNextState(STATE_STOP_TO_FIND_YAW, rollDir);
           return;
 
@@ -6783,17 +6960,17 @@ void Robot::loop()  {
             setNextState(STATE_PERI_OBSTACLE_REV, rollDir);
           }
           else {
-            setNextState(STATE_PERI_OUT_REV, rollDir);
+            setNextState(STATE_BUMPER_REV, rollDir);
           }
           //bber300 return ??
-          //return;
+          return;
         }
       }
       if (millis() > (stateStartTime + MaxOdoStateDuration)) {
         if (developerActive) {
           ShowMessageln ("Warning can t  stop ON BUMPER in time ");
         }
-        setNextState(STATE_PERI_OUT_REV, rollDir);//if the motor can't rech the odocible in slope
+        setNextState(STATE_BUMPER_REV, rollDir);//if the motor can't rech the odocible in slope
       }
       break;
 
@@ -6802,18 +6979,36 @@ void Robot::loop()  {
       checkCurrent();
       checkBumpers();
       if ((moveRightFinish) && (moveLeftFinish) ) {
-
         if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)  { //wait until the 2 motors completly stop because rotation is inverted
-          setNextState(STATE_PERI_OUT_REV, rollDir);
+
+          if ((DistPeriOutRev == 0) && (mowPatternCurr != MOW_LANES)) {
+            setNextState(STATE_PERI_OUT_ROLL, rollDir);
+          }
+          else
+          {
+            DistPeriOutRev = DistPeriOutStop + 10; // into by lane mowing a reverse is mandatory to avoid mower change to random mode imediatelly
+            setNextState(STATE_PERI_OUT_REV, rollDir);
+          }
         }
       }
       if (millis() > (stateStartTime + MaxOdoStateDuration)) {
         if (developerActive) {
           ShowMessageln ("Warning can t peri out stop in time ");
         }
-        setNextState(STATE_PERI_OUT_REV, rollDir);//if the motor can't rech the odocible in slope
+        if ((DistPeriOutRev == 0) && (mowPatternCurr != MOW_LANES)) {
+          setNextState(STATE_PERI_OUT_ROLL, rollDir);
+        }
+        else
+        {
+          DistPeriOutRev = DistPeriOutStop + 10;
+          setNextState(STATE_PERI_OUT_REV, rollDir);
+        }
       }
       break;
+
+
+
+
     case STATE_ENDLANE_STOP:
       motorControlOdo();
       if ((moveRightFinish) && (moveLeftFinish) ) {
@@ -7138,6 +7333,68 @@ void Robot::loop()  {
 
       break;
 
+
+    case STATE_BUMPER_REV:
+      motorControlOdo();
+      /*
+            ShowMessage("REV L/R : ");
+            ShowMessage(odometryLeft);
+            ShowMessage(" / ");
+            ShowMessageln(odometryRight);
+            delay(50);
+      */
+
+      if (mowPatternCurr == MOW_LANES) {  //  *************************LANE***************************************
+        if ((moveRightFinish) && (moveLeftFinish) ) {
+          if (rollDir == RIGHT) {
+            if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0)) { //wait until the 2 motor completly stop because need precision
+              setNextState(STATE_PERI_OUT_LANE_ROLL1, rollDir);
+            }
+          }
+          else
+          {
+            if ((motorLeftPWMCurr == 0) && (motorRightPWMCurr == 0)) {
+              setNextState(STATE_PERI_OUT_LANE_ROLL1, rollDir);
+            }
+          }
+        }
+      }
+      else
+
+
+      { //  *************************RANDOM***************************************
+
+        if (rollDir == RIGHT) {
+          if ((odometryRight <= stateEndOdometryRight) && (moveLeftFinish) ) {
+
+            if (motorLeftPWMCurr == 0 ) { //wait until the left motor completly stop because rotation is inverted
+
+              setNextState(STATE_PERI_OUT_ROLL, rollDir);
+            }
+          }
+        }
+        else
+        {
+          if ((moveRightFinish) && (odometryLeft <= stateEndOdometryLeft) ) {
+
+            if (motorRightPWMCurr == 0 ) { //wait until the right motor completly stop because rotation is inverted
+              setNextState(STATE_PERI_OUT_ROLL, rollDir);
+            }
+          }
+        }
+      }
+
+
+
+      if (millis() > (stateStartTime + MaxOdoStateDuration)) {
+        if (developerActive) {
+          ShowMessageln ("Warning can t bumper rev in time ");
+        }
+        setNextState(STATE_PERI_OUT_LANE_ROLL1, rollDir);//if the motor can't rech the odocible in slope
+      }
+
+      break;
+
     case STATE_PERI_OUT_REV:
       motorControlOdo();
       /*
@@ -7166,14 +7423,6 @@ void Robot::loop()  {
       else
 
 
-
-
-
-
-
-
-
-
       { //  *************************RANDOM***************************************
 
         if (rollDir == RIGHT) {
@@ -7195,14 +7444,6 @@ void Robot::loop()  {
           }
         }
       }
-
-
-
-
-
-
-
-
 
 
       /*
@@ -7643,6 +7884,17 @@ void Robot::loop()  {
       if (millis() > (stateStartTime + 500)) setNextState(stateLast, rollDir);//1000
       break;
 
+    case STATE_WAIT_COVER:
+      if (millis() > (stateStartTime + 10000)) {
+        ShowMessageln("Cover not closed after 10 secondes ???????");
+        setNextState(STATE_OFF, rollDir);
+      }
+
+      if (coverIsClosed) {
+        setNextState(STATE_ACCEL_FRWRD, rollDir);//1000
+      }
+      break;
+
     //bber50
     case STATE_ACCEL_FRWRD:
 
@@ -7650,9 +7902,18 @@ void Robot::loop()  {
       if (!perimeterInsideLeft) {
         ShowMessageln("Try to start at other location : We are not inside perimeter");
         setNextState(STATE_OFF, rollDir);
-        //setNextState(STATE_PERI_OUT_STOP, rollDir);
         return;
       }
+
+      if (LEFT_MOTOR_DRIVER == 1) { //brussless driver have it's own acceleration
+        imuDirPID.reset();
+        motorRightPID.reset();
+        motorLeftPID.reset();
+        setNextState(STATE_FORWARD_ODO, rollDir);
+
+        return;
+      }
+
       if ((millis() > (stateStartTime + MaxOdoStateDuration)) || (odometryRight >= stateEndOdometryRight) || (odometryLeft >= stateEndOdometryLeft) ) {
         imuDirPID.reset();
         motorRightPID.reset();
@@ -7667,7 +7928,8 @@ void Robot::loop()  {
 
   bumperRight = false;
   bumperLeft = false;
-
+  bumperRearRight = false;
+  bumperRearLeft = false;
 
   loopsPerSecCounter++;
   wdt.feed();
