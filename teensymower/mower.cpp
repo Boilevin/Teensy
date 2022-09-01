@@ -33,13 +33,37 @@ Mower robot;
 Mower::Mower() {
 
 
-
-
-  name = "MI632";
-  // ------- wheel motors -----------------------------
+#if defined (MI632)
+  name = "MI632"; //Set the Name of platform
+   // ------- wheel motors -----------------------------
   motorRightSwapDir     = false;    // inverse right motor direction?
   motorLeftSwapDir      = true;    // inverse left motor direction?
-  
+#endif
+
+#if defined (MOW800)
+  name = "MOW800"; //Set the Name of platform
+   // ------- wheel motors -----------------------------
+  motorRightSwapDir     = false;    // inverse right motor direction?
+  motorLeftSwapDir      = true;    // inverse left motor direction?
+#endif
+
+#if defined (YARDFORCE)
+  name = "YARD"; //Set the Name of platform
+   // ------- wheel motors -----------------------------
+  motorRightSwapDir     = true;    // inverse right motor direction?
+  motorLeftSwapDir      = false;    // inverse left motor direction?
+#endif
+
+#if defined (RL2000)
+  name = "RL2000"; //Set the Name of platform
+   // ------- wheel motors -----------------------------
+  motorRightSwapDir     = false;    // inverse right motor direction?
+  motorLeftSwapDir      = false;    // inverse left motor direction?
+#endif
+
+
+ 
+
   //Enable_Screen = false;  // a OLED 0.96 is connected to I2C2
 
   motorAccel       = 1500;  // motor wheel acceleration - only functional when odometry is not in use (warning: do not set too low)
@@ -267,21 +291,12 @@ void Mower::setup() {
 
   pinMode(pinBatterySwitch, OUTPUT);
   digitalWrite(pinBatterySwitch, HIGH);
-
-  // Buzzer.begin();
   Serial.begin(CONSOLE_BAUDRATE);
-  // I2Creset();
   Wire.begin();
-  //Wire1.begin();
-
   Serial.println("SETUP");
-
-
   // LED, buzzer, battery
-
   pinMode(pinBuzzer, OUTPUT);
   digitalWrite(pinBuzzer, 0);
-
   pinMode(pinChargeEnable, OUTPUT);
   setActuator(ACT_CHGRELAY, 0);
 
@@ -291,7 +306,7 @@ void Mower::setup() {
   pinMode(pinMotorMowEnable, OUTPUT);
   digitalWrite(pinMotorMowEnable, LOW);
 
-  analogWriteFrequency(pinMotorMowPWM, 20000);//default value
+  analogWriteFrequency(pinMotorMowPWM, 20000);//default value immediatly replace by coorect one
   analogWriteFrequency(pinMotorMowDir, 20000);
   if (MOW_MOTOR_DRIVER == 1) {
     analogWriteFrequency(pinMotorMowPWM, PWM_FREQUENCY_ZSX11HV1);
@@ -358,10 +373,10 @@ void Mower::setup() {
   pinMode(pinButton, INPUT_PULLUP);
 
   // cover
-  if (MOWER_HAVE_SECURITY_COVER){
+  if (MOWER_HAVE_SECURITY_COVER) {
     pinMode(pinCover, INPUT_PULLUP);
   }
-  
+
 
   // bumpers
   if (BUMPER_IS_SWITCH) {

@@ -261,16 +261,9 @@ void RemoteControl::sendPlotMenu(boolean update) {
 
 void RemoteControl::sendSettingsMenu(boolean update) {
   if (update) serialPort->print("{:"); else serialPort->print(F("{.Settings"));
-  if ((robot->stateCurr == STATE_OFF) || (robot->stateCurr == STATE_STATION))  //deactivate the save setting if the mower is not OFF to avoid zombie
-  {
-    serialPort->print(F("|sz~Save settings|s1~Motor|s2~Mow|s3~Bumper/Button|s4~Sonar|s5~Perimeter|s6~Lawn sensor|s7~IMU|s8~Raspberry"));
-    serialPort->println(F("|s9~Battery|s10~Station|s11~Odometry|s13~Rain Temp Screen|s14~GPS|s16~ByLane Setting|s17~RFID|i~Timer|s12~Date/time|sx~Factory settings}"));
-  }
-  else
-  {
-    serialPort->print(F("|s1~Motor|s2~Mow|s3~Bumper/Button|s4~Sonar|s5~Perimeter|s6~Lawn sensor|s7~IMU|s8~Raspberry"));
-    serialPort->println(F("|s9~Battery|s10~Station|s11~Odometry|s13~Rain Temp Humid|s14~GPS|s16~ByLane Setting|s17~RFID|i~Timer|s12~Date/time|sx~Factory settings}"));
-  }
+  serialPort->print(F("|sz~Save settings|s1~Motor|s2~Mow|s3~Bumper/Button|s4~Sonar|s5~Perimeter|s6~Lawn sensor|s7~IMU|s8~Raspberry Sender Mqtt"));
+  serialPort->println(F("|s9~Battery|s10~Station|s11~Odometry|s13~Rain Temp Screen|s14~GPS|s16~ByLane Setting|s17~RFID|i~Timer|s12~Date/time|sx~Factory settings}"));
+  
 }
 
 void RemoteControl::processSettingsMenu(String pfodCmd) {
@@ -1184,22 +1177,37 @@ void RemoteControl::processImuMenu(String pfodCmd) {
 
 void RemoteControl::sendRemoteMenu(boolean update) {
   if (update) serialPort->print("{:"); else serialPort->print(F("{.Remote R/C or Pi`1000"));
-  serialPort->print(F("|h00~Use MQTT "));
+  serialPort->print(F("|h20~Use MQTT "));
   sendYesNo(robot->useMqtt);
-  serialPort->print(F("|h01~Use Rasberry(Need Reboot)"));
+  serialPort->print(F("|h1~Use Rasberry(Need Reboot)"));
   sendYesNo(robot->RaspberryPIUse);
+  serialPort->print(F("|h22~Start Sender 1"));
+  serialPort->print(F("|h23~Start Sender 2"));
+  serialPort->print(F("|h24~Start Sender 3"));
+  serialPort->print(F("|h25~Stop Sender 1"));
+  serialPort->print(F("|h26~Stop Sender 2"));
+  serialPort->print(F("|h27~Stop Sender 3"));
 
 
   serialPort->println("}");
 }
 
 void RemoteControl::processRemoteMenu(String pfodCmd) {
-  if (pfodCmd == "h00" ) robot->useMqtt = !robot->useMqtt;
-  if (pfodCmd == "h01" ) robot->RaspberryPIUse = !robot->RaspberryPIUse;
+  //all command < h19 is reserve for Pi 
   if (pfodCmd == "h02" ) robot->printSettingSerial();  //use by pi to show all the variable in the console
   if (pfodCmd == "h03" ) robot->consoleMode = (robot->consoleMode + 1) % 5;  //use by pi to change the console mode
   if (pfodCmd == "h04" ) robot->autoReboot();  //use by pi to reset teensy and pi
   if (pfodCmd == "h05" ) robot->teensyBootLoader();  //use by pi to reset teensy
+
+  if (pfodCmd == "h20" ) robot->useMqtt = !robot->useMqtt;
+  if (pfodCmd == "h21" ) robot->RaspberryPIUse = !robot->RaspberryPIUse;
+  //sender management
+  if (pfodCmd == "h22" ) robot->startStopSender(1, 1);
+  if (pfodCmd == "h23" ) robot->startStopSender(2, true);
+  if (pfodCmd == "h24" ) robot->startStopSender(3, 1);
+  if (pfodCmd == "h25" ) robot->startStopSender(1, 0);
+  if (pfodCmd == "h26" ) robot->startStopSender(2, false);
+  if (pfodCmd == "h27" ) robot->startStopSender(3, 0);
 
 
   sendRemoteMenu(true);

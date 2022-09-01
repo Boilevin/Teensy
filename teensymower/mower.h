@@ -15,32 +15,143 @@ const String area1_ip = "10.0.0.150";
 const String area2_ip = "10.0.0.151";
 const String area3_ip = "10.0.0.158";
 
+//**************************************************************
+// ------- select one platform type -------------------
+//**************************************************************
+//#define MI632
+#define YARDFORCE
+//#define RL2000
+//#define MOW800
 
-//*****************possible list of motor driver set to :****************
-// 1 for brushless ZS-X11H v1 Driver
-// 2 for DC L298N Driver
-// 3 for DC BTS7960 Driver
-#define LEFT_MOTOR_DRIVER 1  //never mix BL and DC on drive motor
-#define RIGHT_MOTOR_DRIVER 1
-#define MOW_MOTOR_DRIVER 1
+//**************************************************************
+//***************** SETTING FOR MI632 **************************
+//**************************************************************
+
+#if defined (MI632)  // here all setting for viking mi632 
+    //*****************possible list of motor driver set to :****************
+  // 1 for brushless ZS-X11H v1 Driver
+  // 2 for DC L298N Driver
+  // 3 for DC BTS7960 Driver
+  #define LEFT_MOTOR_DRIVER 1  //never mix BL and DC on drive motor
+  #define RIGHT_MOTOR_DRIVER 1
+  #define MOW_MOTOR_DRIVER 1
+  
+  #define BUMPER_IS_SWITCH false  // set to true if the bumper is a single ON/OFF switch
+  #define BUMPER_REAR_EXIST true  // set to true to manage the rear bumper connected on CAN3 J20 connector
+  #define BUMPER_ARE_NORMALY_CLOSED false  // set to true if the bumper contact is closed when nothing is hit
+
+  #define START_BUTTON_IS_NC true //if button is normaly closed
+
+  // mower can have a cover that stop the mowing cycle but power still on the PCB,mower only start after closing the cover
+  // start button is under cover , so after push the start button you have 10 seconde to close cover and mower start
+  // openning the cover stop mowing cycle
+  #define MOWER_HAVE_SECURITY_COVER false 
+  
+  #define INA226_MOW2_PRESENT false
+  #define INA226_MOW3_PRESENT false
+
+  #define ODOMETRY_ONLY_RISING false
+#endif
+
+//**************************************************************
+//******************** SETTING FOR  YARDFORCE ******************
+//**************************************************************
+
+#if defined (YARDFORCE)  // here all setting for YARDFORCE 
+    //*****************possible list of motor driver set to :****************
+  // 1 for brushless ZS-X11H v1 Driver
+  // 2 for DC L298N Driver
+  // 3 for DC BTS7960 Driver
+  #define LEFT_MOTOR_DRIVER 1  //never mix BL and DC on drive motor
+  #define RIGHT_MOTOR_DRIVER 1
+  #define MOW_MOTOR_DRIVER 1
+  
+  #define BUMPER_IS_SWITCH false  // set to true if the bumper is a single ON/OFF switch
+  #define BUMPER_REAR_EXIST false  // set to true to manage the rear bumper connected on CAN3 J20 connector
+  #define BUMPER_ARE_NORMALY_CLOSED true  // set to true if the bumper contact is closed when nothing is hit
+
+  #define START_BUTTON_IS_NC true //if button is normaly closed
+
+  // mower can have a cover that stop the mowing cycle but power still on the PCB,mower only start after closing the cover
+  // start button is under cover , so after push the start button you have 10 seconde to close cover and mower start
+  // openning the cover stop mowing cycle
+  #define MOWER_HAVE_SECURITY_COVER true // mower can have a cover that stop the mowing cycle but power still on the PCB,mower only start after closing the cover
+
+  #define INA226_MOW2_PRESENT false
+  #define INA226_MOW3_PRESENT false
+
+  #define ODOMETRY_ONLY_RISING false
+#endif
+
+//**************************************************************
+//****************** SETTING FOR MOW800 ************************
+//**************************************************************
+
+#if defined (MOW800)  // here all setting for YARDFORCE 
+    //*****************possible list of motor driver set to :****************
+  // 1 for brushless ZS-X11H v1 Driver
+  // 2 for DC L298N Driver
+  // 3 for DC BTS7960 Driver
+  #define LEFT_MOTOR_DRIVER 1  //never mix BL and DC on drive motor
+  #define RIGHT_MOTOR_DRIVER 1
+  #define MOW_MOTOR_DRIVER 1
+  
+  #define BUMPER_IS_SWITCH false  // set to true if the bumper is a single ON/OFF switch
+  #define BUMPER_REAR_EXIST false  // set to true to manage the rear bumper connected on CAN3 J20 connector
+  #define BUMPER_ARE_NORMALY_CLOSED true  // set to true if the bumper contact is closed when nothing is hit
+
+  #define START_BUTTON_IS_NC true //if button is normaly closed
+
+  // mower can have a cover that stop the mowing cycle but power still on the PCB,mower only start after closing the cover
+  // start button is under cover , so after push the start button you have 10 seconde to close cover and mower start
+  // openning the cover stop mowing cycle
+  #define MOWER_HAVE_SECURITY_COVER true // mower can have a cover that stop the mowing cycle but power still on the PCB,mower only start after closing the cover
+
+  #define INA226_MOW2_PRESENT false
+  #define INA226_MOW3_PRESENT false
+
+  #define ODOMETRY_ONLY_RISING false
+#endif
+
+//**************************************************************
+//****************** SETTING FOR  ROBOMOW RL2000 ***************
+//**************************************************************
+
+
+#if defined (RL2000)  // here all setting for YARDFORCE 
+    //*****************possible list of motor driver set to :****************
+  // 1 for brushless ZS-X11H v1 Driver
+  // 2 for DC L298N Driver
+  // 3 for DC BTS7960 Driver
+  #define LEFT_MOTOR_DRIVER 3  //never mix BL and DC on drive motor
+  #define RIGHT_MOTOR_DRIVER 3
+  #define MOW_MOTOR_DRIVER 3
+  
+  #define BUMPER_IS_SWITCH true  // set to true if the bumper is a single ON/OFF switch
+  #define BUMPER_REAR_EXIST false  // set to true to manage the rear bumper connected on CAN3 J20 connector
+  #define BUMPER_ARE_NORMALY_CLOSED false  // set to true if the bumper contact is closed when nothing is hit
+
+  #define START_BUTTON_IS_NC false //if button is normaly closed
+
+  // mower can have a cover that stop the mowing cycle but power still on the PCB,mower only start after closing the cover
+  // start button is under cover , so after push the start button you have 10 seconde to close cover and mower start
+  // openning the cover stop mowing cycle
+  #define MOWER_HAVE_SECURITY_COVER false // mower can have a cover that stop the mowing cycle but power still on the PCB,mower only start after closing the cover
+
+  #define INA226_MOW2_PRESENT true
+  #define INA226_MOW3_PRESENT true
+
+  #define ODOMETRY_ONLY_RISING false
+#endif
+
+
 
 #define PWM_FREQUENCY_ZSX11HV1  20000 //
 #define PWM_FREQUENCY_L298N  10000 
 #define PWM_FREQUENCY_BTS7960  10000
 
 
-#define BUMPER_IS_SWITCH false  // set to true if the bumper is a single ON/OFF switch
-#define BUMPER_REAR_EXIST false  // set to true to manage the rear bumper connected on CAN3 J20 connector
-#define BUMPER_ARE_NORMALY_CLOSED false  // set to true if the bumper contact is closed when nothing is hit
 
-#define START_BUTTON_IS_NC true //if button is normaly closed
-
-#define MOWER_HAVE_SECURITY_COVER false // mower can have a cover that stop the mowing cycle but power still on the PCB,mower only start after closing the cover
-
-#define INA226_MOW2_PRESENT false
-#define INA226_MOW3_PRESENT false
-
-#define ODOMETRY_ONLY_RISING false
 //***********************************************************************
 
 //**********************       COMPASS         **************************

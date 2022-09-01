@@ -573,6 +573,54 @@ boolean Robot::search_rfid_list(unsigned long TagNr) {
   return tag_exist_in_list;
 }
 
+
+void Robot::startStopSender(int senderNr, boolean startStop) {
+  ShowMessage(F("Sender "));
+  ShowMessage(senderNr);
+  ShowMessage(F(" / "));
+  ShowMessageln(startStop);
+  String line01 = "";
+  
+  if (senderNr == 1) {
+    if (startStop) {
+      line01 = "#SENDER," + area1_ip + ",A1";
+      Bluetooth.println(line01);
+    }
+    else
+    {
+      line01 = "#SENDER," + area1_ip + ",A0";
+      Bluetooth.println(line01);
+    }
+  }
+
+  if (senderNr == 2) {
+    if (startStop) {
+      line01 = "#SENDER," + area2_ip + ",B1";
+      Bluetooth.println(line01);
+    }
+    else
+    {
+      line01 = "#SENDER," + area2_ip + ",B0";
+      Bluetooth.println(line01);
+    }
+  }
+
+  if (senderNr == 3) {
+    if (startStop) {
+      line01 = "#SENDER," + area3_ip + ",B1";
+      Bluetooth.println(line01);
+    }
+    else
+    {
+      line01 = "#SENDER," + area3_ip + ",B0";
+      Bluetooth.println(line01);
+    }
+  }
+  
+}
+
+
+
 void Robot::rfidTagTraitement(unsigned long TagNr, byte statusCurr) {
   boolean tagAndStatus_exist_in_list = false;
   String line01 = "";
@@ -626,12 +674,15 @@ void Robot::rfidTagTraitement(unsigned long TagNr, byte statusCurr) {
         //not use
         break;
       case AREA1:
-        line01 = "#SENDER," + area1_ip + ",A1";
-        Bluetooth.println(line01);
-        line01 = "#SENDER," + area2_ip + ",B0";
-        Bluetooth.println(line01);
-        line01 = "#SENDER," + area3_ip + ",B0";
-        Bluetooth.println(line01);
+        startStopSender(1, 1);
+        //line01 = "#SENDER," + area1_ip + ",A1";
+        //Bluetooth.println(line01);
+        startStopSender(2, 0);
+        //line01 = "#SENDER," + area2_ip + ",B0";
+        //Bluetooth.println(line01);
+        startStopSender(3, 0);
+        //line01 = "#SENDER," + area3_ip + ",B0";
+        //Bluetooth.println(line01);
 
         areaToGo = 1;
         ShowMessageln("Return to Station area ");
@@ -3465,6 +3516,7 @@ void Robot::checkButton() {
           else {
             ShowMessageln("MANUAL START");
             if (MOWER_HAVE_SECURITY_COVER) {
+              motorMowEnable = false;
               setNextState(STATE_WAIT_COVER, 0);
             }
             else {
@@ -3492,6 +3544,7 @@ void Robot::checkButton() {
           else {
 
             if (MOWER_HAVE_SECURITY_COVER) {
+              motorMowEnable = false;
               setNextState(STATE_WAIT_COVER, 0);
             }
             else {
@@ -3697,7 +3750,7 @@ void Robot::readSensors() {
       if (stateCurr != STATE_WAIT_COVER) {
         if (stateCurr != STATE_OFF) {
           ShowMessageln("Cover Open ");
-          if ((statusCurr == MANUAL) || (statusCurr == NORMAL_MOWING) || (statusCurr == SPIRALE_MOWING) || (stateCurr == STATE_ERROR) || (statusCurr == WIRE_MOWING) || (statusCurr == BACK_TO_STATION) || (statusCurr == TRACK_TO_START)) {
+          if ((statusCurr == NORMAL_MOWING) || (statusCurr == SPIRALE_MOWING) || (stateCurr == STATE_ERROR) || (statusCurr == WIRE_MOWING) || (statusCurr == BACK_TO_STATION) || (statusCurr == TRACK_TO_START)) {
             ShowMessageln(F("Stop Mowing and Reset Error"));
             motorMowEnable = false;
             buttonCounter = 0;
@@ -5199,6 +5252,7 @@ void Robot::setNextState(byte stateNew, byte dir) {
     case STATE_WAIT_COVER:
 
       ShowMessageln("Close cover to start");
+      setBeeper(10000, 300, 300, 1000, 0);//beep for 2 sec
       break;
 
     //bber202
@@ -6052,8 +6106,8 @@ void Robot::readAllTemperature() {
     temperatureTeensy = InternalTemperature.readTemperatureC();
     imu.readImuTemperature();
 
-    if ((temperatureTeensy >= 0.8 * maxTemperature) && (stateCurr != STATE_OFF)) { // at 80% of max temp mower try to find the station
-      ShowMessageln("Temperature is 80 % of max ");
+    if ((temperatureTeensy >= 0.9 * maxTemperature) && (stateCurr != STATE_OFF)) { // at 90% of max temp mower try to find the station
+      ShowMessageln("Temperature is 90 % of max ");
       ShowMessageln("Mower search the station ");
       ShowMessage("Maxi Setting = ");
       ShowMessage(maxTemperature);
@@ -7176,7 +7230,7 @@ void Robot::loop()  {
       break;
 
     case STATE_AUTO_CALIBRATE:
-      setBeeper(2000, 300, 300, 2000, 0);//beep for 3 sec
+      setBeeper(2000, 300, 300, 2000, 0);//beep for 2 sec
       if (millis() > nextTimeAddYawMedian) {  // compute a median of accelGyro and Compass  yaw
         compassYawMedian.add(imu.comYaw);
         accelGyroYawMedian.add(imu.ypr.yaw);
@@ -7891,6 +7945,8 @@ void Robot::loop()  {
       }
 
       if (coverIsClosed) {
+        setBeeper(0, 0, 0, 0, 0);
+        motorMowEnable = true;
         setNextState(STATE_ACCEL_FRWRD, rollDir);//1000
       }
       break;

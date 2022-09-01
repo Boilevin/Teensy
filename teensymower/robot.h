@@ -49,7 +49,7 @@ const int chipSelect = BUILTIN_SDCARD;
 
 
 // code version
-#define VER "1.414-Teensyber"
+#define VER "1.415-Teensyber"
 
 
 // sensors
@@ -929,7 +929,7 @@ class Robot
 
     virtual void pfodSetDateTime(byte hr1, byte min1, byte sec1, byte day1, byte month1, short year1);
 
-
+    virtual void startStopSender(int senderNr, boolean startStop);
 
   protected:
     static void OdoRightCountInt(); //odometry interrupt loop
