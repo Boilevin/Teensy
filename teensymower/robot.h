@@ -49,7 +49,7 @@ const int chipSelect = BUILTIN_SDCARD;
 
 
 // code version
-#define VER "1.415-Teensyber"
+#define VER "1.416-Teensyber"
 
 
 // sensors
@@ -636,6 +636,10 @@ class Robot
 
     // Perimeter perimeter;
     boolean perimeterUse       ;      // use perimeter?
+    boolean read2Coil;                // use left and right coil
+     // swap coil polarity?
+    boolean swapCoilPolarityLeft;     //invert coil signal + -
+    boolean swapCoilPolarityRight;
     //int perimeterOutRollTimeMax ;  //free but conserve for eeprom recovery
     //int perimeterOutRollTimeMin ;   //free but conserve for eeprom recovery
     int perimeterOutRevTime  ;

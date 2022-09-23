@@ -18,8 +18,8 @@ const String area3_ip = "10.0.0.158";
 //**************************************************************
 // ------- select one platform type -------------------
 //**************************************************************
-//#define MI632
-#define YARDFORCE
+#define MI632
+//#define YARDFORCE
 //#define RL2000
 //#define MOW800
 
@@ -67,10 +67,10 @@ const String area3_ip = "10.0.0.158";
   #define MOW_MOTOR_DRIVER 1
   
   #define BUMPER_IS_SWITCH false  // set to true if the bumper is a single ON/OFF switch
-  #define BUMPER_REAR_EXIST false  // set to true to manage the rear bumper connected on CAN3 J20 connector
+  #define BUMPER_REAR_EXIST true  // set to true to manage the rear bumper connected on CAN3 J20 connector
   #define BUMPER_ARE_NORMALY_CLOSED true  // set to true if the bumper contact is closed when nothing is hit
 
-  #define START_BUTTON_IS_NC true //if button is normaly closed
+  #define START_BUTTON_IS_NC false //if button is normaly closed
 
   // mower can have a cover that stop the mowing cycle but power still on the PCB,mower only start after closing the cover
   // start button is under cover , so after push the start button you have 10 seconde to close cover and mower start

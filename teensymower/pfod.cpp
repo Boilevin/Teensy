@@ -614,12 +614,12 @@ void RemoteControl::sendPerimeterMenu(boolean update) {
   sendSlider("e11", F("Transition timeout"), robot->trackingPerimeterTransitionTimeOut, "", 1, 5000, 1);
   sendSlider("e12", F("Track error timeout"), robot->trackingErrorTimeOut, "", 1, 10000, 1);
   sendPIDSlider("e07", F("Track"), robot->perimeterPID, 0.1, 52);
- // serialPort->print(F("|e10~Swap Left coil polarity "));
- // sendYesNo(robot->perimeter.swapCoilPolarityLeft);
+  serialPort->print(F("|e10~Swap Left coil polarity "));
+  sendYesNo(robot->swapCoilPolarityLeft);
   serialPort->print(F("|e22~Swap Right coil polarity "));
-  sendYesNo(robot->perimeter.swapCoilPolarityRight);
+  sendYesNo(robot->swapCoilPolarityRight);
   serialPort->print(F("|e23~Read The 2 Coils "));
-  sendYesNo(robot->perimeter.read2Coil);
+  sendYesNo(robot->read2Coil);
   serialPort->print(F("|e13~Block inner wheel  "));
   sendYesNo(robot->trakBlockInnerWheel);
   serialPort->print(F("|e15~Reduce Speed near Wire "));
@@ -648,9 +648,9 @@ void RemoteControl::processPerimeterMenu(String pfodCmd) {
     robot->perimeter.begin(pinPerimeterLeft, pinPerimeterRight);
   }
 
-  //else if (pfodCmd.startsWith("e10")) robot->perimeter.swapCoilPolarityLeft = !robot->perimeter.swapCoilPolarityLeft;
-  else if (pfodCmd.startsWith("e22")) robot->perimeter.swapCoilPolarityRight = !robot->perimeter.swapCoilPolarityRight;
-  else if (pfodCmd.startsWith("e23")) robot->perimeter.read2Coil = !robot->perimeter.read2Coil;
+  else if (pfodCmd.startsWith("e10")) robot->swapCoilPolarityLeft = !robot->swapCoilPolarityLeft;
+  else if (pfodCmd.startsWith("e22")) robot->swapCoilPolarityRight = !robot->swapCoilPolarityRight;
+  else if (pfodCmd.startsWith("e23")) robot->read2Coil = !robot->read2Coil;
 
   else if (pfodCmd.startsWith("e11")) processSlider(pfodCmd, robot->trackingPerimeterTransitionTimeOut, 1);
   else if (pfodCmd.startsWith("e12")) processSlider(pfodCmd, robot->trackingErrorTimeOut, 1);
@@ -1179,7 +1179,7 @@ void RemoteControl::sendRemoteMenu(boolean update) {
   if (update) serialPort->print("{:"); else serialPort->print(F("{.Remote R/C or Pi`1000"));
   serialPort->print(F("|h20~Use MQTT "));
   sendYesNo(robot->useMqtt);
-  serialPort->print(F("|h1~Use Rasberry(Need Reboot)"));
+  serialPort->print(F("|h21~Use Rasberry(Need Reboot)"));
   sendYesNo(robot->RaspberryPIUse);
   serialPort->print(F("|h22~Start Sender 1"));
   serialPort->print(F("|h23~Start Sender 2"));

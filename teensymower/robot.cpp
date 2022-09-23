@@ -1103,8 +1103,8 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, DistBetweenLane);
   eereadwrite(readflag, addr, maxLenghtByLane);
   actualLenghtByLane = maxLenghtByLane; //initialise lenght lane
-  eereadwrite(readflag, addr, perimeter.swapCoilPolarityRight);
-  eereadwrite(readflag, addr, perimeter.read2Coil);
+  eereadwrite(readflag, addr, swapCoilPolarityRight);
+  eereadwrite(readflag, addr, read2Coil);
   eereadwrite(readflag, addr, maxDriftPerSecond);
   eereadwrite(readflag, addr, delayBetweenTwoDmpAutocalib);
   eereadwrite(readflag, addr, maxDurationDmpAutocalib);
@@ -1311,11 +1311,11 @@ void Robot::printSettingSerial() {
   ShowMessageln(perimeterMagMaxValue);
   ShowMessage  ("swapCoilPolarityRight    : ");
   //watchdogReset();
-  ShowMessageln(perimeter.swapCoilPolarityRight);
+  ShowMessageln(swapCoilPolarityRight);
   ShowMessage  ("swapCoilPolarityLeft     : ");
-  ShowMessageln(perimeter.swapCoilPolarityLeft);
+  ShowMessageln(swapCoilPolarityLeft);
   ShowMessage  ("read2Coil                : ");
-  ShowMessageln(perimeter.read2Coil);
+  ShowMessageln(read2Coil);
   ShowMessage  ("trackingBlockInnerWheelWhilePerimeterStrug : ");
   ShowMessageln(trakBlockInnerWheel);
   ShowMessage  ("DistPeriOutRev           : ");
@@ -3692,7 +3692,7 @@ void Robot::readSensors() {
   if ((stateCurr != STATE_STATION) && (stateCurr != STATE_STATION_CHARGING) && (perimeterUse) && (millis() >= nextTimePerimeter)) {
     nextTimePerimeter = millis() +  15;
     //right coil
-    if (perimeter.read2Coil) {
+    if (read2Coil) {
       perimeterMagRight = perimeter.getMagnitude(1);
       if ((perimeter.isInside(1) != perimeterInsideRight)) {
         perimeterRightTriggerTime = millis();
@@ -6106,7 +6106,7 @@ void Robot::readAllTemperature() {
     temperatureTeensy = InternalTemperature.readTemperatureC();
     imu.readImuTemperature();
 
-    if ((temperatureTeensy >= 0.9 * maxTemperature) && (stateCurr != STATE_OFF)) { // at 90% of max temp mower try to find the station
+    if ((temperatureTeensy >= 0.9 * maxTemperature) && (stateCurr == STATE_FORWARD_ODO)) { // at 90% of max temp mower try to find the station
       ShowMessageln("Temperature is 90 % of max ");
       ShowMessageln("Mower search the station ");
       ShowMessage("Maxi Setting = ");
@@ -6933,7 +6933,7 @@ void Robot::loop()  {
           return;
         }
       }
-      if (perimeter.read2Coil) {
+      if (read2Coil) {
         motorControlPerimeter2Coil();
       }
       else {

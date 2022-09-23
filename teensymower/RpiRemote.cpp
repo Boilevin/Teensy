@@ -364,7 +364,7 @@ void RpiRemote::receivePiReqSetting (String Setting_page, int nb_page) {
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->perimeter.signalCodeNo;  //4
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->perimeter.swapCoilPolarityLeft;
+    lineToSend = lineToSend + robot->swapCoilPolarityLeft;
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->perimeter.timeOutSecIfNotInside;
     lineToSend = lineToSend + ",";
@@ -566,9 +566,9 @@ void RpiRemote::receivePiReqSetting (String Setting_page, int nb_page) {
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->maxLenghtByLane;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->perimeter.swapCoilPolarityRight;
+    lineToSend = lineToSend + robot->swapCoilPolarityRight;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->perimeter.read2Coil;
+    lineToSend = lineToSend + robot->read2Coil;
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->maxDriftPerSecond; //9
     lineToSend = lineToSend + ",";
@@ -1410,7 +1410,7 @@ void RpiRemote::readWrite_setting()
         robot->perimeterPID.Ki = val[1];
         robot->perimeterPID.Kd = val[2];
         robot->perimeter.signalCodeNo = val[3];
-        robot->perimeter.swapCoilPolarityLeft = val[4];
+        robot->swapCoilPolarityLeft = val[4];
         robot->perimeter.timeOutSecIfNotInside = val[5];
         robot->trakBlockInnerWheel = val[6];
 
@@ -1496,8 +1496,8 @@ void RpiRemote::readWrite_setting()
         robot->yawOppositeLane3RollLeft = val[3];
         robot->DistBetweenLane = val[4];
         robot->maxLenghtByLane = val[5];
-        robot->perimeter.swapCoilPolarityRight = val[6];
-        robot->perimeter.read2Coil = val[7];
+        robot->swapCoilPolarityRight = val[6];
+        robot->read2Coil = val[7];
         robot->maxDriftPerSecond = val[8];
         robot->delayBetweenTwoDmpAutocalib = val[9];
       }

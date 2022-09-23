@@ -1,4 +1,6 @@
 #include "perimeter.h"
+#include "mower.h"
+
 #include <Arduino.h>
 #include <limits.h>
 
@@ -37,7 +39,7 @@ int sigcode_size = 24;
 
 PerimeterClass::PerimeterClass() {
   //useDifferentialPerimeterSignal = true;
-
+  
   //read2Coil=true;
   timedOutIfBelowSmag = 50;
   timeOutSecIfNotInside = 15;
@@ -125,7 +127,7 @@ void PerimeterClass::begin(byte idx0Pin, byte idx1Pin) {
   buffer_adc_0_count = 0;
   Serial.println("adc0 Timer Interrupt Started");
 
-  if (read2Coil) {
+  if (robot.read2Coil) {
     delay(500);
     Serial.print("Begin setup adc1 on pin:");
     Serial.println(idx1Pin);
@@ -201,8 +203,9 @@ void PerimeterClass::matchedFilter(byte idx) {
 
   mag[idx] = corrFilter(sigcode, subSample, sigcode_size, samples, sampleCount - (sigcode_size * subSample) , filterQuality[idx]);
 
-  if ((idx == 0) && swapCoilPolarityLeft) mag[idx] *= -1;
-  if ((idx == 1) && swapCoilPolarityRight) mag[idx] *= -1;
+  if ((idx == 0) && robot.swapCoilPolarityLeft) mag[idx] *= -1;
+  if ((idx == 1) && robot.swapCoilPolarityRight) mag[idx] *= -1;
+  
   // smoothed magnitude used for signal-off detection change from 1 % to 5 % for faster detection and possible use on center big area to avoid in/out transition
   smoothMag[idx] = 0.95 * smoothMag[idx] + 0.05 * ((float)abs(mag[idx]));
   //smoothMag[idx] = 0.99 * smoothMag[idx] + 0.01 * ((float)abs(mag[idx]));

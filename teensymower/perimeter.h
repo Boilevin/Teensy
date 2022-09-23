@@ -41,10 +41,8 @@ class PerimeterClass
     int timedOutIfBelowSmag;
     unsigned long timeOutSecIfNotInside;
     
-    // swap coil polarity?
-    boolean swapCoilPolarityLeft;
-    boolean swapCoilPolarityRight;
-    boolean read2Coil;
+   
+   
     unsigned long lastInsideTime[2];
    
  
