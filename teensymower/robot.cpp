@@ -1049,9 +1049,9 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, batGoHomeIfBelow);
   eereadwrite(readflag, addr, batSwitchOffIfBelow);
   eereadwrite(readflag, addr, batSwitchOffIfIdle);
-  eereadwrite(readflag, addr, batFactor);  //not use with ina226
-  eereadwrite(readflag, addr, batChgFactor);  //not use with ina226
-  eereadwrite(readflag, addr, batSenseFactor); //not use with ina226
+  eereadwrite(readflag, addr, batFactor);  //float not use with ina226
+  eereadwrite(readflag, addr, batChgFactor);  //float not use with ina226
+  eereadwrite(readflag, addr, batSenseFactor); //float not use with ina226
   eereadwrite(readflag, addr, batFullCurrent);
   eereadwrite(readflag, addr, startChargingIfBelow);
   eereadwrite(readflag, addr, stationRevDist);
@@ -1072,7 +1072,6 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, timerUse);
   eereadwrite(readflag, addr, timer);
   eereadwrite(readflag, addr, rainUse);
-  //eereadwrite(readflag, addr, dropUse);
   eereadwrite(readflag, addr, statsOverride);
   eereadwrite(readflag, addr, reduceSpeedNearPerimeter);
   eereadwrite(readflag, addr, autoAdjustSlopeSpeed);
@@ -1110,7 +1109,7 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, maxDurationDmpAutocalib);
   eereadwrite(readflag, addr, mowPatternDurationMax);
   eereadwrite(readflag, addr, DistPeriOutStop);
-  eereadwrite(readflag, addr, Enable_Screen); //free replace dht22
+  eereadwrite(readflag, addr, Enable_Screen); 
   eereadwrite(readflag, addr, RaspberryPIUse);
   //RaspberryPIUse=false;
   eereadwrite(readflag, addr, sonarToFrontDist);
@@ -1126,11 +1125,8 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, checkDockingSpeed);
   eereadwrite(readflag, addr, batVoltageToStationStart);
   eereadwrite(readflag, addr, bumper_rev_distance);
-
-
-
-
-
+  eereadwrite(readflag, addr, swapCoilPolarityLeft);
+  
   if (readflag)
   {
     ShowMessage(F("UserSettings OK from Address : "));
