@@ -33,36 +33,8 @@ Mower robot;
 Mower::Mower() {
 
 
-#if defined (MI632)
-  name = "MI632"; //Set the Name of platform
-   // ------- wheel motors -----------------------------
-  motorRightSwapDir     = false;    // inverse right motor direction?
-  motorLeftSwapDir      = true;    // inverse left motor direction?
-#endif
+  //factory main setting for all platform (see specific detail at the end for particular platform)
 
-#if defined (MOW800)
-  name = "MOW800"; //Set the Name of platform
-   // ------- wheel motors -----------------------------
-  motorRightSwapDir     = false;    // inverse right motor direction?
-  motorLeftSwapDir      = true;    // inverse left motor direction?
-#endif
-
-#if defined (YARDFORCE)
-  name = "YARD"; //Set the Name of platform
-   // ------- wheel motors -----------------------------
-  motorRightSwapDir     = true;    // inverse right motor direction?
-  motorLeftSwapDir      = false;    // inverse left motor direction?
-#endif
-
-#if defined (RL2000)
-  name = "RL2000"; //Set the Name of platform
-   // ------- wheel motors -----------------------------
-  motorRightSwapDir     = false;    // inverse right motor direction?
-  motorLeftSwapDir      = false;    // inverse left motor direction?
-#endif
-
-
- 
 
   //Enable_Screen = false;  // a OLED 0.96 is connected to I2C2
 
@@ -101,7 +73,7 @@ Mower::Mower() {
   SpeedOdoMax = 140;
   odoLeftRightCorrection     = true;       // left-right correction for straight lines used in manual mode
   autoAdjustSlopeSpeed = true;  //adjust the speed on slope to have same speed on uphill and downhill
-
+  useMotorDriveBrake = false;   //for ZS-X11H BL motor driver it's possible to use the brake option for slope management
 
   // ------ mower motor -------------------------------
   motorMowAccel       = 1000;  // motor mower acceleration (warning: do not set too low) 2000 seems to fit best considerating start time and power consumption
@@ -274,6 +246,67 @@ Mower::Mower() {
   statsMowTimeMinutesTotal = 300;
   statsBatteryChargingCounterTotal = 10;  //11
   statsBatteryChargingCapacityTotal = 10000;  //30000
+
+
+  //special config for each platform
+
+#if defined (MI632)
+  name = "MI632"; //Set the Name of platform
+  // ------- wheel motors -----------------------------
+  motorRightSwapDir     = false;    // inverse right motor direction?
+  motorLeftSwapDir      = true;    // inverse left motor direction?
+  motorSpeedMaxRpm       = 34;   // motor wheel max RPM (WARNING: do not set too high, so there's still speed control when battery is low!)
+  motorSpeedMaxPwm    = 97;  // motor wheel max Pwm  (8-bit PWM=255, 10-bit PWM=1023)
+  motorRollDegMax    = 149;  // max. roll Deg
+  motorRollDegMin    = 20; //min. roll Deg
+  SpeedOdoMin = 2;
+  SpeedOdoMax = 100;
+  motorTickPerSecond = 1200; // use to compute the maxodostate duration and computed on the calibration motor
+  useMotorDriveBrake = true;   //for ZS-X11H BL motor driver it's possible to use the brake option for slope management
+
+  motorMowSpeedMaxPwm   = 115;    // motor mower max PWM
+  motorMowSpeedMinPwm = 100;   // motor mower minimum PWM (only for cutter modulation)
+  motorMowPowerMax = 65.0;     // motor mower max power (Watt)
+  highGrassSpeedCoeff = 0.7;  //drive speed coeff when detect high grass in by lane mode
+
+  perimeterTriggerMinSmag = 800;
+  MaxSpeedperiPwm = 85; // speed max in PWM while perimeter tracking
+  perimeterMagMaxValue = 5000; // Maximum value return when near the perimeter wire (use for tracking and slowing when near wire
+
+  odometryTicksPerRevolution = 2070;   // encoder ticks per one full resolution
+  odometryTicksPerCm = 29.6;  // encoder ticks per cm
+  odometryWheelBaseCm = 43;    // wheel-to-wheel distance (cm)
+
+
+#endif
+
+#if defined (MOW800)
+  name = "MOW800"; //Set the Name of platform
+  // ------- wheel motors -----------------------------
+  motorRightSwapDir     = false;    // inverse right motor direction?
+  motorLeftSwapDir      = true;    // inverse left motor direction?
+#endif
+
+#if defined (YARDFORCE)
+  name = "YARD"; //Set the Name of platform
+  // ------- wheel motors -----------------------------
+  motorRightSwapDir     = true;    // inverse right motor direction?
+  motorLeftSwapDir      = false;    // inverse left motor direction?
+#endif
+
+#if defined (RL2000)
+  name = "RL2000"; //Set the Name of platform
+  // ------- wheel motors -----------------------------
+  motorRightSwapDir     = false;    // inverse right motor direction?
+  motorLeftSwapDir      = false;    // inverse left motor direction?
+#endif
+
+
+
+
+
+
+
   // -----------configuration end-------------------------------------
 
 
@@ -511,19 +544,23 @@ void Mower::setActuator(char type, int value) {
     //case ACT_MOTOR_MOW: setL298N(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, value); break;// Motortreiber einstellung - bei Bedarf Ã¤ndern z.B setL298N auf setMC33926
 
     case ACT_MOTOR_MOW:
-      if (MOW_MOTOR_DRIVER == 1) setZSX11HV1(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, abs(value));
+      if (MOW_MOTOR_DRIVER == 1) setZSX11HV1(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, abs(value), useMotorDriveBrake);
       if (MOW_MOTOR_DRIVER == 2) setL298N(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, abs(value));
       if (MOW_MOTOR_DRIVER == 3) setBTS7960(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, abs(value));
       break;
 
     case ACT_MOTOR_LEFT:
-      if (LEFT_MOTOR_DRIVER == 1) setZSX11HV1(pinMotorLeftDir, pinMotorLeftPWM, pinMotorLeftEnable, value);
+      if (LEFT_MOTOR_DRIVER == 1) {
+        setZSX11HV1(pinMotorLeftDir, pinMotorLeftPWM, pinMotorLeftEnable, value, useMotorDriveBrake);
+      }
       if (LEFT_MOTOR_DRIVER == 2) setL298N(pinMotorLeftDir, pinMotorLeftPWM, pinMotorLeftEnable, value);
       if (LEFT_MOTOR_DRIVER == 3) setBTS7960(pinMotorLeftDir, pinMotorLeftPWM, pinMotorLeftEnable, value);
       break;
 
     case ACT_MOTOR_RIGHT:
-      if (RIGHT_MOTOR_DRIVER == 1) setZSX11HV1(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value);
+      if (RIGHT_MOTOR_DRIVER == 1) {
+        setZSX11HV1(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value, useMotorDriveBrake);
+      }
       if (RIGHT_MOTOR_DRIVER == 2) setL298N(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value);
       if (RIGHT_MOTOR_DRIVER == 3) setBTS7960(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value);
       break;

@@ -51,6 +51,7 @@ const String area3_ip = "10.0.0.158";
   #define INA226_MOW3_PRESENT false
 
   #define ODOMETRY_ONLY_RISING false
+  
 #endif
 
 //**************************************************************

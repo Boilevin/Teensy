@@ -64,6 +64,7 @@ float RemoteControl::stringToFloat(String &s) {
 }
 
 void RemoteControl::sendYesNo(int value) {
+  
   if (value == 1) serialPort->print("YES");
   else serialPort->print("NO");
 }
@@ -367,8 +368,9 @@ void RemoteControl::sendMotorMenu(boolean update) {
   serialPort->print(robot->motorRightPWMCurr);
   serialPort->print(F("|a10~Slope Adjust Speed : "));
   sendYesNo(robot->autoAdjustSlopeSpeed);
-
-
+  serialPort->print(F("|a33~Use brake : "));
+  sendYesNo(robot->useMotorDriveBrake);
+ 
 
   //bber400
   serialPort->print(F("|a04~Actual Speed coeff : "));
@@ -376,7 +378,7 @@ void RemoteControl::sendMotorMenu(boolean update) {
 
   sendSlider("a06", F("Speed max in rpm"), robot->motorSpeedMaxRpm, "", 1, 50, 20);
   sendSlider("a15", F("Speed max in pwm"), robot->motorSpeedMaxPwm, "", 1, 255, 50);
-
+     
   //sendSlider("a11", F("Accel"), robot->motorAccel, "", 1, 2000, 500);
   sendSlider("a18", F("Power ignore time"), robot->motorPowerIgnoreTime, "", 1, 8000, 1);
 
@@ -441,6 +443,8 @@ void RemoteControl::processMotorMenu(String pfodCmd) {
   else if (pfodCmd.startsWith("a30")) processSlider(pfodCmd, robot->SpeedOdoMin, 1);
   else if (pfodCmd.startsWith("a31")) processSlider(pfodCmd, robot->SpeedOdoMax, 1);
 
+  
+
   else if (pfodCmd == "a32") {
     robot->odometryRight = robot->odometryLeft = 0;
     robot->stateEndOdometryRight = robot->odometryRight + 6 * robot->odometryTicksPerRevolution; //test on 6 full rev
@@ -449,6 +453,10 @@ void RemoteControl::processMotorMenu(String pfodCmd) {
     robot->motorRightSpeedRpmSet = 100;//robot->motorSpeedMaxRpm;
     robot->setNextState(STATE_CALIB_MOTOR_SPEED, robot->rollDir);
     
+  }
+
+  else if (pfodCmd == "a33") {
+    robot->useMotorDriveBrake = !robot->useMotorDriveBrake;
   }
 
 
@@ -1578,6 +1586,8 @@ void RemoteControl::processInfoMenu(String pfodCmd) {
 void RemoteControl::sendCommandMenu(boolean update) {
   if (update) serialPort->print("{:"); else serialPort->print(F("{.Commands`5000"));
   serialPort->print(F("|ro~OFF"));
+  serialPort->print(F("|r1~Battery "));
+  serialPort->print(robot->batVoltage);
   serialPort->print(F("|ra~Start Now in Auto mode"));
   serialPort->println(F("|rb~Actual Status is "));
   serialPort->print(robot->statusName());

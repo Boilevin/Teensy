@@ -49,7 +49,7 @@ const int chipSelect = BUILTIN_SDCARD;
 
 
 // code version
-#define VER "1.416-Teensyber"
+#define VER "1.417-Teensyber"
 
 
 // sensors
@@ -475,6 +475,7 @@ class Robot
     boolean UseBrakeLeft;
     boolean moveRightFinish;
     boolean moveLeftFinish;
+    boolean useMotorDriveBrake;   //for ZS-X11H BL motor driver it's possible to use the brake option for slope management
 
     boolean odoLeftRightCorrection;
     boolean autoAdjustSlopeSpeed;

@@ -114,7 +114,7 @@ String date2str(date_t date) {
 //S --> ODO TO J1 ODO 
 //G --> NOT CONNECTED
 
-void setZSX11HV1(int pinDir, int pinPWM, int pinEnable, int speed) {
+void setZSX11HV1(int pinDir, int pinPWM, int pinEnable, int speed, boolean brake) {
   
   if (speed < 0) {
     digitalWrite(pinEnable, LOW) ;
@@ -129,7 +129,10 @@ void setZSX11HV1(int pinDir, int pinPWM, int pinEnable, int speed) {
   if (speed == 0) {
     analogWrite(pinPWM, 0);
     //delay(2);
-    digitalWrite(pinEnable, HIGH) ; // active the brake function of the motor driver   
+    if (brake) {
+      digitalWrite(pinEnable, HIGH) ; // active the brake function of the motor driver  
+    }
+     
   }
 }
 

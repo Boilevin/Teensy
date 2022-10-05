@@ -580,7 +580,7 @@ void Robot::startStopSender(int senderNr, boolean startStop) {
   ShowMessage(F(" / "));
   ShowMessageln(startStop);
   String line01 = "";
-  
+
   if (senderNr == 1) {
     if (startStop) {
       line01 = "#SENDER," + area1_ip + ",A1";
@@ -616,7 +616,7 @@ void Robot::startStopSender(int senderNr, boolean startStop) {
       Bluetooth.println(line01);
     }
   }
-  
+
 }
 
 
@@ -1109,7 +1109,7 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, maxDurationDmpAutocalib);
   eereadwrite(readflag, addr, mowPatternDurationMax);
   eereadwrite(readflag, addr, DistPeriOutStop);
-  eereadwrite(readflag, addr, Enable_Screen); 
+  eereadwrite(readflag, addr, Enable_Screen);
   eereadwrite(readflag, addr, RaspberryPIUse);
   //RaspberryPIUse=false;
   eereadwrite(readflag, addr, sonarToFrontDist);
@@ -1126,7 +1126,10 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, batVoltageToStationStart);
   eereadwrite(readflag, addr, bumper_rev_distance);
   eereadwrite(readflag, addr, swapCoilPolarityLeft);
-  
+  eereadwrite(readflag, addr, useMotorDriveBrake);
+
+
+
   if (readflag)
   {
     ShowMessage(F("UserSettings OK from Address : "));
@@ -3711,7 +3714,7 @@ void Robot::readSensors() {
       perimeterInsideLeft = perimeter.isInside(0);
     }
 
-    if (((!perimeterInsideLeft) || (!perimeterInsideRight)) && (perimeterTriggerTime == 0)) {
+    if (((!perimeterInsideLeft) || ((!perimeterInsideRight) && (read2Coil))) && (perimeterTriggerTime == 0)) {
       // set perimeter trigger time
 
       //bber2
@@ -7031,12 +7034,13 @@ void Robot::loop()  {
       if ((moveRightFinish) && (moveLeftFinish) ) {
         if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)  { //wait until the 2 motors completly stop because rotation is inverted
 
-          if ((DistPeriOutRev == 0) && (mowPatternCurr != MOW_LANES)) {
+          //if ((DistPeriOutRev == 0) && (mowPatternCurr != MOW_LANES)) {
+          if (mowPatternCurr != MOW_LANES) { // do not reverse in random mowing mode
             setNextState(STATE_PERI_OUT_ROLL, rollDir);
           }
           else
           {
-            DistPeriOutRev = DistPeriOutStop + 10; // into by lane mowing a reverse is mandatory to avoid mower change to random mode imediatelly
+            //DistPeriOutRev = DistPeriOutStop + 10; // into by lane mowing a reverse is mandatory to avoid mower change to random mode imediatelly
             setNextState(STATE_PERI_OUT_REV, rollDir);
           }
         }
@@ -7045,12 +7049,13 @@ void Robot::loop()  {
         if (developerActive) {
           ShowMessageln ("Warning can t peri out stop in time ");
         }
-        if ((DistPeriOutRev == 0) && (mowPatternCurr != MOW_LANES)) {
+        //if ((DistPeriOutRev == 0) && (mowPatternCurr != MOW_LANES)) {
+        if (mowPatternCurr != MOW_LANES) { // do not reverse in random mowing mode
           setNextState(STATE_PERI_OUT_ROLL, rollDir);
         }
         else
         {
-          DistPeriOutRev = DistPeriOutStop + 10;
+          //DistPeriOutRev = DistPeriOutStop + 10;
           setNextState(STATE_PERI_OUT_REV, rollDir);
         }
       }
@@ -7281,21 +7286,60 @@ void Robot::loop()  {
 
       break;
 
+
+
+
+
+
+
+
+
+
+
+
+
     case STATE_STOP_CALIBRATE:
       motorControlOdo();
 
       if ((moveRightFinish) && (moveLeftFinish) ) {
         if (motorLeftPWMCurr == 0 && motorRightPWMCurr == 0)  { //wait until the 2 motors completly stop because rotation is inverted
-          setNextState(STATE_AUTO_CALIBRATE, rollDir);
+          if (perimeter.isInside(0)) {  // v417 if calibration begin out of perimeter mower can't continue and stop with outside error
+            setNextState(STATE_AUTO_CALIBRATE, rollDir);
+          }
+          else
+          {
+            setNextState(STATE_PERI_OUT_REV, rollDir);
+          }
+
         }
       }
       if (millis() > (stateStartTime + MaxOdoStateDuration)) {
         if (developerActive) {
           ShowMessageln ("Warning can t  stop to calibrate in time ");
         }
-        setNextState(STATE_AUTO_CALIBRATE, rollDir);//if the motor can't rech the odocible in slope
+        if (perimeter.isInside(0)) { //if calibration begin out of perimeter mower can't continue and stop with outside error
+          setNextState(STATE_AUTO_CALIBRATE, rollDir);
+        }
+        else
+        {
+          setNextState(STATE_PERI_OUT_REV, rollDir);
+        }
       }
       break;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     case STATE_STOP_BEFORE_SPIRALE:
       motorControlOdo();
