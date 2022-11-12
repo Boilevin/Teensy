@@ -37,7 +37,7 @@ void Screen::init() {
   u8g2.begin();
   u8g2.setFont(u8g2_font_ncenB08_tr);
   u8g2.setCursor(10, 25);
-  u8g2.print("AZURITBER");
+  u8g2.print("TEENSYBER");
   u8g2.setCursor(0, 60);
   u8g2.print(VER);
   u8g2.sendBuffer();

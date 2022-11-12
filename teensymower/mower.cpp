@@ -164,14 +164,14 @@ Mower::Mower() {
   imuRollPID.Kd     = 0;
   //bb
   yawSet1 = 45;
-  yawOppositeLane1RollRight = -133;
-  yawOppositeLane1RollLeft = -138;
+  yawOppositeLane1RollRight = -138;
+  yawOppositeLane1RollLeft = -133;
   yawSet2 = 90;
-  yawOppositeLane2RollRight = -88;
-  yawOppositeLane2RollLeft = -92;
+  yawOppositeLane2RollRight = -92;
+  yawOppositeLane2RollLeft = -88;
   yawSet3 = 135;
-  yawOppositeLane3RollRight = -47;
-  yawOppositeLane3RollLeft = -42;
+  yawOppositeLane3RollRight = -42;
+  yawOppositeLane3RollLeft = -47;
   laneUseNr = 2;
   maxDriftPerSecond = 0.05; //limit the stop time if small drift
   maxDurationDmpAutocalib = 60; //in sec
@@ -188,10 +188,10 @@ Mower::Mower() {
   // ------ model R/C ------------------------------------
   remoteUse         = 0;       // use model remote control (R/C)?
   // ------ battery -------------------------------------
-  batMonitor = false;              // monitor battery and charge voltage?
+  batMonitor = true;              // monitor battery and charge voltage?
   batGoHomeIfBelow = 24.3;     // drive home voltage (Volt)
   batSwitchOffIfBelow = 23;  // switch off battery if below voltage (Volt)
-  batSwitchOffIfIdle = 300;      // switch off battery if idle (minutes)
+  batSwitchOffIfIdle = 60;      // switch off battery if idle (minutes)
   batFactor       = 1.00;     //not use
   batChgFactor    = 1.00;     //not use
   batFull          = 29.4;     // battery reference Voltage (fully charged) PLEASE ADJUST IF USING A DIFFERENT BATTERY VOLTAGE! FOR a 12V SYSTEM TO 14.4V
@@ -209,7 +209,7 @@ Mower::Mower() {
   stationRollAngle    = 45;    // charge station roll after reverse
   stationForwDist    = 30;    // charge station accel distance cm
   stationCheckDist   = 2;    // charge station  check distance to be sure voltage is OK cm
-  UseBumperDock = true; //bumper is pressed when docking or not
+  UseBumperDock = false; //bumper is pressed when docking or not
   dockingSpeed   =  60;   //speed docking is (percent of maxspeed)
   autoResetActive  = 0;       // after charging reboot or not
   stationHeading  = 0;  //heading of the charging station to use when no compass
@@ -292,6 +292,28 @@ Mower::Mower() {
   // ------- wheel motors -----------------------------
   motorRightSwapDir     = true;    // inverse right motor direction?
   motorLeftSwapDir      = false;    // inverse left motor direction?
+  motorSpeedMaxRpm       = 39;   // motor wheel max RPM (WARNING: do not set too high, so there's still speed control when battery is low!)
+  motorSpeedMaxPwm    = 180;  // motor wheel max Pwm  (8-bit PWM=255, 10-bit PWM=1023)
+  motorRollDegMax    = 100;  // max. roll Deg
+  motorRollDegMin    = 20; //min. roll Deg
+  SpeedOdoMin = 50;
+  SpeedOdoMax = 140;
+  useMotorDriveBrake = true;   //for ZS-X11H BL motor driver it's possible to use the brake option for slope management
+
+  motorMowSpeedMaxPwm   = 210;    // motor mower max PWM
+  motorMowSpeedMinPwm = 150;   // motor mower minimum PWM (only for cutter modulation)
+  motorMowPowerMax = 30.0;     // motor mower max power (Watt)
+  highGrassSpeedCoeff = 0.7;  //drive speed coeff when detect high grass in by lane mode
+
+  perimeterTriggerMinSmag = 800;
+  MaxSpeedperiPwm = 100; // speed max in PWM while perimeter tracking
+  perimeterMagMaxValue = 12000; // Maximum value return when near the perimeter wire (use for tracking and slowing when near wire
+
+  odometryTicksPerRevolution = 1200;   // encoder ticks per one full resolution
+  odometryTicksPerCm = 21.3;  // encoder ticks per cm
+  odometryWheelBaseCm = 33;    // wheel-to-wheel distance (cm)
+
+  
 #endif
 
 #if defined (RL2000)
@@ -357,6 +379,8 @@ void Mower::setup() {
   //left motor setting********************************************
   pinMode(pinMotorLeftEnable, OUTPUT);
   digitalWrite(pinMotorLeftEnable, LOW);
+  pinMode(pinMotorLeftBrake, OUTPUT);
+  digitalWrite(pinMotorLeftBrake, LOW);
   pinMode(pinMotorLeftPWM, OUTPUT);
   pinMode(pinMotorLeftDir, OUTPUT);
 
@@ -378,6 +402,8 @@ void Mower::setup() {
   //right motor setting *********************************
   pinMode(pinMotorRightEnable, OUTPUT);
   digitalWrite(pinMotorRightEnable, LOW);
+  pinMode(pinMotorRightBrake, OUTPUT);
+  digitalWrite(pinMotorRightBrake, LOW);
   pinMode(pinMotorRightPWM, OUTPUT);
   pinMode(pinMotorRightDir, OUTPUT);
 
@@ -544,14 +570,14 @@ void Mower::setActuator(char type, int value) {
     //case ACT_MOTOR_MOW: setL298N(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, value); break;// Motortreiber einstellung - bei Bedarf Ã¤ndern z.B setL298N auf setMC33926
 
     case ACT_MOTOR_MOW:
-      if (MOW_MOTOR_DRIVER == 1) setZSX11HV1(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, abs(value), useMotorDriveBrake);
+      if (MOW_MOTOR_DRIVER == 1) setZSX11HV1(pinMotorMowDir, pinMotorMowPWM, pinMotorMowBrake, abs(value), useMotorDriveBrake);
       if (MOW_MOTOR_DRIVER == 2) setL298N(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, abs(value));
       if (MOW_MOTOR_DRIVER == 3) setBTS7960(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, abs(value));
       break;
 
     case ACT_MOTOR_LEFT:
       if (LEFT_MOTOR_DRIVER == 1) {
-        setZSX11HV1(pinMotorLeftDir, pinMotorLeftPWM, pinMotorLeftEnable, value, useMotorDriveBrake);
+        setZSX11HV1(pinMotorLeftDir, pinMotorLeftPWM, pinMotorLeftBrake, value, useMotorDriveBrake);
       }
       if (LEFT_MOTOR_DRIVER == 2) setL298N(pinMotorLeftDir, pinMotorLeftPWM, pinMotorLeftEnable, value);
       if (LEFT_MOTOR_DRIVER == 3) setBTS7960(pinMotorLeftDir, pinMotorLeftPWM, pinMotorLeftEnable, value);
@@ -559,7 +585,7 @@ void Mower::setActuator(char type, int value) {
 
     case ACT_MOTOR_RIGHT:
       if (RIGHT_MOTOR_DRIVER == 1) {
-        setZSX11HV1(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value, useMotorDriveBrake);
+        setZSX11HV1(pinMotorRightDir, pinMotorRightPWM, pinMotorRightBrake, value, useMotorDriveBrake);
       }
       if (RIGHT_MOTOR_DRIVER == 2) setL298N(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value);
       if (RIGHT_MOTOR_DRIVER == 3) setBTS7960(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value);

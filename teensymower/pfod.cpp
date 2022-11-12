@@ -64,7 +64,7 @@ float RemoteControl::stringToFloat(String &s) {
 }
 
 void RemoteControl::sendYesNo(int value) {
-  
+
   if (value == 1) serialPort->print("YES");
   else serialPort->print("NO");
 }
@@ -264,7 +264,7 @@ void RemoteControl::sendSettingsMenu(boolean update) {
   if (update) serialPort->print("{:"); else serialPort->print(F("{.Settings"));
   serialPort->print(F("|sz~Save settings|s1~Motor|s2~Mow|s3~Bumper/Button|s4~Sonar|s5~Perimeter|s6~Lawn sensor|s7~IMU|s8~Raspberry Sender Mqtt"));
   serialPort->println(F("|s9~Battery|s10~Station|s11~Odometry|s13~Rain Temp Screen|s14~GPS|s16~ByLane Setting|s17~RFID|i~Timer|s12~Date/time|sx~Factory settings}"));
-  
+
 }
 
 void RemoteControl::processSettingsMenu(String pfodCmd) {
@@ -370,7 +370,7 @@ void RemoteControl::sendMotorMenu(boolean update) {
   sendYesNo(robot->autoAdjustSlopeSpeed);
   serialPort->print(F("|a33~Use brake : "));
   sendYesNo(robot->useMotorDriveBrake);
- 
+
 
   //bber400
   serialPort->print(F("|a04~Actual Speed coeff : "));
@@ -378,7 +378,7 @@ void RemoteControl::sendMotorMenu(boolean update) {
 
   sendSlider("a06", F("Speed max in rpm"), robot->motorSpeedMaxRpm, "", 1, 50, 20);
   sendSlider("a15", F("Speed max in pwm"), robot->motorSpeedMaxPwm, "", 1, 255, 50);
-     
+
   //sendSlider("a11", F("Accel"), robot->motorAccel, "", 1, 2000, 500);
   sendSlider("a18", F("Power ignore time"), robot->motorPowerIgnoreTime, "", 1, 8000, 1);
 
@@ -443,7 +443,7 @@ void RemoteControl::processMotorMenu(String pfodCmd) {
   else if (pfodCmd.startsWith("a30")) processSlider(pfodCmd, robot->SpeedOdoMin, 1);
   else if (pfodCmd.startsWith("a31")) processSlider(pfodCmd, robot->SpeedOdoMax, 1);
 
-  
+
 
   else if (pfodCmd == "a32") {
     robot->odometryRight = robot->odometryLeft = 0;
@@ -452,7 +452,7 @@ void RemoteControl::processMotorMenu(String pfodCmd) {
     robot->motorLeftSpeedRpmSet = 100;//robot->motorSpeedMaxRpm;
     robot->motorRightSpeedRpmSet = 100;//robot->motorSpeedMaxRpm;
     robot->setNextState(STATE_CALIB_MOTOR_SPEED, robot->rollDir);
-    
+
   }
 
   else if (pfodCmd == "a33") {
@@ -541,11 +541,11 @@ void RemoteControl::sendBumperMenu(boolean update) {
   serialPort->print(robot->bumperRearRightCounter);
 
 
-  
+
 
   sendSlider("b05", F("Rev distance"), robot->bumper_rev_distance, "", 1, 50, 5);
-  
-  
+
+
   serialPort->println(F("|b03~Button Use "));
   sendYesNo(robot->buttonUse);
   serialPort->println("}");
@@ -858,8 +858,9 @@ void RemoteControl::processSdCardLogMenu(String pfodCmd) {
         return;
       }
       SD.remove(entry.name());
-      // Serial.print(entry.name());
-      //Serial.println(" delete");
+      robot->resetWatchdogForPfod();
+      Serial.print(entry.name());
+      Serial.println(" delete");
     }
     return;
   }
@@ -1201,7 +1202,7 @@ void RemoteControl::sendRemoteMenu(boolean update) {
 }
 
 void RemoteControl::processRemoteMenu(String pfodCmd) {
-  //all command < h19 is reserve for Pi 
+  //all command < h19 is reserve for Pi
   if (pfodCmd == "h02" ) robot->printSettingSerial();  //use by pi to show all the variable in the console
   if (pfodCmd == "h03" ) robot->consoleMode = (robot->consoleMode + 1) % 5;  //use by pi to change the console mode
   if (pfodCmd == "h04" ) robot->autoReboot();  //use by pi to reset teensy and pi
@@ -1602,25 +1603,25 @@ void RemoteControl::sendCommandMenu(boolean update) {
   //serialPort->print(F("|rk~Start Tracking"));
   serialPort->print(F("|rt~Power OFF PCB"));
   /*
-  serialPort->print(F("|r1~User switch 1 is "));
-  sendOnOff(robot->userSwitch1);
-  serialPort->print(F("|r2~User switch 2 is "));
-  sendOnOff(robot->userSwitch2);
-  serialPort->print(F("|r3~User switch 3 is "));
-  sendOnOff(robot->userSwitch3);
+    serialPort->print(F("|r1~User switch 1 is "));
+    sendOnOff(robot->userSwitch1);
+    serialPort->print(F("|r2~User switch 2 is "));
+    sendOnOff(robot->userSwitch2);
+    serialPort->print(F("|r3~User switch 3 is "));
+    sendOnOff(robot->userSwitch3);
 
-  //bber80
-  serialPort->print(F("|rd1~UserOut1 ON "));
-  serialPort->print(F("|rd0~UserOut1 OFF "));
+    //bber80
+    serialPort->print(F("|rd1~UserOut1 ON "));
+    serialPort->print(F("|rd0~UserOut1 OFF "));
 
-  serialPort->print(F("|re1~UserOut2 ON "));
-  serialPort->print(F("|re0~UserOut2 OFF "));
+    serialPort->print(F("|re1~UserOut2 ON "));
+    serialPort->print(F("|re0~UserOut2 OFF "));
 
-  serialPort->print(F("|rf1~UserOut3 ON "));
-  serialPort->print(F("|rf0~UserOut3 OFF "));
-*/
+    serialPort->print(F("|rf1~UserOut3 ON "));
+    serialPort->print(F("|rf0~UserOut3 OFF "));
+  */
   serialPort->println("}");
-  
+
 }
 
 void RemoteControl::processCommandMenu(String pfodCmd) {
@@ -1679,7 +1680,7 @@ void RemoteControl::processCommandMenu(String pfodCmd) {
     robot->statusCurr = TRACK_TO_START;
     robot->setNextState(STATE_PERI_FIND, 0);
     sendCommandMenu(true);
-  } 
+  }
   else if (pfodCmd.startsWith("rl")) {
     processSlider(pfodCmd, robot->imu.CompassGyroOffset, 0.01);
   }
@@ -1713,7 +1714,7 @@ void RemoteControl::processCommandMenu(String pfodCmd) {
         robot->statusCurr = TRACK_TO_START; //status change later into STATE_PERI_STOP_TOTRACK
         robot->setNextState(STATE_PERI_FIND, 0);
       }
-      else 
+      else
       {
         robot->setNextState(STATE_ACCEL_FRWRD, 0);
       }
@@ -1801,8 +1802,8 @@ void RemoteControl::processCommandMenu(String pfodCmd) {
 void RemoteControl::sendManualMenu(boolean update) {
   if (update) serialPort->print("{:"); else serialPort->println(F("{^Manual navigation`400"));
   serialPort->print(F("|nl~Left|nr~Right|nf~Forward"));
-  if (   ((robot->motorLeftSpeedRpmSet  < 5)  && (robot->motorLeftSpeedRpmSet  > -5))
-         &&  ((robot->motorRightSpeedRpmSet < 5)  && (robot->motorRightSpeedRpmSet > -5))  ) {
+  if (   ((robot->motorLeftSpeedRpmSet  < 2)  && (robot->motorLeftSpeedRpmSet  > -2))
+         &&  ((robot->motorRightSpeedRpmSet < 2)  && (robot->motorRightSpeedRpmSet > -2))  ) {
     serialPort->print(F("|nb~Reverse"));
   } else serialPort->print(F("|ns~Stop"));
   serialPort->print(F("|nm~Mow is "));
@@ -1813,35 +1814,60 @@ void RemoteControl::sendManualMenu(boolean update) {
 void RemoteControl::processManualMenu(String pfodCmd) {
   if (pfodCmd == "nl") {
     // manual: left
-    float sign = 1.0;
-    if (robot->motorLeftSpeedRpmSet < 0) sign = -1.0;
-    if (sign * robot->motorLeftSpeedRpmSet >= sign * robot->motorRightSpeedRpmSet) robot->motorLeftSpeedRpmSet  = sign * robot->motorSpeedMaxRpm / 2;
-    else robot->motorLeftSpeedRpmSet /= 1.5;
-    robot->motorRightSpeedRpmSet = sign * robot->motorSpeedMaxRpm;
+    /*
+      float sign = 1.0;
+      if (robot->motorLeftSpeedRpmSet < 0) sign = -1.0;
+      if (sign * robot->motorLeftSpeedRpmSet >= sign * robot->motorRightSpeedRpmSet) robot->motorLeftSpeedRpmSet  = sign * robot->motorSpeedMaxRpm / 2;
+      else robot->motorLeftSpeedRpmSet /= 1.5;
+      robot->motorRightSpeedRpmSet = sign * robot->motorSpeedMaxRpm;
+    */
+    robot->motorLeftSpeedRpmSet = robot->motorLeftSpeedRpmSet - 8;
+    if (robot->motorLeftSpeedRpmSet <= 0) robot->motorLeftSpeedRpmSet = 0;
+    robot->motorRightSpeedRpmSet = robot->motorRightSpeedRpmSet + 8;
+    if (robot->motorRightSpeedRpmSet >= 60) robot->motorRightSpeedRpmSet = 60;
+
     robot->stateOffAfter = millis() + 120000;
     robot->setNextState(STATE_MANUAL, 0);
     sendManualMenu(true);
   } else if (pfodCmd == "nr") {
     // manual: right
-    float sign = 1.0;
-    if (robot->motorRightSpeedRpmSet < 0) sign = -1.0;
-    if (sign * robot->motorRightSpeedRpmSet >= sign * robot->motorLeftSpeedRpmSet) robot->motorRightSpeedRpmSet  = sign * robot->motorSpeedMaxRpm / 2;
-    else robot->motorRightSpeedRpmSet /= 1.5;
-    robot->motorLeftSpeedRpmSet  = sign * robot->motorSpeedMaxRpm;
+    /*
+      float sign = 1.0;
+      if (robot->motorRightSpeedRpmSet < 0) sign = -1.0;
+      if (sign * robot->motorRightSpeedRpmSet >= sign * robot->motorLeftSpeedRpmSet) robot->motorRightSpeedRpmSet  = sign * robot->motorSpeedMaxRpm / 2;
+      else robot->motorRightSpeedRpmSet /= 1.5;
+      robot->motorLeftSpeedRpmSet  = sign * robot->motorSpeedMaxRpm;
+    */
+    robot->motorLeftSpeedRpmSet = robot->motorLeftSpeedRpmSet + 8;
+    if (robot->motorLeftSpeedRpmSet >= 60) robot->motorLeftSpeedRpmSet = 60;
+    robot->motorRightSpeedRpmSet = robot->motorRightSpeedRpmSet - 8;
+    if (robot->motorRightSpeedRpmSet <= 0) robot->motorRightSpeedRpmSet = 0;
+
     robot->stateOffAfter = millis() + 120000;
     robot->setNextState(STATE_MANUAL, 0);
     sendManualMenu(true);
   } else if (pfodCmd == "nf") {
     // manual: forward
-    robot->motorLeftSpeedRpmSet  = robot->motorSpeedMaxRpm;
-    robot->motorRightSpeedRpmSet = robot->motorSpeedMaxRpm;
+
+    robot->motorLeftSpeedRpmSet  = robot->motorLeftSpeedRpmSet + 8;
+    robot->motorRightSpeedRpmSet = robot->motorRightSpeedRpmSet + 8;
+    //to go straight
+    if (robot->motorLeftSpeedRpmSet >= robot->motorRightSpeedRpmSet) {
+      robot->motorRightSpeedRpmSet = robot->motorLeftSpeedRpmSet;
+    }
+    else
+    {
+      robot->motorLeftSpeedRpmSet = robot->motorRightSpeedRpmSet;
+    }
+    if (robot->motorRightSpeedRpmSet >= 60) robot->motorRightSpeedRpmSet = 60;
+    if (robot->motorLeftSpeedRpmSet >= 60) robot->motorLeftSpeedRpmSet = 60;
     robot->stateOffAfter = millis() + 120000;
     robot->setNextState(STATE_MANUAL, 0);
     sendManualMenu(true);
   } else if (pfodCmd == "nb") {
     // manual: reverse
-    robot->motorLeftSpeedRpmSet  = -robot->motorSpeedMaxRpm;
-    robot->motorRightSpeedRpmSet = -robot->motorSpeedMaxRpm;
+    robot->motorLeftSpeedRpmSet  = -robot->motorSpeedMaxRpm/2;
+    robot->motorRightSpeedRpmSet = -robot->motorSpeedMaxRpm/2;
     robot->stateOffAfter = millis() + 120000; //stop all after 2 minutes
     robot->setNextState(STATE_MANUAL, 0);
     sendManualMenu(true);
@@ -1868,7 +1894,7 @@ void RemoteControl::sendMainTestMenu(boolean update) {
   sendSlider("ya03", F("whereToStart"), robot->whereToStart, "", 1, 9999, 0);
   sendSlider("ya04", F("areaToGo"), robot->areaToGo, "", 1, 3, 0);
   sendSlider("ya05", F("actualLenghtByLane"), robot->actualLenghtByLane, "", 1, 255, 0);
- // sendSlider("ya10", F("yaw offset"), robot->imu.CompassGyroOffset, "", 0.01, 2, 0);
+  // sendSlider("ya10", F("yaw offset"), robot->imu.CompassGyroOffset, "", 0.01, 2, 0);
 
   serialPort->println("}");
 
@@ -1880,8 +1906,8 @@ void RemoteControl::processMainTestMenu(String pfodCmd) {
   else if (pfodCmd.startsWith("ya03")) processSlider(pfodCmd, robot->whereToStart, 1);
   else if (pfodCmd.startsWith("ya04")) processSlider(pfodCmd, robot->areaToGo, 1);
   else if (pfodCmd.startsWith("ya05")) processSlider(pfodCmd, robot->actualLenghtByLane, 1);
- // else if (pfodCmd.startsWith("ya10")) processSlider(pfodCmd, robot->imu.CompassGyroOffset, 0.01);
-  
+  // else if (pfodCmd.startsWith("ya10")) processSlider(pfodCmd, robot->imu.CompassGyroOffset, 0.01);
+
   sendMainTestMenu(true);
 
 

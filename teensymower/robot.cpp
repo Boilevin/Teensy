@@ -477,7 +477,7 @@ void Robot::receiveGPSTime() {
     }
   }
 }// check if mower is stuck ToDo: take HDOP into consideration if gpsSpeed is reliable
-void Robot::checkIfStuck() {
+void Robot::checkIfStuck() {   // not use 04/11/22
   if (millis() < nextTimeCheckIfStuck) return;
   nextTimeCheckIfStuck = millis() + 300;
   if ((gpsUse) && (gps.hdop() < 500))  {
@@ -560,12 +560,9 @@ void Robot::processGPSData()
 }
 
 boolean Robot::search_rfid_list(unsigned long TagNr) {
-
   boolean tag_exist_in_list = false;
   ptr = head;
   if (ptr != NULL) {
-
-
     for (ptr = head; ptr->next != NULL; ptr = ptr->next) {
       if (ptr->TagNr == TagNr) tag_exist_in_list = true;
     }
@@ -675,15 +672,8 @@ void Robot::rfidTagTraitement(unsigned long TagNr, byte statusCurr) {
         break;
       case AREA1:
         startStopSender(1, 1);
-        //line01 = "#SENDER," + area1_ip + ",A1";
-        //Bluetooth.println(line01);
         startStopSender(2, 0);
-        //line01 = "#SENDER," + area2_ip + ",B0";
-        //Bluetooth.println(line01);
         startStopSender(3, 0);
-        //line01 = "#SENDER," + area3_ip + ",B0";
-        //Bluetooth.println(line01);
-
         areaToGo = 1;
         ShowMessageln("Return to Station area ");
         motorSpeedMaxPwm = ptr->TagSpeed;
@@ -1668,7 +1658,29 @@ void Robot::checkErrorCounter() {
 void Robot::teensyBootLoader() {
   delayWithWatchdog(8000); //wait for pyteensy to stop and start pi teensy loader
   asm("bkpt #251");
-  //_reboot_Teensyduino_();
+
+}
+
+void Robot::powerOff_pcb() {
+  if (RaspberryPIUse) {
+    ShowMessageln(F("PCB power OFF after 30 secondes Wait Until PI Stop "));
+    MyRpi.sendCommandToPi("PowerOffPi");
+    delayWithWatchdog(30000);//wait 30Sec  until pi is OFF or the USB native power again the due and the undervoltage never switch OFF
+  }
+  else
+  {
+    ShowMessageln(F("PCB power OFF"));
+  }
+  setBeeper(3000, 3000, 0, 2000, 0);
+  loadSaveErrorCounters(false); // saves error counters
+  loadSaveRobotStats(false);    // saves robot stats
+  ShowMessageln(F("BATTERY switching OFF"));
+  delayWithWatchdog(2000);
+  Serial1.end();//disconnect BT
+  delayWithWatchdog(3000);
+  setActuator(ACT_BATTERY_SW, 0);  // switch off battery
+  //end of working
+
 }
 
 void Robot::autoReboot() {
@@ -1683,7 +1695,7 @@ void Robot::autoReboot() {
   }
   delay(1000);
   //watchdogReset();
-  delay(30000); // this IS USED to force watchdog to reset due.
+  delay(30000); // this IS USED to force watchdog to power off the PCB by generate error.
 }
 
 
@@ -2123,32 +2135,48 @@ void Robot::motorControlOdo() {
       imuDirPID.y_max = motorSpeedMaxPwm / 2;
       imuDirPID.max_output = motorSpeedMaxPwm / 2;
       imuDirPID.compute();
+      /*
+            if ((millis() - stateStartTime) < 1000) { // do not use rpm adjust during acceleration
+              //bber402
 
-      if ((millis() - stateStartTime) < 1000) { // do not use rpm adjust during acceleration
-        //bber402
+              rightSpeed =  rightSpeed - (66 - (millis() - stateStartTime) / 30);
+              leftSpeed =  leftSpeed - (66 - (millis() - stateStartTime) / 30);
+              if (rightSpeed < 0 ) rightSpeed = 0;
+              if (leftSpeed < 0 ) leftSpeed = 0;
+            }
+            else //adjust rpm speed only after 1 seconde
+            {
+      */
+      //bber400 //adjust RPM speed
+      //PID version
+      motorRightPID.x = motorRightRpmCurr; //16/10/22
+      //motorRightPID.w = motorSpeedMaxRpm;
+      motorRightPID.w = motorRightSpeedRpmSet;
+      motorRightPID.y_min = -motorSpeedMaxPwm;       // Regel-MIN
+      motorRightPID.y_max = motorSpeedMaxPwm;  // Regel-MAX
+      motorRightPID.max_output = motorSpeedMaxPwm;   // Begrenzung
+      motorRightPID.compute();
+      //ShowMessageln(motorRightPID.y);
+      motorRpmCoeff = (100 + motorRightPID.y) / 100;
+      if (motorRpmCoeff < 0.10) motorRpmCoeff = 0.10;
+      if (motorRpmCoeff > 2.00) motorRpmCoeff = 2.00;
 
-        rightSpeed =  rightSpeed - (66 - (millis() - stateStartTime) / 30);
-        leftSpeed =  leftSpeed - (66 - (millis() - stateStartTime) / 30);
-        if (rightSpeed < 0 ) rightSpeed = 0;
-        if (leftSpeed < 0 ) leftSpeed = 0;
+      if ((motorRightSpeedRpmSet / motorRightRpmCurr) < 0.8 ) { //speed real is 20 % too high need a brake
+        Serial.print("R speed  ");
+        Serial.print((motorRightSpeedRpmSet / motorRightRpmCurr));
+        Serial.print(" / ");
+        Serial.println(motorRightPID.y);
       }
-      else //adjust rpm speed only after 1 seconde
-      {
-        //bber400 //adjust RPM speed
-        //PID version
-        motorRightPID.x = motorRightRpmCurr;
-        motorRightPID.w = motorSpeedMaxRpm;
-        motorRightPID.y_min = -motorSpeedMaxPwm;       // Regel-MIN
-        motorRightPID.y_max = motorSpeedMaxPwm;  // Regel-MAX
-        motorRightPID.max_output = motorSpeedMaxPwm;   // Begrenzung
-        motorRightPID.compute();
-        //ShowMessageln(motorRightPID.y);
-        motorRpmCoeff = (100 + motorRightPID.y) / 100;
-        if (motorRpmCoeff < 0.10) motorRpmCoeff = 0.10;
-        if (motorRpmCoeff > 2.00) motorRpmCoeff = 2.00;
 
-
+      if ((motorLeftSpeedRpmSet / motorLeftRpmCurr) < 0.8 ) {
+        Serial.print("L speed  ");
+        Serial.print((motorLeftSpeedRpmSet / motorLeftRpmCurr));
+        Serial.print(" / ");
+        Serial.println(motorRightPID.y);
       }
+
+
+      // }
 
       if ((sonarSpeedCoeff != 1) || (!autoAdjustSlopeSpeed)) { //do not change speed if sonar is activate
         motorRpmCoeff = 1;
@@ -2180,7 +2208,8 @@ void Robot::motorControlOdo() {
         //bber400 //adjust RPM speed
         //PID version
         motorRightPID.x = motorRightRpmCurr;
-        motorRightPID.w = motorSpeedMaxRpm;
+        //motorRightPID.w = motorSpeedMaxRpm;
+        motorRightPID.w = motorRightSpeedRpmSet;//16/10/22
         motorRightPID.y_min = -motorSpeedMaxPwm;       // Regel-MIN
         motorRightPID.y_max = motorSpeedMaxPwm;  // Regel-MAX
         motorRightPID.max_output = motorSpeedMaxPwm;   // Begrenzung
@@ -2209,8 +2238,8 @@ void Robot::motorControlOdo() {
           motorRightPID.y_max = motorSpeedMaxPwm;  // Regel-MAX
           motorRightPID.max_output = motorSpeedMaxPwm;   // Begrenzung
           motorRightPID.compute();
-          rightSpeed =  rightSpeed + motorRightPID.y ;
-          leftSpeed =  leftSpeed - motorRightPID.y ;
+          rightSpeed =  rightSpeed + motorRightPID.y / 2;
+          leftSpeed =  leftSpeed - motorRightPID.y / 2;
         }
       }
     }
@@ -2702,13 +2731,23 @@ void Robot::motorControl() {
   }
   motorLeftPID.x = motorLeftRpmCurr;                 // IST
   if ((stateCurr == STATE_OFF)) motorLeftPID.w = 0; // to be sure the motor stop when OFF
-  motorLeftPID.y_min = -motorSpeedMaxPwm;        // Regel-MIN
-  motorLeftPID.y_max = motorSpeedMaxPwm;     // Regel-MAX
-  motorLeftPID.max_output = motorSpeedMaxPwm;    // Begrenzung
+  /*
+    motorLeftPID.y_min = -motorSpeedMaxPwm;        // Regel-MIN
+    motorLeftPID.y_max = motorSpeedMaxPwm;     // Regel-MAX
+    motorLeftPID.max_output = motorSpeedMaxPwm;    // Begrenzung
+    motorLeftPID.compute();
+    leftSpeed = int(motorLeftPWMCurr + motorLeftPID.y);
+    if (motorLeftSpeedRpmSet > 0) leftSpeed = min( max(0, leftSpeed), motorSpeedMaxPwm);
+    if (motorLeftSpeedRpmSet < 0) leftSpeed = max(-motorSpeedMaxPwm, min(0, leftSpeed));
+  */
+
+  motorLeftPID.y_min = -255;        // Regel-MIN
+  motorLeftPID.y_max = 255;     // Regel-MAX
+  motorLeftPID.max_output = 255;    // Begrenzung
   motorLeftPID.compute();
-  int leftSpeed = motorLeftPWMCurr + motorLeftPID.y;
-  if (motorLeftSpeedRpmSet > 0) leftSpeed = min( max(0, leftSpeed), motorSpeedMaxPwm);
-  if (motorLeftSpeedRpmSet < 0) leftSpeed = max(-motorSpeedMaxPwm, min(0, leftSpeed));
+  leftSpeed = int(motorLeftPWMCurr + motorLeftPID.y);
+  if (motorLeftSpeedRpmSet > 0) leftSpeed = min( max(0, leftSpeed), 255);
+  if (motorLeftSpeedRpmSet < 0) leftSpeed = max(-255, min(0, leftSpeed));
 
   // Regelbereich entspricht maximaler PWM am Antriebsrad (motorSpeedMaxPwm), um auch an Steigungen hÃ¶chstes Drehmoment fÃ¼r die Solldrehzahl zu gewÃ¤hrleisten
   motorRightPID.Kp = motorLeftPID.Kp;
@@ -2716,13 +2755,23 @@ void Robot::motorControl() {
   motorRightPID.Kd = motorLeftPID.Kd;
   motorRightPID.x = motorRightRpmCurr;               // IST
   if ((stateCurr == STATE_OFF)) motorRightPID.w = 0; // to be sure the motor stop when OFF
-  motorRightPID.y_min = -motorSpeedMaxPwm;       // Regel-MIN
-  motorRightPID.y_max = motorSpeedMaxPwm;        // Regel-MAX
-  motorRightPID.max_output = motorSpeedMaxPwm;   // Begrenzung
+
+  /*
+    motorRightPID.y_min = -motorSpeedMaxPwm;       // Regel-MIN
+    motorRightPID.y_max = motorSpeedMaxPwm;        // Regel-MAX
+    motorRightPID.max_output = motorSpeedMaxPwm;   // Begrenzung
+    motorRightPID.compute();
+    rightSpeed = int(motorRightPWMCurr + motorRightPID.y);
+    if (motorRightSpeedRpmSet > 0) rightSpeed = min( max(0, rightSpeed), motorSpeedMaxPwm);
+    if (motorRightSpeedRpmSet < 0) rightSpeed = max(-motorSpeedMaxPwm, min(0, rightSpeed));
+  */
+  motorRightPID.y_min = -255;       // Regel-MIN
+  motorRightPID.y_max = 255;        // Regel-MAX
+  motorRightPID.max_output = 255;   // Begrenzung
   motorRightPID.compute();
-  int rightSpeed = motorRightPWMCurr + motorRightPID.y;
-  if (motorRightSpeedRpmSet > 0) rightSpeed = min( max(0, rightSpeed), motorSpeedMaxPwm);
-  if (motorRightSpeedRpmSet < 0) rightSpeed = max(-motorSpeedMaxPwm, min(0, rightSpeed));
+  rightSpeed = int(motorRightPWMCurr + motorRightPID.y);
+  if (motorRightSpeedRpmSet > 0) rightSpeed = min( max(0, rightSpeed), 255);
+  if (motorRightSpeedRpmSet < 0) rightSpeed = max(-255, min(0, rightSpeed));
 
   if ( (abs(motorLeftPID.x) < 2) && (abs(motorLeftPID.w) < 0.1) ) leftSpeed = 0; // ensures PWM is really zero
   if ( (abs(motorRightPID.x)  < 2) && (abs(motorRightPID.w) < 0.1) ) rightSpeed = 0; // ensures PWM is really zero
@@ -3590,10 +3639,7 @@ void Robot::newTagFind() {
     ShowMessageln(rfidTagFind);
     unsigned long rfidTagFind_long = hstol(rfidTagFind);
 
-    //bber200
-
     if (rfidUse) {
-
       if (search_rfid_list(rfidTagFind_long)) {
         rfidTagTraitement(rfidTagFind_long, statusCurr);
       }
@@ -3603,11 +3649,7 @@ void Robot::newTagFind() {
         ShowMessageln(rfidTagFind);
         insert_rfid_list(rfidTagFind_long , 0, 0, 100, 1, 1, 1, 1);
         sort_rfid_list();
-
       }
-
-
-
     }
   }
 }
@@ -3738,7 +3780,7 @@ void Robot::readSensors() {
   }
 
 
-  if (MOWER_HAVE_SECURITY_COVER) {
+  if ((MOWER_HAVE_SECURITY_COVER) && (stateCurr != STATE_TEST_MOTOR)) {
 
     if (digitalRead(pinCover) == 0) {
       coverIsClosed = true;
@@ -3747,7 +3789,7 @@ void Robot::readSensors() {
     {
       coverIsClosed = false;
       if (stateCurr != STATE_WAIT_COVER) {
-        if (stateCurr != STATE_OFF) {
+        if (stateCurr != STATE_OFF)  {
           ShowMessageln("Cover Open ");
           if ((statusCurr == NORMAL_MOWING) || (statusCurr == SPIRALE_MOWING) || (stateCurr == STATE_ERROR) || (statusCurr == WIRE_MOWING) || (statusCurr == BACK_TO_STATION) || (statusCurr == TRACK_TO_START)) {
             ShowMessageln(F("Stop Mowing and Reset Error"));
@@ -3935,10 +3977,9 @@ void Robot::setNextState(byte stateNew, byte dir) {
   moveLeftFinish = false;
   switch (stateNew) {
 
-    case STATE_FORWARD:
+    case STATE_FORWARD: // not use 04/11/22
       if ((stateCurr == STATE_STATION_REV) || (stateCurr == STATE_STATION_ROLL) || (stateCurr == STATE_STATION_CHECK) ) return;
       if ((stateCurr == STATE_STATION) || (stateCurr == STATE_STATION_CHARGING)) {
-        //stateNew = STATE_STATION_CHECK;
         setActuator(ACT_CHGRELAY, 0);
         motorMowEnable = false;
       }
@@ -4088,6 +4129,7 @@ void Robot::setNextState(byte stateNew, byte dir) {
 
     case STATE_STATION_CHECK:
       //Move forward in stattion 2 or 3 cm to be sure contact are OK
+      //16/10/22 limit the max state duration to 500 ms to avoid overload motor
       if (statusCurr == WIRE_MOWING) { //it is the last status
         ShowMessage("Total distance drive ");
         ShowMessage(totalDistDrive / 100);
@@ -4101,9 +4143,9 @@ void Robot::setNextState(byte stateNew, byte dir) {
         ShowMessageln("Check station");
       }
       delayToReadVoltageStation = millis() + 500; //the battery is read again after 500 ms to be sure we have always voltage
-      UseAccelLeft = 0;
+      UseAccelLeft = 1; //16/10/22
       UseBrakeLeft = 1;
-      UseAccelRight = 0;
+      UseAccelRight = 1; //16/10/22
       UseBrakeRight = 1;
       motorLeftSpeedRpmSet = motorRightSpeedRpmSet = checkDockingSpeed;
       stateEndOdometryRight = odometryRight + (odometryTicksPerCm * stationCheckDist);
@@ -4207,8 +4249,8 @@ void Robot::setNextState(byte stateNew, byte dir) {
       if (mowPatternCurr == MOW_LANES) {
         if (stateCurr == STATE_NEXT_LANE_FORW) {  // change to mow random if the wire is detected
           //bber201
-          mowPatternDuration = mowPatternDurationMax - 3 ; //set the mow_random for the next 3 minutes
-          ShowMessageln("Find a corner change to Random for 3 minutes ");
+          mowPatternDuration = mowPatternDurationMax - 1 ; //set the mow_random for the next 1 minutes
+          ShowMessageln("Find a corner change to Random for 1 minutes ");
           mowPatternCurr = MOW_RANDOM; //change the pattern each x minutes
           laneUseNr = laneUseNr + 1;
           findedYaw = 999;
@@ -4793,8 +4835,8 @@ void Robot::setNextState(byte stateNew, byte dir) {
       }
       if (mowPatternCurr == MOW_LANES) {
         //bber201
-        mowPatternDuration = mowPatternDurationMax - 3 ; //set the mow_random for the next 3 minutes
-        ShowMessageln("Find a corner change to Random for 3 minutes ");
+        mowPatternDuration = mowPatternDurationMax - 1 ; //set the mow_random for the next 1 minutes
+        ShowMessageln("Find a corner change to Random for 1 minutes ");
         mowPatternCurr = MOW_RANDOM; //change the pattern each x minutes
         laneUseNr = laneUseNr + 1;
         findedYaw = 999;
@@ -5123,8 +5165,6 @@ void Robot::setNextState(byte stateNew, byte dir) {
       break;
     case STATE_MANUAL:
       statusCurr = MANUAL;
-      motorLeftPID.reset();
-      motorRightPID.reset();
       if (RaspberryPIUse) MyRpi.SendStatusToPi();
       break;
     case STATE_REMOTE:
@@ -5163,6 +5203,8 @@ void Robot::setNextState(byte stateNew, byte dir) {
 
     case STATE_OFF:
       statusCurr = WAIT;
+      motorRightPID.reset();
+      motorLeftPID.reset();
       if (RaspberryPIUse) MyRpi.SendStatusToPi();
 
       startByTimer = false;// reset the start timer
@@ -5434,6 +5476,9 @@ void Robot::checkBattery() {
           loadSaveRobotStats(false);    // saves robot stats
           idleTimeSec = BATTERY_SW_OFF; // flag to remember that battery is switched off
           ShowMessageln(F("BATTERY switching OFF"));
+          delayWithWatchdog(2000);
+          Serial1.end();//disconnect BT
+          delayWithWatchdog(3000);
           setActuator(ACT_BATTERY_SW, 0);  // switch off battery
         }
       }
@@ -5739,20 +5784,21 @@ void Robot::checkBumpersPerimeter() {
     return;
   }
 
-  if (!UseBumperDock) {   // read the station voltage
-    //bber300
-    if ((powerboard_I2c_line_Ok) && (millis() >= nextTimeReadStationVoltage)) {
-      nextTimeReadStationVoltage = millis() + 20;
-      chgVoltage = ChargeIna226.readBusVoltage() ;
-    }
-    if (chgVoltage > 5) {
-      motorLeftRpmCurr = motorRightRpmCurr = 0 ;
-      setMotorPWM(0, 0);//stop immediatly and wait 2 sec to see if voltage on pin
-      ShowMessageln("Detect a voltage on charging contact");
-      setNextState(STATE_STATION_CHECK, rollDir);
-      return;
-    }
+  //if (!UseBumperDock) {   // read the station voltage
+  //bber300
+  if ((powerboard_I2c_line_Ok) && (millis() >= nextTimeReadStationVoltage)) {
+    nextTimeReadStationVoltage = millis() + 20;
+    chgVoltage = ChargeIna226.readBusVoltage() ;
   }
+  if (chgVoltage > 5) {
+    motorLeftRpmCurr = motorRightRpmCurr = 0 ;
+    motorLeftSpeedRpmSet = motorRightSpeedRpmSet = 0;
+    setMotorPWM(0, 0);//stop immediatly and wait 2 sec to see if voltage on pin
+    ShowMessageln("Detect a voltage on charging contact");
+    setNextState(STATE_STATION_CHECK, rollDir);
+    return;
+  }
+  //}
 }
 
 //bber401
@@ -6130,7 +6176,7 @@ void Robot::readAllTemperature() {
       ShowMessage(" Actual Temperature = ");
       ShowMessageln(temperatureTeensy);
       nextTimeReadTemperature = nextTimeReadTemperature + 180000; // do not read again the temp for the next 3 minute and set the idle bat to 2 minute to poweroff the PCB
-      batSwitchOffIfIdle = 2; //use to switch all off after 2 minute
+      batSwitchOffIfIdle = 2; //use to switch all off after 2 minutes
       setNextState(STATE_ERROR, 0);
       return;
     }
@@ -6326,16 +6372,11 @@ void Robot::loop()  {
       motorControl();
       break;
 
-    case STATE_FORWARD:
+    case STATE_FORWARD:  // not use 04/11/22
       // driving forward
-
-
       checkRain();
       checkCurrent();
       checkBumpers();
-
-      // checkSonar();
-      //checkLawn();
       checkTimeout();
       motorControl();
       break;
@@ -6902,7 +6943,7 @@ void Robot::loop()  {
 
     case STATE_PERI_TRACK:
       // track perimeter
-      checkCurrent();  // use to detect voltage station
+      checkCurrent();  // use to detect obstacle
       checkBumpersPerimeter();  // use to detect voltage station
       checkSonarPeriTrack();
       if (statusCurr == BACK_TO_STATION) {
@@ -6978,22 +7019,31 @@ void Robot::loop()  {
         }
 
 
-        if ((chgCurrent < batFullCurrent) && (millis() - stateStartTime > 3000)) {
+        if ((chgCurrent < batFullCurrent) && (millis() - stateStartTime > 3000))   //end of charge by current
+        {
           if ((autoResetActive) && (millis() - stateStartTime > 3600000)) { // only reboot if the mower is charging for more 1 hour
             ShowMessageln("End of charge by batfullcurrent Time to Restart PI and Due");
-            autoReboot();
+            autoReboot(); // 05/11/22 not ok with teensy pcb because power is down when watchdog reset
+          }
+          if (!timerUse) {  //power off everything at the end of charging if the timer is not active
+            ShowMessageln("End of charge and no timer so PowerOff");
+            powerOff_pcb(); // to stop immediatly the PCB
           }
           setNextState(STATE_STATION, 0);
           return;
+
         }
-        if (millis() - stateStartTime > chargingTimeout)
+        if (millis() - stateStartTime > chargingTimeout)   //end of charge by timeout
         {
           ShowMessageln("End of charging duration check the batfullCurrent to try to stop before");
           if (autoResetActive) {
             ShowMessageln("Time to Restart PI and Due");
-            autoReboot();
+            autoReboot(); // 05/11/22 not ok with teensy pcb because power is down when watchdog reset
           }
-
+          if (!timerUse) {  //power off everything at the end of charging if the timer is not active
+            ShowMessageln("End of charge and no timer so PowerOff");
+            powerOff_pcb();
+          }
 
           setNextState(STATE_STATION, 0);
           return;
@@ -7797,7 +7847,18 @@ void Robot::loop()  {
       break;
 
     case STATE_STATION_CHECK:
+      //check motor sense to stop imediatly if blocking station (no spring on charging contact)
+      if ((motorLeftPower >= 0.8 * motorPowerMax) || (motorLeftPower >= 0.8 * motorPowerMax)) {
+        //stop immediatly
+        ShowMessageln ("Station check detect overload on motor ");
+        motorLeftPWMCurr = motorRightPWMCurr = 0;
+        motorLeftRpmCurr = motorRightRpmCurr = 0 ;
+        motorLeftSpeedRpmSet = motorRightSpeedRpmSet = 0;
+        setMotorPWM(0, 0);
+        setNextState(STATE_OFF, rollDir);// we are
+        return;
 
+      }
       // check for charging voltage here after detect station
       if ((moveRightFinish) && (moveLeftFinish)) //move some CM to be sure the contact is OK
       {
@@ -7819,10 +7880,11 @@ void Robot::loop()  {
           //}
         }
       }
-      if (millis() > (stateStartTime + MaxOdoStateDuration)) {//the motor have not enought power to reach the cible
-        //if (developerActive) {
-        ShowMessageln ("Warning can t make the station check in time ");
-        //}
+      //if (millis() > (stateStartTime + MaxOdoStateDuration)) {//the motor have not enought power to reach the cible
+      if (millis() > (stateStartTime + 500)) {//16/10/22 limit to 500ms
+        if (developerActive) {
+          ShowMessageln ("Warning can t make the station check in time ");
+        }
         // if (millis() >= delayToReadVoltageStation) { //wait 0.5 sec after all stop and before read voltage
         //bber300
         if (powerboard_I2c_line_Ok) chgVoltage = ChargeIna226.readBusVoltage() ;
