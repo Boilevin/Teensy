@@ -2160,7 +2160,8 @@ void Robot::motorControlOdo() {
       motorRpmCoeff = (100 + motorRightPID.y) / 100;
       if (motorRpmCoeff < 0.10) motorRpmCoeff = 0.10;
       if (motorRpmCoeff > 2.00) motorRpmCoeff = 2.00;
-
+/*
+ * Speed control loop to build !!!
       if ((motorRightSpeedRpmSet / motorRightRpmCurr) < 0.8 ) { //speed real is 20 % too high need a brake
         Serial.print("R speed  ");
         Serial.print((motorRightSpeedRpmSet / motorRightRpmCurr));
@@ -2174,9 +2175,8 @@ void Robot::motorControlOdo() {
         Serial.print(" / ");
         Serial.println(motorRightPID.y);
       }
-
-
-      // }
+*/
+      
 
       if ((sonarSpeedCoeff != 1) || (!autoAdjustSlopeSpeed)) { //do not change speed if sonar is activate
         motorRpmCoeff = 1;
