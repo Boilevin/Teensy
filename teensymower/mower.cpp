@@ -228,7 +228,7 @@ Mower::Mower() {
 
 
   // ----- other -----------------------------------------
-  buttonUse         = 1;       // has digital ON/OFF button?
+  buttonUse         = 0;       // has digital ON/OFF button?
   RaspberryPIUse = false; // a raspberryPi is connected to USBNative port
   mowPatternDurationMax = 120; //in minutes
   useMqtt = false; //select this to exchange data over mqtt protocol for homeassistant.

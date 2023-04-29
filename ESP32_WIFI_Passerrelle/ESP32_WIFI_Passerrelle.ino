@@ -29,7 +29,7 @@ void setup() {
 
   delay(500);
   Serial.begin(115200);
-  Serial2.begin(115200);
+  Serial2.begin(19200);
   if (debug) Serial.println("\n\n ESP32 BT and WiFi serial bridge V1.00");
 
 
