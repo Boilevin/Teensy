@@ -1299,7 +1299,7 @@ void RemoteControl::sendOdometryMenu(boolean update) {
   serialPort->print(", ");
   serialPort->println(robot->odometryRight);
 
-  sendSlider("l04", F("Ticks per one full revolution"), robot->odometryTicksPerRevolution, "", 1, 2800, 500);
+  sendSlider("l04", F("Ticks per one full revolution"), robot->odometryTicksPerRevolution, "", 1, 2000, 300);
   sendSlider("l03", F("Ticks per cm"), robot->odometryTicksPerCm, "", 0.1, 30, 8);
   sendSlider("l02", F("Wheel base cm"), robot->odometryWheelBaseCm, "", 0.1, 50, 5);
 

@@ -125,7 +125,7 @@ Mower::Mower() {
   perimeterTrackRevTime = 2200;  // reverse time during perimeter tracking
   DistPeriOutRev = 40; // reverse distance when reach the perimeter in cm
   DistPeriObstacleRev = 30; // reverse distance when hit obstacle while tracking in cm
-  if ( LEFT_MOTOR_DRIVER == 1) {
+  if (( LEFT_MOTOR_DRIVER == 1) || ( LEFT_MOTOR_DRIVER == 4)) {
     DistPeriOutForw = 15; // distance to accell reduce when BL motor is used
   }
   else
@@ -386,7 +386,7 @@ void Mower::setup() {
 
   analogWriteFrequency(pinMotorLeftPWM, 10000);//default value
   analogWriteFrequency(pinMotorLeftDir, 10000);
-  if (LEFT_MOTOR_DRIVER == 1) {
+  if ((LEFT_MOTOR_DRIVER == 1) || (LEFT_MOTOR_DRIVER == 4)){
     analogWriteFrequency(pinMotorLeftPWM, PWM_FREQUENCY_ZSX11HV1);
     analogWriteFrequency(pinMotorLeftDir, PWM_FREQUENCY_ZSX11HV1);
   }
@@ -409,7 +409,7 @@ void Mower::setup() {
 
   analogWriteFrequency(pinMotorRightPWM, 10000);//default value
   analogWriteFrequency(pinMotorRightDir, 10000);
-  if (RIGHT_MOTOR_DRIVER == 1) {
+  if ((RIGHT_MOTOR_DRIVER == 1) || (RIGHT_MOTOR_DRIVER == 4)) {
     analogWriteFrequency(pinMotorRightPWM, PWM_FREQUENCY_ZSX11HV1);
     analogWriteFrequency(pinMotorRightDir, PWM_FREQUENCY_ZSX11HV1);
   }
@@ -461,7 +461,7 @@ void Mower::setup() {
 
 
   // odometry
-  if (LEFT_MOTOR_DRIVER == 1) {  //for BL motor no need pull_up
+  if ((LEFT_MOTOR_DRIVER == 1) || (LEFT_MOTOR_DRIVER == 4)){  //for BL motor no need pull_up
     pinMode(pinOdometryLeft, INPUT);
     pinMode(pinOdometryRight, INPUT);
   }
@@ -573,19 +573,26 @@ void Mower::setActuator(char type, int value) {
       if (MOW_MOTOR_DRIVER == 1) setZSX11HV1(pinMotorMowDir, pinMotorMowPWM, pinMotorMowBrake, abs(value), useMotorDriveBrake);
       if (MOW_MOTOR_DRIVER == 2) setL298N(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, abs(value));
       if (MOW_MOTOR_DRIVER == 3) setBTS7960(pinMotorMowDir, pinMotorMowPWM, pinMotorMowEnable, abs(value));
+      if (MOW_MOTOR_DRIVER == 4) setZSX12HV1(pinMotorMowDir, pinMotorMowPWM, pinMotorMowBrake, abs(value), useMotorDriveBrake);
       break;
 
     case ACT_MOTOR_LEFT:
       if (LEFT_MOTOR_DRIVER == 1) {
         setZSX11HV1(pinMotorLeftDir, pinMotorLeftPWM, pinMotorLeftBrake, value, useMotorDriveBrake);
       }
+      if (LEFT_MOTOR_DRIVER == 4) {
+        setZSX12HV1(pinMotorLeftDir, pinMotorLeftPWM, pinMotorLeftBrake, value, useMotorDriveBrake);
+      }
       if (LEFT_MOTOR_DRIVER == 2) setL298N(pinMotorLeftDir, pinMotorLeftPWM, pinMotorLeftEnable, value);
       if (LEFT_MOTOR_DRIVER == 3) setBTS7960(pinMotorLeftDir, pinMotorLeftPWM, pinMotorLeftEnable, value);
       break;
 
     case ACT_MOTOR_RIGHT:
-      if (RIGHT_MOTOR_DRIVER == 1) {
+      if (RIGHT_MOTOR_DRIVER == 1)  {
         setZSX11HV1(pinMotorRightDir, pinMotorRightPWM, pinMotorRightBrake, value, useMotorDriveBrake);
+      }
+      if (RIGHT_MOTOR_DRIVER == 4)  {
+        setZSX12HV1(pinMotorRightDir, pinMotorRightPWM, pinMotorRightBrake, value, useMotorDriveBrake);
       }
       if (RIGHT_MOTOR_DRIVER == 2) setL298N(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value);
       if (RIGHT_MOTOR_DRIVER == 3) setBTS7960(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value);

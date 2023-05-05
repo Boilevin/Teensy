@@ -136,6 +136,31 @@ void setZSX11HV1(int pinDir, int pinPWM, int pinBrake, int speed, boolean brake)
   }
 }
 
+// brushless ZSX12HV1 motor driver
+
+void setZSX12HV1(int pinDir, int pinPWM, int pinBrake, int speed, boolean brake) {
+  //setZSX11HV1(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value, useMotorDriveBrake);
+  if (speed < 0) {
+    digitalWrite(pinBrake, HIGH) ;
+    digitalWrite(pinDir, LOW) ;
+    analogWrite(pinPWM, ((byte)abs(speed)));
+  }
+  if (speed > 0) {
+    digitalWrite(pinBrake, HIGH) ;
+    digitalWrite(pinDir, HIGH) ;
+    analogWrite(pinPWM, ((byte)abs(speed)));
+  }
+  if (speed == 0) {
+    analogWrite(pinPWM, 0);
+    digitalWrite(pinDir, HIGH) ;
+    if (brake) {
+      digitalWrite(pinBrake, LOW) ; // active the brake function of the motor driver  
+    }
+     
+  }
+}
+
+
 
 // L298N motor driver
 // IN2/C(10)/PinPWM   IN1/D(12)/PinDir

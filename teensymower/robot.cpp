@@ -8063,7 +8063,7 @@ void Robot::loop()  {
         return;
       }
 
-      if (LEFT_MOTOR_DRIVER == 1) { //brussless driver have it's own acceleration
+      if ((LEFT_MOTOR_DRIVER == 1) || (LEFT_MOTOR_DRIVER == 4)) { //brussless driver have it's own acceleration
         imuDirPID.reset();
         motorRightPID.reset();
         motorLeftPID.reset();

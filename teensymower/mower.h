@@ -18,16 +18,16 @@ const String area3_ip = "10.0.0.158";
 //**************************************************************
 // ------- select one platform type -------------------
 //**************************************************************
-#define MI632
-//#define YARDFORCE
+//#define MI632
+#define YARDFORCE
 //#define RL2000
 //#define MOW800
 
 //**************************************************************
 // ------- select one mainPCB -------------------
 //**************************************************************
-#define PCB_V101
-//#define PCB_V103
+//#define PCB_V101
+#define PCB_V103
 
 
 //**************************************************************
@@ -39,6 +39,7 @@ const String area3_ip = "10.0.0.158";
 // 1 for brushless ZS-X11H v1 Driver
 // 2 for DC L298N Driver
 // 3 for DC BTS7960 Driver
+// 4 for brushless ZS-X12H Driver
 #define LEFT_MOTOR_DRIVER 1  //never mix BL and DC on drive motor
 #define RIGHT_MOTOR_DRIVER 1
 #define MOW_MOTOR_DRIVER 1
@@ -70,8 +71,11 @@ const String area3_ip = "10.0.0.158";
 // 1 for brushless ZS-X11H v1 Driver
 // 2 for DC L298N Driver
 // 3 for DC BTS7960 Driver
-#define LEFT_MOTOR_DRIVER 1  //never mix BL and DC on drive motor
-#define RIGHT_MOTOR_DRIVER 1
+// 4 for brushless ZS-X12H Driver
+
+
+#define LEFT_MOTOR_DRIVER 4  //never mix BL and DC on drive motor
+#define RIGHT_MOTOR_DRIVER 4
 #define MOW_MOTOR_DRIVER 1
 
 #define BUMPER_IS_SWITCH false  // set to true if the bumper is a single ON/OFF switch
