@@ -285,6 +285,29 @@ Mower::Mower() {
   // ------- wheel motors -----------------------------
   motorRightSwapDir     = false;    // inverse right motor direction?
   motorLeftSwapDir      = true;    // inverse left motor direction?
+  motorRightSwapDir     = true;    // inverse right motor direction?
+  motorLeftSwapDir      = false;    // inverse left motor direction?
+  motorSpeedMaxRpm       = 39;   // motor wheel max RPM (WARNING: do not set too high, so there's still speed control when battery is low!)
+  motorSpeedMaxPwm    = 180;  // motor wheel max Pwm  (8-bit PWM=255, 10-bit PWM=1023)
+  motorRollDegMax    = 100;  // max. roll Deg
+  motorRollDegMin    = 20; //min. roll Deg
+  SpeedOdoMin = 50;
+  SpeedOdoMax = 140;
+  useMotorDriveBrake = true;   //for ZS-X11H BL motor driver it's possible to use the brake option for slope management
+
+  motorMowSpeedMaxPwm   = 210;    // motor mower max PWM
+  motorMowSpeedMinPwm = 150;   // motor mower minimum PWM (only for cutter modulation)
+  motorMowPowerMax = 30.0;     // motor mower max power (Watt)
+  highGrassSpeedCoeff = 0.7;  //drive speed coeff when detect high grass in by lane mode
+
+  perimeterTriggerMinSmag = 800;
+  MaxSpeedperiPwm = 100; // speed max in PWM while perimeter tracking
+  perimeterMagMaxValue = 12000; // Maximum value return when near the perimeter wire (use for tracking and slowing when near wire
+
+  odometryTicksPerRevolution = 1200;   // encoder ticks per one full resolution
+  odometryTicksPerCm = 21.3;  // encoder ticks per cm
+  odometryWheelBaseCm = 33;    // wheel-to-wheel distance (cm)
+
 #endif
 
 #if defined (YARDFORCE)
