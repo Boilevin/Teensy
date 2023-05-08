@@ -283,8 +283,6 @@ Mower::Mower() {
 #if defined (MOW800)
   name = "MOW800"; //Set the Name of platform
   // ------- wheel motors -----------------------------
-  motorRightSwapDir     = false;    // inverse right motor direction?
-  motorLeftSwapDir      = true;    // inverse left motor direction?
   motorRightSwapDir     = true;    // inverse right motor direction?
   motorLeftSwapDir      = false;    // inverse left motor direction?
   motorSpeedMaxRpm       = 39;   // motor wheel max RPM (WARNING: do not set too high, so there's still speed control when battery is low!)
