@@ -610,10 +610,23 @@ void Mower::setActuator(char type, int value) {
 
     case ACT_MOTOR_RIGHT:
       if (RIGHT_MOTOR_DRIVER == 1)  {
-        setZSX11HV1(pinMotorRightDir, pinMotorRightPWM, pinMotorRightBrake, value, useMotorDriveBrake);
+        //setZSX11HV1(pinMotorRightDir, pinMotorRightPWM, pinMotorRightBrake, value, useMotorDriveBrake);
+        if (value >= 0) {
+          setZSX11HV1(pinMotorRightDir, pinMotorRightPWM, pinMotorRightBrake, value * (1 + (double)motorRightOffsetFwd / 100), useMotorDriveBrake);
+        }
+        else {
+          setZSX11HV1(pinMotorRightDir, pinMotorRightPWM, pinMotorRightBrake, value * (1 - (double)motorRightOffsetRev / 100), useMotorDriveBrake);
+        }
       }
       if (RIGHT_MOTOR_DRIVER == 4)  {
-        setZSX12HV1(pinMotorRightDir, pinMotorRightPWM, pinMotorRightBrake, value, useMotorDriveBrake);
+        //setZSX12HV1(pinMotorRightDir, pinMotorRightPWM, pinMotorRightBrake, value, useMotorDriveBrake);
+        if (value >= 0) {
+          setZSX12HV1(pinMotorRightDir, pinMotorRightPWM, pinMotorRightBrake, value * (1 + (double)motorRightOffsetFwd / 100), useMotorDriveBrake);
+        }
+        else {
+          setZSX12HV1(pinMotorRightDir, pinMotorRightPWM, pinMotorRightBrake, value * (1 - (double)motorRightOffsetRev / 100), useMotorDriveBrake);
+        }
+        
       }
       if (RIGHT_MOTOR_DRIVER == 2) setL298N(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value);
       if (RIGHT_MOTOR_DRIVER == 3) setBTS7960(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value);
