@@ -1243,6 +1243,7 @@ void RemoteControl::sendBatteryMenu(boolean update) {
 
   sendSlider("j10", F("charging starts if Voltage is below"), robot->startChargingIfBelow, "", 0.1, robot->batFull, (robot->batFull * 0.72));
   sendSlider("j11", F("Battery is fully charged if current is below"), robot->batFullCurrent, "", 0.01, 0.2, 0);
+  sendSlider("j13", F("Battery is fully charged after (hour)"), robot->chargingMaxDuration, "", 1, 60, 1);
   serialPort->println("}");
 }
 
@@ -1257,6 +1258,7 @@ void RemoteControl::processBatteryMenu(String pfodCmd) {
   else if (pfodCmd.startsWith("j10")) processSlider(pfodCmd, robot->startChargingIfBelow, 0.1);
   else if (pfodCmd.startsWith("j11")) processSlider(pfodCmd, robot->batFullCurrent, 0.01);
   else if (pfodCmd.startsWith("j12")) processSlider(pfodCmd, robot->batSwitchOffIfIdle, 1);
+  else if (pfodCmd.startsWith("j13")) processSlider(pfodCmd, robot->chargingMaxDuration, 1);
   sendBatteryMenu(true);
 }
 
@@ -1300,8 +1302,8 @@ void RemoteControl::sendOdometryMenu(boolean update) {
   serialPort->println(robot->odometryRight);
 
   sendSlider("l04", F("Ticks per one full revolution"), robot->odometryTicksPerRevolution, "", 1, 2000, 300);
-  sendSlider("l03", F("Ticks per cm"), robot->odometryTicksPerCm, "", 0.1, 25, 5);
-  sendSlider("l02", F("Wheel base cm"), robot->odometryWheelBaseCm, "", 0.1, 50, 15);
+  sendSlider("l03", F("Ticks per cm"), robot->odometryTicksPerCm, "", 0.1, 30, 8);
+  sendSlider("l02", F("Wheel base cm"), robot->odometryWheelBaseCm, "", 0.1, 50, 5);
 
   serialPort->println("}");
 

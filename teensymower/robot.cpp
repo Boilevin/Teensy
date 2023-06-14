@@ -1117,7 +1117,9 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, bumper_rev_distance);
   eereadwrite(readflag, addr, swapCoilPolarityLeft);
   eereadwrite(readflag, addr, useMotorDriveBrake);
-
+  eereadwrite(readflag, addr, chargingMaxDuration);
+  chargingTimeout = chargingMaxDuration * 3600000;// from hour to millis
+  
 
 
   if (readflag)
@@ -1401,6 +1403,8 @@ void Robot::printSettingSerial() {
   ShowMessageln(startChargingIfBelow);
   ShowMessage  (F("chargingTimeout      : "));
   ShowMessageln(chargingTimeout);
+   ShowMessage  (F("chargingMaxDuration  : "));
+  ShowMessageln(chargingMaxDuration);
   ShowMessage  (F("stationHeading       : "));
   ShowMessageln(stationHeading);
   ShowMessage  (F("batSenseFactor       : "));
@@ -3195,8 +3199,8 @@ void Robot::setup()  {
 
   ShowMessageln("Watchdog configuration start ");
   WDT_timings_t config;
-  config.trigger = 2; /* in seconds, 0->128 */
-  config.timeout = 10; /* in seconds, 0->128 */
+  config.trigger = 100; /* in seconds, 0->128 */
+  config.timeout = 120; /* in seconds, 0->128 */
   config.callback = myCallback;
   wdt.begin(config);
   ShowMessageln("Watchdog configuration Finish ");

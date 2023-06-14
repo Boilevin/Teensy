@@ -49,7 +49,7 @@ const int chipSelect = BUILTIN_SDCARD;
 
 
 // code version
-#define VER "1.422-Teensyber"
+#define VER "1.423-Teensyber"
 
 
 // sensors
@@ -785,6 +785,7 @@ class Robot
 
     float startChargingIfBelow; // start charging if battery Voltage is below
     unsigned long chargingTimeout; // safety timer for charging
+    int chargingMaxDuration; // safety timer for charging in hour
     float stationHeading    ;       // station heading to init the YAW when leave station (in radian)
     float batSenseFactor       ;     // charge current conversion factor
     //float chgSense        ;       // mV/A empfindlichkeit des Ladestromsensors in mV/A (FÃ¼r ACS712 5A = 185)

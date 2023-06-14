@@ -198,8 +198,9 @@ Mower::Mower() {
   batChargingCurrentMax = 2; // maximum current your charger can devliver
   batFullCurrent  = 0.05;      // current flowing when battery is fully charged
   startChargingIfBelow = 25.0; // start charging if battery Voltage is below
-  chargingTimeout = 36000000; // safety timer for charging (ms)  10 hrs
-
+  chargingMaxDuration = 10 ; //max duration to charge battery
+  chargingTimeout = chargingMaxDuration * 3600000 ;//36000000; // safety timer for charging (ms)  10 hrs
+  
   batSenseFactor  = 1.11;         // charge current conversion factor   - Empfindlichkeit nimmt mit ca. 39/V Vcc ab
   //chgSense        = 185.0;      // mV/A empfindlichkeit des Ladestromsensors in mV/A (FÃ¼r ACS712 5A = 185)
   //chgChange       = 0;          // Messwertumkehr von - nach +         1 oder 0
@@ -283,29 +284,8 @@ Mower::Mower() {
 #if defined (MOW800)
   name = "MOW800"; //Set the Name of platform
   // ------- wheel motors -----------------------------
-  motorRightSwapDir     = true;    // inverse right motor direction?
-  motorLeftSwapDir      = false;    // inverse left motor direction?
-  motorSpeedMaxRpm       = 39;   // motor wheel max RPM (WARNING: do not set too high, so there's still speed control when battery is low!)
-  motorSpeedMaxPwm    = 180;  // motor wheel max Pwm  (8-bit PWM=255, 10-bit PWM=1023)
-  motorRollDegMax    = 100;  // max. roll Deg
-  motorRollDegMin    = 20; //min. roll Deg
-  SpeedOdoMin = 50;
-  SpeedOdoMax = 140;
-  useMotorDriveBrake = true;   //for ZS-X11H BL motor driver it's possible to use the brake option for slope management
-
-  motorMowSpeedMaxPwm   = 210;    // motor mower max PWM
-  motorMowSpeedMinPwm = 150;   // motor mower minimum PWM (only for cutter modulation)
-  motorMowPowerMax = 30.0;     // motor mower max power (Watt)
-  highGrassSpeedCoeff = 0.7;  //drive speed coeff when detect high grass in by lane mode
-
-  perimeterTriggerMinSmag = 800;
-  MaxSpeedperiPwm = 100; // speed max in PWM while perimeter tracking
-  perimeterMagMaxValue = 12000; // Maximum value return when near the perimeter wire (use for tracking and slowing when near wire
-
-  odometryTicksPerRevolution = 1200;   // encoder ticks per one full resolution
-  odometryTicksPerCm = 21.3;  // encoder ticks per cm
-  odometryWheelBaseCm = 33;    // wheel-to-wheel distance (cm)
-
+  motorRightSwapDir     = false;    // inverse right motor direction?
+  motorLeftSwapDir      = true;    // inverse left motor direction?
 #endif
 
 #if defined (YARDFORCE)
@@ -610,23 +590,10 @@ void Mower::setActuator(char type, int value) {
 
     case ACT_MOTOR_RIGHT:
       if (RIGHT_MOTOR_DRIVER == 1)  {
-        //setZSX11HV1(pinMotorRightDir, pinMotorRightPWM, pinMotorRightBrake, value, useMotorDriveBrake);
-        if (value >= 0) {
-          setZSX11HV1(pinMotorRightDir, pinMotorRightPWM, pinMotorRightBrake, value * (1 + (double)motorRightOffsetFwd / 100), useMotorDriveBrake);
-        }
-        else {
-          setZSX11HV1(pinMotorRightDir, pinMotorRightPWM, pinMotorRightBrake, value * (1 - (double)motorRightOffsetRev / 100), useMotorDriveBrake);
-        }
+        setZSX11HV1(pinMotorRightDir, pinMotorRightPWM, pinMotorRightBrake, value, useMotorDriveBrake);
       }
       if (RIGHT_MOTOR_DRIVER == 4)  {
-        //setZSX12HV1(pinMotorRightDir, pinMotorRightPWM, pinMotorRightBrake, value, useMotorDriveBrake);
-        if (value >= 0) {
-          setZSX12HV1(pinMotorRightDir, pinMotorRightPWM, pinMotorRightBrake, value * (1 + (double)motorRightOffsetFwd / 100), useMotorDriveBrake);
-        }
-        else {
-          setZSX12HV1(pinMotorRightDir, pinMotorRightPWM, pinMotorRightBrake, value * (1 - (double)motorRightOffsetRev / 100), useMotorDriveBrake);
-        }
-        
+        setZSX12HV1(pinMotorRightDir, pinMotorRightPWM, pinMotorRightBrake, value, useMotorDriveBrake);
       }
       if (RIGHT_MOTOR_DRIVER == 2) setL298N(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value);
       if (RIGHT_MOTOR_DRIVER == 3) setBTS7960(pinMotorRightDir, pinMotorRightPWM, pinMotorRightEnable, value);
