@@ -18,8 +18,8 @@ const String area3_ip = "10.0.0.158";
 //**************************************************************
 // ------- select one platform type -------------------
 //**************************************************************
-//#define MI632
-#define YARDFORCE
+#define MI632
+//#define YARDFORCE
 //#define RL2000
 //#define MOW800
 
