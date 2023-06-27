@@ -23,7 +23,7 @@
 */
 #include "drivers.h"
 
-const char *dayOfWeek[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+const char *dayOfWeek[] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
 void StreamPrint_progmem(Print &out, PGM_P format, ...)
 {
   // program memory version of printf - copy of format string and result share a buffer
