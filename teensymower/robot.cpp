@@ -347,7 +347,7 @@ void Robot::checkTimer() {
                 Serial.print("Timer trigger but battery too low : ");
                 Serial.print(batVoltage);
                 Serial.print(" Min Voltage : ");
-                Serial.print(timerStartMinVoltage);
+                Serial.println(timerStartMinVoltage);
                 return;
               }
               Serial.print("Timer ");
@@ -7060,8 +7060,7 @@ void Robot::loop()  {
           return;
         }
       }
-
-
+      if (millis() - stateStartTime > 180000) checkTimer(); //only check timer after 30 minutes when charging
       break;
 
     case STATE_STOP_ON_BUMPER:
