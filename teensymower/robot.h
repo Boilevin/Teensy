@@ -49,7 +49,7 @@ const int chipSelect = BUILTIN_SDCARD;
 
 
 // code version
-#define VER "1.426-Teensyber"
+#define VER "1.483-Teensyber"
 
 
 // sensors
@@ -781,7 +781,8 @@ class Robot
     float batChargingCurrentMax ; // maximum current your charger can devliver
     float batFull         ;      // battery reference Voltage (fully charged)
     float batFullCurrent   ; // current flowing when battery is fully charged
-    float timerStartMinVoltage; // start timer mowing at this voltage (avoid wait for 100 % charge)
+    float batVoltageToStationStart; // // start timer mowing at this voltage (avoid wait for 100 % charge)
+
     float startChargingIfBelow; // start charging if battery Voltage is below
     unsigned long chargingTimeout; // safety timer for charging
     int chargingMaxDuration; // safety timer for charging in hour

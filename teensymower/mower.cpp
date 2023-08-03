@@ -241,7 +241,7 @@ Mower::Mower() {
   userSwitch3       = 0;       // user-defined switch 3 (default value)
   // ----- timer -----------------------------------------
   timerUse          = 0;       // use RTC and timer?
-  timerStartMinVoltage = 27.5; // min voltage to allow timer start the mower from station
+
   // ------ mower stats-------------------------------------------
   statsOverride = false; // if set to true mower stats are overwritten - be careful
   statsMowTimeMinutesTotal = 300;

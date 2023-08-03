@@ -342,14 +342,7 @@ void Robot::checkTimer() {
           if ((currmin >= startmin) && (currmin < stopmin)) {
             // start timer triggered
             stopTimerTriggered = false;
-            if ((stateCurr == STATE_STATION) || (stateCurr == STATE_STATION_CHARGING)) {
-              if ((stateCurr == STATE_STATION_CHARGING) &&  (batVoltage < timerStartMinVoltage)){ //check if battery is OK
-                Serial.print("Timer trigger but battery too low : ");
-                Serial.print(batVoltage);
-                Serial.print(" Min Voltage : ");
-                Serial.println(timerStartMinVoltage);
-                return;
-              }
+            if ((stateCurr == STATE_STATION)) {
               Serial.print("Timer ");
               Serial.print(i);
               Serial.println(F(" start triggered"));
@@ -1120,7 +1113,7 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, useMqtt);
   eereadwrite(readflag, addr, stationHeading);
   eereadwrite(readflag, addr, checkDockingSpeed);
-  eereadwrite(readflag, addr, timerStartMinVoltage);
+  eereadwrite(readflag, addr, batVoltageToStationStart);
   eereadwrite(readflag, addr, bumper_rev_distance);
   eereadwrite(readflag, addr, swapCoilPolarityLeft);
   eereadwrite(readflag, addr, useMotorDriveBrake);
@@ -1400,8 +1393,8 @@ void Robot::printSettingSerial() {
   ShowMessageln( batChgFactor);
   ShowMessage  (F("batFull              : "));
   ShowMessageln( batFull);
-  ShowMessage  (F("timerStartMinVoltage : "));
-  ShowMessageln(timerStartMinVoltage);
+  ShowMessage  (F("batVoltageToStationStart: "));
+  ShowMessageln(batVoltageToStationStart);
   ShowMessage  (F("batChargingCurrentMax: "));
   ShowMessageln(batChargingCurrentMax);
   ShowMessage  (F("batFullCurrent       : "));
@@ -3346,7 +3339,7 @@ void Robot::delayInfo(int ms) {
     // readSensors();
     printInfo(Serial);
     //watchdogReset();
-    delay(1000);
+    delay(500);
     //watchdogReset();
   }
 }
@@ -4784,6 +4777,9 @@ void Robot::setNextState(byte stateNew, byte dir) {
 
 
       OdoRampCompute();
+      wdt.feed();
+      delay(500);
+      wdt.feed();
       break;
 
     case STATE_PERI_OUT_ROLL: //roll left or right in normal mode
@@ -4879,6 +4875,7 @@ void Robot::setNextState(byte stateNew, byte dir) {
 
 
       }
+      
       OdoRampCompute();
       break;
     case STATE_PERI_OUT_ROLL_TOTRACK:  //roll left or right in normal mode
@@ -7060,7 +7057,8 @@ void Robot::loop()  {
           return;
         }
       }
-      if (millis() - stateStartTime > 180000) checkTimer(); //only check timer after 30 minutes when charging
+
+
       break;
 
     case STATE_STOP_ON_BUMPER:
