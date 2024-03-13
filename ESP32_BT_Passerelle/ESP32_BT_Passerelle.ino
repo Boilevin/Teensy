@@ -10,12 +10,12 @@ void setup() {
 //BT seial for Pfod init
   Serial.begin(115200);
   Serial.println("Start Bluetooth");
-  ESP_BT.begin("TEENSY");
-  Serial.println("Bluetooth started with name TEENSY  Wait 10 seconde......");
+  ESP_BT.begin("DENNA");
+  Serial.println("Bluetooth started with name DENNA  Wait 10 seconde......");
   delay(10000);
   
   Serial.println("Try to connect to DUE");
-  Serial2.begin(115200);
+  Serial2.begin(19200);
   Serial.println("Connected");
   
 }
