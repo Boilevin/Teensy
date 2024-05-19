@@ -1119,7 +1119,8 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, useMotorDriveBrake);
   eereadwrite(readflag, addr, chargingMaxDuration);
   chargingTimeout = chargingMaxDuration * 3600000;// from hour to millis
-  
+  eereadwrite(readflag, addr, perimeter.timedOutIfBelowSmag);
+
 
 
   if (readflag)
@@ -1403,7 +1404,7 @@ void Robot::printSettingSerial() {
   ShowMessageln(startChargingIfBelow);
   ShowMessage  (F("chargingTimeout      : "));
   ShowMessageln(chargingTimeout);
-   ShowMessage  (F("chargingMaxDuration  : "));
+  ShowMessage  (F("chargingMaxDuration  : "));
   ShowMessageln(chargingMaxDuration);
   ShowMessage  (F("stationHeading       : "));
   ShowMessageln(stationHeading);
@@ -2164,23 +2165,23 @@ void Robot::motorControlOdo() {
       motorRpmCoeff = (100 + motorRightPID.y) / 100;
       if (motorRpmCoeff < 0.10) motorRpmCoeff = 0.10;
       if (motorRpmCoeff > 2.00) motorRpmCoeff = 2.00;
-/*
- * Speed control loop to build !!!
-      if ((motorRightSpeedRpmSet / motorRightRpmCurr) < 0.8 ) { //speed real is 20 % too high need a brake
-        Serial.print("R speed  ");
-        Serial.print((motorRightSpeedRpmSet / motorRightRpmCurr));
-        Serial.print(" / ");
-        Serial.println(motorRightPID.y);
-      }
+      /*
+         Speed control loop to build !!!
+            if ((motorRightSpeedRpmSet / motorRightRpmCurr) < 0.8 ) { //speed real is 20 % too high need a brake
+              Serial.print("R speed  ");
+              Serial.print((motorRightSpeedRpmSet / motorRightRpmCurr));
+              Serial.print(" / ");
+              Serial.println(motorRightPID.y);
+            }
 
-      if ((motorLeftSpeedRpmSet / motorLeftRpmCurr) < 0.8 ) {
-        Serial.print("L speed  ");
-        Serial.print((motorLeftSpeedRpmSet / motorLeftRpmCurr));
-        Serial.print(" / ");
-        Serial.println(motorRightPID.y);
-      }
-*/
-      
+            if ((motorLeftSpeedRpmSet / motorLeftRpmCurr) < 0.8 ) {
+              Serial.print("L speed  ");
+              Serial.print((motorLeftSpeedRpmSet / motorLeftRpmCurr));
+              Serial.print(" / ");
+              Serial.println(motorRightPID.y);
+            }
+      */
+
 
       if ((sonarSpeedCoeff != 1) || (!autoAdjustSlopeSpeed)) { //do not change speed if sonar is activate
         motorRpmCoeff = 1;
@@ -2434,6 +2435,11 @@ void Robot::motorControlPerimeter() {
       if (rightSpeedperi < 0) rightSpeedperi = 0;
       if (leftSpeedperi < 0) leftSpeedperi = 0;
     }
+    //brake the wheel on angular
+    if (useMotorDriveBrake) {
+      if (leftSpeedperi < SpeedOdoMin) leftSpeedperi = 0;
+      if (rightSpeedperi < SpeedOdoMin) rightSpeedperi = 0;
+    }
 
     if (consoleMode == CONSOLE_TRACKING) {
       ShowMessage("SLOW;");
@@ -2481,11 +2487,8 @@ void Robot::motorControlPerimeter() {
 
   //bb2
   if ((millis() - stateStartTime ) < 2000) { //at the start of the tracking accelerate slowly during 2 secondes
-    //leftSpeedperi = leftSpeedperi - (66 - (millis() - stateStartTime) / 30);
     leftSpeedperi = int(leftSpeedperi * ((millis() - stateStartTime) / 2000));
-    //bber300
     if (leftSpeedperi < SpeedOdoMin) leftSpeedperi = SpeedOdoMin;
-    //rightSpeedperi = rightSpeedperi - (66 - (millis() - stateStartTime) / 30);
     rightSpeedperi = int(rightSpeedperi * ((millis() - stateStartTime) / 2000));
     if (rightSpeedperi < SpeedOdoMin) rightSpeedperi = SpeedOdoMin;
   }
@@ -2614,6 +2617,11 @@ void Robot::motorControlPerimeter2Coil() {
       if (rightSpeedperi < 0) rightSpeedperi = 0;
       if (leftSpeedperi < 0) leftSpeedperi = 0;
     }
+    //brake the wheel on angular
+    if (useMotorDriveBrake) {
+      if (leftSpeedperi < SpeedOdoMin) leftSpeedperi = 0;
+      if (rightSpeedperi < SpeedOdoMin) rightSpeedperi = 0;
+    }
 
     if (consoleMode == CONSOLE_TRACKING) {
       ShowMessage("SLOW;");
@@ -2661,11 +2669,8 @@ void Robot::motorControlPerimeter2Coil() {
 
   //bb2
   if ((millis() - stateStartTime ) < 2000) { //at the start of the tracking accelerate slowly during 2 secondes
-    //leftSpeedperi = leftSpeedperi - (66 - (millis() - stateStartTime) / 30);
     leftSpeedperi = int(leftSpeedperi * ((millis() - stateStartTime) / 2000));
-    //bber300
     if (leftSpeedperi < SpeedOdoMin) leftSpeedperi = SpeedOdoMin;
-    //rightSpeedperi = rightSpeedperi - (66 - (millis() - stateStartTime) / 30);
     rightSpeedperi = int(rightSpeedperi * ((millis() - stateStartTime) / 2000));
     if (rightSpeedperi < SpeedOdoMin) rightSpeedperi = SpeedOdoMin;
   }
@@ -2836,6 +2841,19 @@ void Robot::motorMowControl() {
   else
   {
     setMotorMowPWM(motorMowSpeedPWMSet, true);
+  }
+}
+
+void Robot::checkSenderIsRunning() {
+  //check if sender is ON
+  if (abs(perimeter.getSmoothMagnitude(0)) < abs(perimeter.timedOutIfBelowSmag)) {
+    ShowMessage(" Can't read valid signal on coil Left : Smag =");
+    ShowMessageln(perimeter.getSmoothMagnitude(0));
+    addErrorCounter(ERR_PERIMETER_TIMEOUT);
+    senderIsRunning = false;
+  }
+  else{
+    senderIsRunning = true;
   }
 }
 
@@ -4875,54 +4893,56 @@ void Robot::setNextState(byte stateNew, byte dir) {
 
 
       }
-      
+
       OdoRampCompute();
       break;
-    case STATE_PERI_OUT_ROLL_TOTRACK:  //roll left or right in normal mode
-      AngleRotate = 180;
+    case STATE_PERI_OUT_ROLL_TOTRACK:  //roll left or right in normal mode until find the wire
+      AngleRotate = 360;
       UseAccelLeft = 1;
-      UseBrakeLeft = 1;
+      UseBrakeLeft = 0;
       UseAccelRight = 1;
-      UseBrakeRight = 1;
+      UseBrakeRight = 0;
+      Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
       if (track_ClockWise) {
-        Tempovar = 36000 / AngleRotate; //need a value*100 for integer division later
-        motorLeftSpeedRpmSet = motorSpeedMaxRpm ;
-        motorRightSpeedRpmSet = -motorSpeedMaxRpm ;
+        motorLeftSpeedRpmSet = motorSpeedMaxRpm / 1.5 ;
+        motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5 ;
       }
       else {
-        Tempovar = -36000 / AngleRotate; //need a value*100 for integer division later
-        motorLeftSpeedRpmSet = -motorSpeedMaxRpm ;
-        motorRightSpeedRpmSet = motorSpeedMaxRpm ;
+        //check location of mower vs wire
+        if (!perimeterInsideLeft) { //if coil left outside roll CW (roll in the area and not outside)
+          motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5 ;
+          motorLeftSpeedRpmSet = motorSpeedMaxRpm / 1.5 ;
+          stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
+          stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
+        }
+        else   //if left inside roll CCW (roll in the area and not outside)
+        {
+          motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.5 ;
+          motorLeftSpeedRpmSet = -motorSpeedMaxRpm / 1.5 ;
+          stateEndOdometryRight = odometryRight + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
+          stateEndOdometryLeft = odometryLeft - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
+        }
       }
-      stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-      stateEndOdometryLeft = odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
-
-
       OdoRampCompute();
       break;
 
-    case STATE_PERI_OUT_STOP_ROLL_TOTRACK:  //roll right in normal mode when find wire
+    case STATE_PERI_OUT_STOP_ROLL_TOTRACK:
       UseAccelLeft = 0;
       UseBrakeLeft = 1;
       UseAccelRight = 0;
       UseBrakeRight = 1;
-      //bber300
-      if (track_ClockWise) {
-        motorLeftSpeedRpmSet = motorSpeedMaxRpm / 1.5;
-        motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
+      //keep the same speed as before and select odometry direction according
+      if (motorRightSpeedRpmSet <= 0) {
         stateEndOdometryRight = odometryRight - (int)(odometryTicksPerCm * 5); //stop on 5 cm
         stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * 5);
-
       }
       else {
-        motorLeftSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
-        motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.5;
         stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * 5); //stop on 5 cm
         stateEndOdometryLeft = odometryLeft - (int)(odometryTicksPerCm * 5);
       }
-
       OdoRampCompute();
       break;
+
     case STATE_PERI_OUT_FORW:  //Accel after roll so the 2 wheel have the same speed when reach the forward state
       ShowMessage("New heading :");
       ShowMessageln((imu.ypr.yaw / PI * 180.0));
@@ -5258,6 +5278,10 @@ void Robot::setNextState(byte stateNew, byte dir) {
       ShowMessage(areaInMowing);
       ShowMessage(" Area To Go ");
       ShowMessageln(areaToGo);
+
+      //check if sender is ON
+      checkSenderIsRunning();
+
 
       if ((stateCurr == STATE_FORWARD_ODO) || (stateCurr == STATE_PERI_OBSTACLE_AVOID)) {
         UseAccelRight = 0;
@@ -5961,28 +5985,30 @@ void Robot::checkRain() {
 }
 void Robot::checkSonarPeriTrack() {
   if (!sonarUse) return;
-  /*
-    if (millis() < nextTimeCheckSonar) return;
-    nextTimeCheckSonar = millis() + 200;
-    sonarDistRight = NO_ECHO;
-    sonarDistLeft = NO_ECHO;
-    if (track_ClockWise) { //Track CW
+
+  if (millis() < nextTimeCheckSonar) return;
+  nextTimeCheckSonar = millis() + 200;
+  sonarDistRight = NO_ECHO;
+  sonarDistLeft = NO_ECHO;
+  if (track_ClockWise)
+  { //Track CW
     if (sonarRightUse) {
-      sonarDistRight = readSensor(SEN_SONAR_RIGHT);
-      if (sonarDistRight < 20 || sonarDistRight > 110) sonarDistRight = NO_ECHO; // Object is too close to the sensor JSN SR04T can't read <20 CM . Sensor value is useless
+      sonarDistRight = NewSonarRight.ping_cm();
+      if (sonarDistRight < 10 || sonarDistRight > 90) sonarDistRight = NO_ECHO;
     }
 
     else sonarDistRight = NO_ECHO;
-    }
-    else {//track CCW
+  }
+  else
+  { //track CCW
     if (sonarLeftUse) { //use the left sonar
-      sonarDistLeft = readSensor(SEN_SONAR_LEFT);
-      if (sonarDistLeft < 20 || sonarDistLeft  > 110) sonarDistLeft = NO_ECHO;
+      sonarDistLeft = NewSonarLeft.ping_cm();
+      if (sonarDistLeft < 10 || sonarDistLeft  > 90) sonarDistLeft = NO_ECHO;
     }
     else sonarDistLeft = NO_ECHO;
-    }
+  }
 
-    if (((sonarDistRight != NO_ECHO) && (sonarDistRight < sonarTriggerBelow)) ||  ((sonarDistLeft != NO_ECHO) && (sonarDistLeft < sonarTriggerBelow))  ) {
+  if (((sonarDistRight != NO_ECHO) && (sonarDistRight < sonarTriggerBelow)) ||  ((sonarDistLeft != NO_ECHO) && (sonarDistLeft < sonarTriggerBelow))  ) {
     //setBeeper(1000, 50, 50, 60, 60);
     Serial.println("Sonar reduce speed on tracking for 2 meters");
     whereToResetSpeed =  totalDistDrive + 200; // when a speed tag is read it's where the speed is back to maxpwm value
@@ -5992,8 +6018,8 @@ void Robot::checkSonarPeriTrack() {
     trakBlockInnerWheel = 1; //don't want that a wheel reverse just before station check   /bber30
 
 
-    }
-  */
+  }
+
 }
 
 // check sonar
@@ -6157,7 +6183,7 @@ void Robot::readAllTemperature() {
   if (millis() > nextTimeReadTemperature) {
     nextTimeReadTemperature = millis() + 3000;
     temperatureTeensy = InternalTemperature.readTemperatureC();
-    imu.readImuTemperature();
+    //imu.readImuTemperature();// not use 18/05/2024
 
     if ((temperatureTeensy >= 0.9 * maxTemperature) && (stateCurr == STATE_FORWARD_ODO)) { // at 90% of max temp mower try to find the station
       ShowMessageln("Temperature is 90 % of max ");
@@ -6223,26 +6249,77 @@ void Robot::loop()  {
     }
   }
   else {
-    readSerial();
+
+    readSerial(); //check for PC arduino ide console command
+
   }
 
 
-  rc.readSerial();// see the readserial function into pfod.cpp
+
+  StartReadAt = millis();
+  rc.readSerial();// readserial function into pfod.cpp
+  EndReadAt = millis();
+  ReadDuration = EndReadAt - StartReadAt;
+  if ( ReadDuration > 200) {
+    ShowMessage("Warning Serial read duration > 200 ms : ");
+    ShowMessageln(ReadDuration);
+  }
 
 
+  StartReadAt = millis();
   readSensors();
-  readAllTemperature();
+  EndReadAt = millis();
+  ReadDuration = EndReadAt - StartReadAt;
+  if ( ReadDuration > 20) {
+    ShowMessage("Warning Sensor read duration > 20 ms : ");
+    ShowMessageln(ReadDuration);
+  }
+
+
   checkRobotStats();
+
   checkPerimeterBoundary();
   calcOdometry();
   checkOdometryFaults();
   checkButton();
+
+
+  StartReadAt = millis();
+  readAllTemperature();
   motorMowControl();
+  EndReadAt = millis();
+  ReadDuration = EndReadAt - StartReadAt;
+  if ( ReadDuration > 20) {
+    ShowMessage("Warning temperature or mow control read duration > 20 ms : ");
+    ShowMessageln(ReadDuration);
+  }
+
+  StartReadAt = millis();
   checkTilt();
+  EndReadAt = millis();
+  ReadDuration = EndReadAt - StartReadAt;
+  if ( ReadDuration > 30) {
+    ShowMessage("Warning TILT read duration > 30 ms : ");
+    ShowMessageln(ReadDuration);
+  }
+
+
+
+
+
   if ((stateCurr == STATE_PERI_OUT_STOP) && (statusCurr == NORMAL_MOWING)) { //read only timer here for fast processing on odo
     checkTimer();
   }
+
+  StartReadAt = millis();
   beeper();
+  EndReadAt = millis();
+  ReadDuration = EndReadAt - StartReadAt;
+  if ( ReadDuration > 30) {
+    ShowMessage("Warning beeper read duration > 30 ms : ");
+    ShowMessageln(ReadDuration);
+  }
+
 
   // IMU MANAGEMENT
 
@@ -6296,8 +6373,12 @@ void Robot::loop()  {
 
     EndReadAt = millis();
     ReadDuration = EndReadAt - StartReadAt;
-    //ShowMessage("Screen Duration ");
-    //ShowMessageln(ReadDuration);
+    if ( ReadDuration > 100) {
+      ShowMessage("Warning screen management duration > 100 ms : ");
+      ShowMessageln(ReadDuration);
+      ShowMessageln("Screen is disabled ");
+      Enable_Screen = false;
+    }
 
 
 
@@ -6320,7 +6401,15 @@ void Robot::loop()  {
     loopsPerSecCounter = 0;
   }
 
+
+  StartReadAt = millis();
   rc.run();
+  EndReadAt = millis();
+  ReadDuration = EndReadAt - StartReadAt;
+  if ( ReadDuration > 30) {
+    ShowMessage("Warning pfor read duration > 30 ms : ");
+    ShowMessageln(ReadDuration);
+  }
 
 
 
@@ -6397,11 +6486,11 @@ void Robot::loop()  {
 
     case STATE_FORWARD_ODO:
       // driving forward with odometry control
-
-
-
       motorControlOdo();
-
+      if (!senderIsRunning) {
+        setNextState(STATE_ERROR, 0);
+        return;
+      }
 
       //manage the imu////////////////////////////////////////////////////////////
       if (imuUse ) {
@@ -6937,11 +7026,32 @@ void Robot::loop()  {
 
     case STATE_PERI_FIND:
       // find perimeter
-      if (!perimeterInsideLeft) {
-        ShowMessageln("Not inside so start to track the wire");
-        setNextState(STATE_PERI_STOP_TOTRACK, 0);
+      if (!senderIsRunning) {
+        setNextState(STATE_ERROR, 0);
         return;
       }
+      if (read2Coil) {
+        //need to stop only when right coil outside to manage roll to track
+        if (!perimeterInsideRight) {
+          ShowMessageln("Right coil not inside: start to track the wire");
+          setNextState(STATE_PERI_STOP_TOTRACK, 0);
+          return;
+        }
+        if (!perimeterInsideLeft) {
+          ShowMessageln("Left coil not inside: start to track the wire");
+          setNextState(STATE_PERI_STOP_TOTRACK, 0);
+          return;
+        }
+      }
+      else
+      {
+        if (!perimeterInsideLeft) {
+          ShowMessageln("Left coil not inside: so start to track the wire");
+          setNextState(STATE_PERI_STOP_TOTRACK, 0);
+          return;
+        }
+      }
+
 
       checkSonar();
       checkBumpersPerimeter();
@@ -7700,11 +7810,30 @@ void Robot::loop()  {
 
     case STATE_PERI_OUT_ROLL_TOTRACK:
       motorControlOdo();
+      if (read2Coil) {
+        if (motorRightSpeedRpmSet <= 0) { //roll CW until coil right outside
+          if ((!perimeterInsideRight) && (perimeterInsideLeft)) {
+            setNextState(STATE_PERI_OUT_STOP_ROLL_TOTRACK, 0);
+            return;
+          }
+        }
+        else
+        { //roll CCW
+          if ((!perimeterInsideRight) && (perimeterInsideLeft)) {
+            setNextState(STATE_PERI_OUT_STOP_ROLL_TOTRACK, 0);
+            return;
+          }
+        }
 
-      if (perimeterInsideLeft) {
-        setNextState(STATE_PERI_OUT_STOP_ROLL_TOTRACK, 0);
-        return;
       }
+      else
+      {
+        if (perimeterInsideLeft) {
+          setNextState(STATE_PERI_OUT_STOP_ROLL_TOTRACK, 0);
+          return;
+        }
+      }
+
 
       if (millis() > (stateStartTime + MaxOdoStateDuration)) {
         if (developerActive) {
@@ -7722,21 +7851,17 @@ void Robot::loop()  {
       break;
 
     case STATE_PERI_OUT_STOP_ROLL_TOTRACK:
+      //need to check what s append if track CW
       motorControlOdo();
+      if ((moveRightFinish) && (moveLeftFinish) ) {
+        if ((motorLeftPWMCurr == 0 ) && (motorRightPWMCurr == 0 )) {
+          lastTimeForgetWire = millis(); //avoid motor reverse on tracking startup
+          //bber300
 
-      if (perimeterInsideLeft) {
-
-        if ((moveRightFinish) && (moveLeftFinish) ) {
-          if ((motorLeftPWMCurr == 0 ) && (motorRightPWMCurr == 0 )) {
-            lastTimeForgetWire = millis(); //avoid motor reverse on tracking startup
-            //bber300
-
-            setNextState(STATE_PERI_TRACK, 0);
-            return;
-          }
+          setNextState(STATE_PERI_TRACK, 0);
+          return;
         }
       }
-
       if (millis() > (stateStartTime + MaxOdoStateDuration)) {
         if (developerActive) {
           ShowMessageln ("Warning can t PERI_OUT_STOP_ROLL_TOTRACK in time ");
@@ -8098,7 +8223,15 @@ void Robot::loop()  {
   bumperRearLeft = false;
 
   loopsPerSecCounter++;
+  StartReadAt = millis();
   wdt.feed();
+  EndReadAt = millis();
+  ReadDuration = EndReadAt - StartReadAt;
+  if ( ReadDuration > 20) {
+    ShowMessage("Warning watchdog fedd duration > 20 ms : ");
+    ShowMessageln(ReadDuration);
+  }
+
 
   /*
     StartReadAt = millis();

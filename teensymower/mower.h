@@ -26,8 +26,8 @@ const String area3_ip = "10.0.0.158";
 //**************************************************************
 // ------- select one mainPCB -------------------
 //**************************************************************
-//#define PCB_V101
-#define PCB_V103
+#define PCB_V101
+//#define PCB_V103
 
 
 //**************************************************************
@@ -173,7 +173,7 @@ const String area3_ip = "10.0.0.158";
 
 //#define Console Serial
 #define CONSOLE_BAUDRATE    115200       // baudrate used for serial debug
-#define track_ClockWise false    //tracking wire direction
+#define track_ClockWise false    //tracking wire direction warning value true never tested  on 18/05/2024
 #define RaspberryPIPort Serial  //The PI is connected over USB cable
 
 #define Bluetooth Serial1  // Ardumower default OK for ESP32 or HC05

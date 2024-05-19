@@ -49,7 +49,7 @@ const int chipSelect = BUILTIN_SDCARD;
 
 
 // code version
-#define VER "1.483-Teensyber"
+#define VER "1.490-Teensyber"
 
 
 // sensors
@@ -636,6 +636,7 @@ class Robot
     PerimeterClass perimeter;
 
     // Perimeter perimeter;
+    boolean senderIsRunning;     //check sender is on
     boolean perimeterUse       ;      // use perimeter?
     boolean read2Coil;                // use left and right coil
     // swap coil polarity?
@@ -911,7 +912,7 @@ class Robot
     //bb
     virtual void setBeeper(int totalDuration, int OnDuration, int OffDuration, int frequenceOn, int frequenceOff ); // Set the variable for the beeper
     //virtual void RaspberryPISendStat ();
-
+    virtual void checkSenderIsRunning() ;
     virtual void receivePiPfodCommand (String RpiCmd, float v1, float v2, float v3);
 
     virtual void ResetWatchdog();
