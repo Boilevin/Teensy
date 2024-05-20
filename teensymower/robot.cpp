@@ -5258,6 +5258,7 @@ void Robot::setNextState(byte stateNew, byte dir) {
 
     case STATE_OFF:
       statusCurr = WAIT;
+      senderIsRunning=true; //reset value
       motorRightPID.reset();
       motorLeftPID.reset();
       if (RaspberryPIUse) MyRpi.SendStatusToPi();
