@@ -2668,12 +2668,13 @@ void Robot::motorControlPerimeter2Coil() {
   }
 
   //bb2
-  if ((millis() - stateStartTime ) < 2000) { //at the start of the tracking accelerate slowly during 2 secondes
-    leftSpeedperi = int(leftSpeedperi * ((millis() - stateStartTime) / 2000));
-    if (leftSpeedperi < SpeedOdoMin) leftSpeedperi = SpeedOdoMin;
-    rightSpeedperi = int(rightSpeedperi * ((millis() - stateStartTime) / 2000));
-    if (rightSpeedperi < SpeedOdoMin) rightSpeedperi = SpeedOdoMin;
-  }
+  //20/05/2024 don't work on mi632 but can't understand why ???
+  //  if ((millis() - stateStartTime ) < 2000) { //at the start of the tracking accelerate slowly during 2 secondes
+  //    leftSpeedperi = int(leftSpeedperi * (int(millis() - stateStartTime) / 2000));
+  //    if (leftSpeedperi < SpeedOdoMin) leftSpeedperi = SpeedOdoMin;
+  //    rightSpeedperi = int(rightSpeedperi * (int(millis() - stateStartTime) / 2000));
+  //    if (rightSpeedperi < SpeedOdoMin) rightSpeedperi = SpeedOdoMin;
+  //  }
 
   if (track_ClockWise) {
     setMotorPWM( leftSpeedperi, rightSpeedperi);
@@ -2852,7 +2853,7 @@ void Robot::checkSenderIsRunning() {
     addErrorCounter(ERR_PERIMETER_TIMEOUT);
     senderIsRunning = false;
   }
-  else{
+  else {
     senderIsRunning = true;
   }
 }
@@ -2976,6 +2977,7 @@ void Robot::myCallback() {
 // initialise odometry interrupt
 
 void Robot::setup()  {
+  senderIsRunning = true; //set to true to avoid error on first start
   setDefaultTime();
   //  mower.h start before the robot setup
   ShowMessage("++++++++++++++ Start Robot Setup at ");
@@ -3710,6 +3712,7 @@ void Robot::pfodSetDateTime(byte hr1, byte min1, byte sec1, byte day1, byte mont
 }
 
 void Robot::readSensors() {
+  if (stateCurr == STATE_ERROR) return;
   if (millis() >= nextTimeMotorSense) {
     nextTimeMotorSense = millis() +  50;
     double accel = 0.10;  //filter percent
@@ -3765,10 +3768,32 @@ void Robot::readSensors() {
     }
     //left coil
     perimeterMagLeft = perimeter.getMagnitude(0);
-    perimeterMedian.add(perimeterMagLeft);
-    if (perimeterMedian.isFull()) {
-      perimeterNoise = perimeterMedian.getHighest() - perimeterMedian.getLowest();
-      perimeterMedian.clear();
+    smoothPeriMag = perimeter.getSmoothMagnitude(0);
+    //bber1
+    if ((stateCurr != STATE_OFF) && perimeterUse && (smoothPeriMag < perimeter.timedOutIfBelowSmag)) {
+      perimeterMedian.add(perimeterMagLeft); // add 67 value , so 1 seconde
+      if (perimeterMedian.isFull()) {
+        perimeterNoise = perimeterMedian.getAverage() ;
+        if (perimeterNoise < perimeter.timedOutIfBelowSmag) {
+          ShowMessage("No perimeter signal or too low : ");
+          ShowMessageln(perimeterNoise);
+          addErrorCounter(ERR_PERIMETER_TIMEOUT);
+          setNextState(STATE_ERROR, 0);
+        }
+        perimeterMedian.clear();
+      }
+
+
+    }
+
+
+
+    if (stateCurr == STATE_TEST_MOTOR) {
+      perimeterMedian.add(perimeterMagLeft);
+      if (perimeterMedian.isFull()) {
+        perimeterNoise = perimeterMedian.getHighest() - perimeterMedian.getLowest();
+        perimeterMedian.clear();
+      }
     }
 
     if ((perimeter.isInside(0) != perimeterInsideLeft)) {
@@ -3783,7 +3808,6 @@ void Robot::readSensors() {
 
       //bber2
       //use smooth on left coil only  to avoid big area transition, in the middle of the area with noise the mag can change from + to -
-      smoothPeriMag = perimeter.getSmoothMagnitude(0);
       if (smoothPeriMag > perimeterTriggerMinSmag) {
         perimeterTriggerTime = millis();
       }
@@ -4908,8 +4932,11 @@ void Robot::setNextState(byte stateNew, byte dir) {
         motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5 ;
       }
       else {
-        //check location of mower vs wire
-        if (!perimeterInsideLeft) { //if coil left outside roll CW (roll in the area and not outside)
+        //check orientation of mower vs wire
+
+
+        if ((perimeterInsideRight) || (perimeterRightTriggerTime >= perimeterLeftTriggerTime)) { //if coil left outside before right roll CW (roll in the area and not outside)
+          //if (!perimeterInsideLeft) { //if coil left outside roll CW (roll in the area and not outside)
           motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5 ;
           motorLeftSpeedRpmSet = motorSpeedMaxRpm / 1.5 ;
           stateEndOdometryRight = odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar);
@@ -6488,6 +6515,7 @@ void Robot::loop()  {
       // driving forward with odometry control
       motorControlOdo();
       if (!senderIsRunning) {
+        ShowMessageln("NO SIGNAL");
         setNextState(STATE_ERROR, 0);
         return;
       }
@@ -7845,8 +7873,16 @@ void Robot::loop()  {
           setNextState(STATE_ERROR, 0);
           return;
         }
-        if (!perimeterInsideLeft) setNextState(STATE_WAIT_AND_REPEAT, 0);//again until find the inside
-        else setNextState(STATE_PERI_OUT_STOP_ROLL_TOTRACK, 0);
+        if (perimeterInsideLeft && perimeterInsideRight) {// after 360 degree 2 coil are inside , try to find again wire
+          ShowMessageln ("Warning after 360 degree 2 coils are inside and no wire detected");
+          setNextState(STATE_PERI_FIND, 0);
+        }
+        else
+        {
+          if (!perimeterInsideLeft) setNextState(STATE_WAIT_AND_REPEAT, 0);//again until find the inside
+          else setNextState(STATE_PERI_OUT_STOP_ROLL_TOTRACK, 0);
+        }
+
       }
       break;
 
@@ -8038,6 +8074,7 @@ void Robot::loop()  {
 
 
     case STATE_START_FROM_STATION:
+
       //adjust imu to station heading
       if ((imuUse) && (millis() >= nextTimeImuLoop)) {
         nextTimeImuLoop = millis() + 50;

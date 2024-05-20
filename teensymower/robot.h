@@ -49,7 +49,7 @@ const int chipSelect = BUILTIN_SDCARD;
 
 
 // code version
-#define VER "1.490-Teensyber"
+#define VER "1.491-Teensyber"
 
 
 // sensors
