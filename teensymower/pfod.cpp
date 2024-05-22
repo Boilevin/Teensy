@@ -1592,6 +1592,7 @@ void RemoteControl::sendCommandMenu(boolean update) {
   serialPort->print(F("|r1~Battery "));
   serialPort->print(robot->batVoltage);
   serialPort->print(F("|ra~Start Now in Auto mode"));
+  serialPort->print(F("|rh~Go to Station"));
   serialPort->println(F("|rb~Actual Status is "));
   serialPort->print(robot->statusName());
   serialPort->println(F("|rs~Actual State is "));
@@ -1601,7 +1602,6 @@ void RemoteControl::sendCommandMenu(boolean update) {
   serialPort->println(F("|rp~Pattern is "));
   serialPort->print(robot->mowPatternName());
   sendSlider("rl", F("Heading offset"), robot->imu.CompassGyroOffset, "", 0.01, 2, 0);
-  serialPort->print(F("|rh~Go to Station"));
   //serialPort->print(F("|rk~Start Tracking"));
   serialPort->print(F("|rt~Power OFF PCB"));
   /*

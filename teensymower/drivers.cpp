@@ -128,6 +128,7 @@ void setZSX11HV1(int pinDir, int pinPWM, int pinBrake, int speed, boolean brake)
   }
   if (speed == 0) {
     analogWrite(pinPWM, 0);
+    delay(5); // test to avoid driver freeze 
     digitalWrite(pinDir, HIGH) ;
     if (brake) {
       digitalWrite(pinBrake, HIGH) ; // active the brake function of the motor driver  

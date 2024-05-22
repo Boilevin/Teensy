@@ -1,6 +1,4 @@
-/*
-  Private-use only! (you need to ask for a commercial-use)
-*/
+//Private - use only! (you need to ask for a commercial - use)
 
 #include "robot.h"
 #include "mower.h"
@@ -1240,7 +1238,10 @@ void Robot::printSettingSerial() {
   ShowMessage  ("bumper_rev_distance : ");
   ShowMessageln(bumper_rev_distance);
 
-
+  // ------ SD Card -------------------------------------
+  ShowMessageln("---------- SD Card -------------");
+  ShowMessage  ("SDCard ready        : ");
+  ShowMessageln(sdCardReady);
 
 
   // ------ rain -------------------------------------
@@ -3755,7 +3756,7 @@ void Robot::readSensors() {
 
   }
   //perimeter
-  if ((stateCurr != STATE_STATION) && (stateCurr != STATE_STATION_CHARGING) && (perimeterUse) && (millis() >= nextTimePerimeter)) {
+  if ((stateCurr != STATE_MANUAL) && (stateCurr != STATE_START_FROM_STATION) && (stateCurr != STATE_STATION_ROLL) && (stateCurr != STATE_STATION_REV) && (stateCurr != STATE_STATION) && (stateCurr != STATE_STATION_CHARGING) && (perimeterUse) && (millis() >= nextTimePerimeter)) {
     nextTimePerimeter = millis() +  15;
     //right coil
     if (read2Coil) {
@@ -5258,7 +5259,7 @@ void Robot::setNextState(byte stateNew, byte dir) {
 
     case STATE_OFF:
       statusCurr = WAIT;
-      senderIsRunning=true; //reset value
+      senderIsRunning = true; //reset value
       motorRightPID.reset();
       motorLeftPID.reset();
       if (RaspberryPIUse) MyRpi.SendStatusToPi();
@@ -5409,34 +5410,52 @@ void Robot::setNextState(byte stateNew, byte dir) {
 
 
 void Robot::writeOnSD(String message) {
-  if (sdCardReady) {
-    //filename is reset into :loadSaveRobotStats
-    File dataFile = SD.open(historyFilenameChar, FILE_WRITE);
-    if (dataFile) {
-      dataFile.print(message);
-      dataFile.close();
-    }
-    totalLineOnFile = totalLineOnFile + 1;
-    if (totalLineOnFile >= 1000) { // create a new log file if too long
-      totalLineOnFile = 0;
-      sprintf(historyFilenameChar, "%02u%02u%02u%02u%02u.txt", datetime.date.year - 2000, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
-    }
+  if (!sdCardReady) return;
+  StartReadAt = millis();
+
+  //filename is reset into :loadSaveRobotStats
+  File dataFile = SD.open(historyFilenameChar, FILE_WRITE);
+  if (dataFile) {
+    dataFile.print(message);
+    dataFile.close();
+  }
+  totalLineOnFile = totalLineOnFile + 1;
+  if (totalLineOnFile >= 1000) { // create a new log file if too long
+    totalLineOnFile = 0;
+    sprintf(historyFilenameChar, "%02u%02u%02u%02u%02u.txt", datetime.date.year - 2000, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
+  }
+
+  EndReadAt = millis();
+  ReadDuration = EndReadAt - StartReadAt;
+  if ( ReadDuration > 100) {
+    ShowMessage("Warning SD card Write duration > 100 ms : ");
+    ShowMessageln(ReadDuration);
+    ShowMessageln("SD card is desactivate");
+    sdCardReady = false;
   }
 }
 
 void Robot::writeOnSDln(String message) {
-  if (sdCardReady) {
-    //filename is reset into :loadSaveRobotStats
-    File dataFile = SD.open(historyFilenameChar, FILE_WRITE);
-    if (dataFile) {
-      dataFile.println(message);
-      dataFile.close();
-    }
-    totalLineOnFile = totalLineOnFile + 1;
-    if (totalLineOnFile >= 1000) { // create a new log file if too long
-      totalLineOnFile = 0;
-      sprintf(historyFilenameChar, "%02u%02u%02u%02u%02u.txt", datetime.date.year - 2000, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
-    }
+  if (!sdCardReady) return;
+  StartReadAt = millis();
+  //filename is reset into :loadSaveRobotStats
+  File dataFile = SD.open(historyFilenameChar, FILE_WRITE);
+  if (dataFile) {
+    dataFile.println(message);
+    dataFile.close();
+  }
+  totalLineOnFile = totalLineOnFile + 1;
+  if (totalLineOnFile >= 1000) { // create a new log file if too long
+    totalLineOnFile = 0;
+    sprintf(historyFilenameChar, "%02u%02u%02u%02u%02u.txt", datetime.date.year - 2000, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
+  }
+  EndReadAt = millis();
+  ReadDuration = EndReadAt - StartReadAt;
+  if ( ReadDuration > 100) {
+    ShowMessage("Warning SD card Write duration > 100 ms : ");
+    ShowMessageln(ReadDuration);
+    ShowMessageln("SD card is desactivate");
+    sdCardReady = false;
   }
 }
 

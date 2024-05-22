@@ -49,7 +49,7 @@ const int chipSelect = BUILTIN_SDCARD;
 
 
 // code version
-#define VER "1.491-Teensyber"
+#define VER "1.492-Teensyber"
 
 
 // sensors
@@ -593,7 +593,7 @@ class Robot
     RunningMedian accelGyroYawMedian = RunningMedian(60);
     RunningMedian motorMowPowerMedian = RunningMedian(30);
     // RunningMedian motorSpeedRpmMedian = RunningMedian(35);
-    RunningMedian perimeterMedian = RunningMedian(67); //perimeter is read each 15 ms so 1 second
+    RunningMedian perimeterMedian = RunningMedian(67); //perimeter is read each 20 ms so 1 second
 
 
 
