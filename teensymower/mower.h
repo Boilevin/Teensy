@@ -1,7 +1,5 @@
 /*
-
   choose your robot type, PCB version, baud rates, pin definitions etc.
-
 */
 
 #ifndef MOWER_H
@@ -29,7 +27,39 @@ const String area3_ip = "10.0.0.158";
 #define PCB_V101
 //#define PCB_V103
 
+#define D5VoltageDrop 0.8  //correction of battery voltage
 
+//**********************       COMPASS         **************************
+//#define COMPASS_IS HMC5883L
+#define COMPASS_IS QMC5883L
+//***********************************************************************
+
+//#define Console Serial
+#define CONSOLE_BAUDRATE    115200       // baudrate used for serial debug
+#define track_ClockWise false    //tracking wire direction warning value true never tested  on 18/05/2024
+#define RaspberryPIPort Serial  //A Rasspberry PI is connected over USB cable and run PiArdu
+
+#define Bluetooth Serial1  // Ardumower default OK for ESP32 or HC05
+#define BLUETOOTH_BAUDRATE  19200  // baudrate used for communication with Bluetooth module
+
+#define GpsPort Serial3  // GPS 
+
+
+
+// ---- choose only one perimeter signal code ----
+#define SIGCODE_1  // Ardumower default perimeter signal
+//#define SIGCODE_2  // Ardumower alternative perimeter signal
+//#define SIGCODE_3  // Ardumower alternative perimeter signal
+
+
+
+
+
+//**************************************************************
+//From here to end of mower.h you don't need to change anything
+//**************************************************************
+//**************************************************************
+//**************************************************************
 //**************************************************************
 //***************** SETTING FOR MI632 **************************
 //**************************************************************
@@ -162,31 +192,6 @@ const String area3_ip = "10.0.0.158";
 #define PWM_FREQUENCY_L298N  10000
 #define PWM_FREQUENCY_BTS7960  10000
 
-
-
-//***********************************************************************
-
-//**********************       COMPASS         **************************
-//#define COMPASS_IS HMC5883L
-#define COMPASS_IS QMC5883L
-//***********************************************************************
-
-//#define Console Serial
-#define CONSOLE_BAUDRATE    115200       // baudrate used for serial debug
-#define track_ClockWise false    //tracking wire direction warning value true never tested  on 18/05/2024
-#define RaspberryPIPort Serial  //The PI is connected over USB cable
-
-#define Bluetooth Serial1  // Ardumower default OK for ESP32 or HC05
-#define BLUETOOTH_BAUDRATE  19200     // baudrate used for communication with Bluetooth module (Ardumower default: 19200)
-
-#define GpsPort Serial3  // GPS 
-
-#define D5VoltageDrop 0.8
-
-// ---- choose only one perimeter signal code ----
-#define SIGCODE_1  // Ardumower default perimeter signal
-//#define SIGCODE_2  // Ardumower alternative perimeter signal
-//#define SIGCODE_3  // Ardumower alternative perimeter signal
 
 
 

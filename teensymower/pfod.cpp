@@ -754,6 +754,10 @@ void RemoteControl::sendSdCardLogMenu(boolean update) {
   // array is used to manage the pfod id H00 to H98 and to show the detail menu of the correct file
   // H99 is menu reservation  to erase all SD file
   //int32_t logfiledateArray[1000];
+  if(!robot->sdCardReady){
+    sendMainMenu(false);
+    return;
+  }
   if (update) serialPort->print("{:"); else serialPort->println(F("{.Sdcard`20000"));
   int myFileIndex = 0;
   int orderedIndex = 0;
@@ -1563,6 +1567,8 @@ void RemoteControl::sendInfoMenu(boolean update) {
   serialPort->print(VER);
   serialPort->print(F("|v01~Developer "));
   sendYesNo(robot->developerActive);
+  serialPort->print(F("|v09~SD Card Enable "));
+  sendYesNo(robot->sdCardReady);
   serialPort->print(F("|v04~Stats override "));
   sendYesNo(robot->statsOverride);
   serialPort->print(F("|v02~Mowing time trip (min) "));
@@ -1583,6 +1589,7 @@ void RemoteControl::sendInfoMenu(boolean update) {
 void RemoteControl::processInfoMenu(String pfodCmd) {
   if (pfodCmd == "v01") robot->developerActive = !robot->developerActive;
   if (pfodCmd == "v04") robot->statsOverride = !robot->statsOverride;
+  if (pfodCmd == "v09") robot->sdCardReady = !robot->sdCardReady;
   sendInfoMenu(true);
 }
 
