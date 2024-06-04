@@ -3890,36 +3890,37 @@ void Robot::readSensors() {
     }
 
     // rear bumper
-    if (BUMPER_ARE_NORMALY_CLOSED) {
-      if (digitalRead(pinBumperRearLeft) == 1) {
-        //ShowMessageln("Bumper left trigger");
-        bumperRearLeftCounter++;
-        bumperRearLeft = true;
+    if (BUMPER_REAR_EXIST) {
+      if (BUMPER_ARE_NORMALY_CLOSED) {
+        if (digitalRead(pinBumperRearLeft) == 1) {
+          //ShowMessageln("Bumper left trigger");
+          bumperRearLeftCounter++;
+          bumperRearLeft = true;
+        }
+
+        if (digitalRead(pinBumperRearRight) == 1) {
+          //ShowMessageln("Bumper right trigger");
+          bumperRearRightCounter++;
+          bumperRearRight = true;
+        }
+      }
+      else
+      {
+        if (digitalRead(pinBumperRearLeft) == 0) {
+          //ShowMessageln("Bumper left trigger");
+          bumperRearLeftCounter++;
+          bumperRearLeft = true;
+        }
+
+        if (digitalRead(pinBumperRearRight) == 0) {
+          //ShowMessageln("Bumper right trigger");
+          bumperRearRightCounter++;
+          bumperRearRight = true;
+        }
+
       }
 
-      if (digitalRead(pinBumperRearRight) == 1) {
-        //ShowMessageln("Bumper right trigger");
-        bumperRearRightCounter++;
-        bumperRearRight = true;
-      }
     }
-    else
-    {
-      if (digitalRead(pinBumperRearLeft) == 0) {
-        //ShowMessageln("Bumper left trigger");
-        bumperRearLeftCounter++;
-        bumperRearLeft = true;
-      }
-
-      if (digitalRead(pinBumperRearRight) == 0) {
-        //ShowMessageln("Bumper right trigger");
-        bumperRearRightCounter++;
-        bumperRearRight = true;
-      }
-
-    }
-
-
 
 
 
