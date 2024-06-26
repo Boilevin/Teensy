@@ -6536,7 +6536,7 @@ void Robot::loop()  {
       // driving forward with odometry control
       motorControlOdo();
       if (!senderIsRunning) {
-        ShowMessageln("NO SIGNAL");
+        ShowMessageln("NO PERIMETER SIGNAL");
         setNextState(STATE_ERROR, 0);
         return;
       }
@@ -6694,6 +6694,11 @@ void Robot::loop()  {
 
     case STATE_PERI_OBSTACLE_AVOID:
       //circle arc
+      if (!senderIsRunning) {
+        ShowMessageln("NO PERIMETER SIGNAL");
+        setNextState(STATE_ERROR, 0);
+        return;
+      }
       motorControlOdo();
       if ((odometryRight >= stateEndOdometryRight) || (odometryLeft >= stateEndOdometryLeft)) {
         periFindDriveHeading = imu.ypr.yaw;
@@ -8155,39 +8160,16 @@ void Robot::loop()  {
       if ((moveRightFinish) && (moveLeftFinish) )
       {
         if ((motorLeftPWMCurr == 0 ) && (motorRightPWMCurr == 0 )) { //wait until the 2 motor completly stop
-          smoothPeriMag = perimeter.getSmoothMagnitude(0);
-
-          if ((perimeterInsideLeft) && (smoothPeriMag > 250)) //check if signal here and inside need a big value to be sure it is not only noise
-          {
-            ShowMessage("SIGNAL OK SmoothMagnitude =  ");
-            ShowMessageln(smoothPeriMag);
-            motorMowEnable = true;
-            setNextState(STATE_STATION_FORW, rollDir);
-            return;
-          }
-          else {
-            ShowMessage("ERROR No SIGNAL SmoothMagnitude =  ");
-            ShowMessageln(smoothPeriMag);
-            setNextState(STATE_ERROR, 0);
-            return;
-          }
+          motorMowEnable = true;
+          setNextState(STATE_STATION_FORW, rollDir);
+          return;
         }
       }
       if (millis() > (stateStartTime + MaxOdoStateDuration)) {//the motor have not enought power to reach the cible
         if (developerActive) {
           ShowMessageln ("Warning can t make the station roll in time ");
         }
-        smoothPeriMag = perimeter.getSmoothMagnitude(0);
-
-        if ((perimeterInsideLeft) && (smoothPeriMag > 250)) //check if signal here and inside need a big value to be sure it is not only noise
-        {
-          setNextState(STATE_STATION_FORW, rollDir);
-        }
-        else {
-          ShowMessage("ERROR No SIGNAL SmoothMagnitude =  ");
-          ShowMessageln(smoothPeriMag);
-          setNextState(STATE_ERROR, 0);
-        }
+        setNextState(STATE_STATION_FORW, rollDir);
       }
       break;
 
@@ -8201,9 +8183,12 @@ void Robot::loop()  {
       //justChangeLaneDir=false;
       motorControlOdo();
 
+
+
       if ((odometryRight >= stateEndOdometryRight) || (odometryLeft >= stateEndOdometryLeft))
       {
         if ((whereToStart != 0) && (startByTimer)) { //if ((whereToStart != 0) make a circle arround the station if not start immediatly
+          checkSenderIsRunning();
           setNextState(STATE_PERI_OBSTACLE_AVOID, rollDir);
         }
         else
@@ -8211,6 +8196,7 @@ void Robot::loop()  {
           //020919 to check but never call and not sure it's ok
           statusCurr = NORMAL_MOWING;
           if (RaspberryPIUse) MyRpi.SendStatusToPi();
+          checkSenderIsRunning();
           setNextState(STATE_FORWARD_ODO, rollDir);
         }
 
@@ -8221,9 +8207,13 @@ void Robot::loop()  {
           ShowMessageln ("Warning can t make the station forw in time ");
         }
         if ((whereToStart != 0) && (startByTimer)) {
+          checkSenderIsRunning();
           setNextState(STATE_PERI_OBSTACLE_AVOID, rollDir);
         }
-        else  setNextState(STATE_FORWARD_ODO, rollDir);
+        else {
+          checkSenderIsRunning();
+          setNextState(STATE_FORWARD_ODO, rollDir);
+        }
       }
       break;
 
