@@ -442,20 +442,20 @@ void Mower::setup() {
   if (BUMPER_IS_SWITCH) {
     pinMode(pinBumperLeft, INPUT_PULLUP); //it's contact
     pinMode(pinBumperRight, INPUT_PULLUP);
-    if (BUMPER_REAR_EXIST) {
+    //if (BUMPER_REAR_EXIST) { // always define the pin even if it's not connected to avoid leave free
       pinMode(pinBumperRearLeft, INPUT_PULLUP); //it's contact
       pinMode(pinBumperRearRight, INPUT_PULLUP);
 
-    }
+    //}
   }
   else
   {
     pinMode(pinBumperLeft, INPUT); //it's electronics like KY003
     pinMode(pinBumperRight, INPUT);
-    if (BUMPER_REAR_EXIST) {
+    //if (BUMPER_REAR_EXIST) {  // always define the pin even if it's not connected to avoid leave free
       pinMode(pinBumperRearLeft, INPUT); //it's contact
       pinMode(pinBumperRearRight, INPUT);
-    }
+    //}
   }
   // rain
   pinMode(pinRain, INPUT);
