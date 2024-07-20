@@ -414,7 +414,7 @@ void RpiRemote::receivePiReqSetting (String Setting_page, int nb_page) {
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->batSwitchOffIfIdle;
     lineToSend = lineToSend + ",";
-    lineToSend = lineToSend + robot->batFactor;
+    lineToSend = lineToSend + robot->sonarSpeedSettingCoeff;
     lineToSend = lineToSend + ",";
     lineToSend = lineToSend + robot->batChgFactor;
     lineToSend = lineToSend + ",";
@@ -1431,7 +1431,7 @@ void RpiRemote::readWrite_setting()
       }
       if (nr_page == 7) {
         robot->batSwitchOffIfIdle = val[0];
-        robot->batFactor = val[1];
+        robot->sonarSpeedSettingCoeff = val[1];
         robot->batChgFactor = val[2];
         robot->stationHeading = val[3];
         robot->batSenseFactor = val[4];

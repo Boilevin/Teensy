@@ -113,7 +113,7 @@ Mower::Mower() {
   sonarTriggerBelow          = 87;       // ultrasonic sensor trigger distance in cm (0=off)
   sonarToFrontDist           = 30;        // ultrasonic sensor distance to front mower in cm
   sonarLikeBumper            = false;      //ultrasonic reduce speed vs bumper like
-
+  sonarSpeedSettingCoeff       = 1.00;     
 
   // ------ perimeter ---------------------------------
   perimeterUse       = 1;      // use perimeter?
@@ -192,7 +192,7 @@ Mower::Mower() {
   batGoHomeIfBelow = 24.3;     // drive home voltage (Volt)
   batSwitchOffIfBelow = 23;  // switch off battery if below voltage (Volt)
   batSwitchOffIfIdle = 60;      // switch off battery if idle (minutes)
-  batFactor       = 1.00;     //not use
+  
   batChgFactor    = 1.00;     //not use
   batFull          = 29.4;     // battery reference Voltage (fully charged) PLEASE ADJUST IF USING A DIFFERENT BATTERY VOLTAGE! FOR a 12V SYSTEM TO 14.4V
   batChargingCurrentMax = 2; // maximum current your charger can devliver

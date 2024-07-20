@@ -400,10 +400,10 @@ void RemoteControl::sendMotorMenu(boolean update) {
 
 void RemoteControl::processMotorMenu(String pfodCmd) {
   //bb add
-  if (robot->developerActive) {
-    if (pfodCmd.startsWith("a20")) processSlider(pfodCmd, robot->motorSenseLeftScale, 0.01);
-    if (pfodCmd.startsWith("a21")) processSlider(pfodCmd, robot->motorSenseRightScale, 0.01);
-  }
+  //if (robot->developerActive) {
+  //  if (pfodCmd.startsWith("a20")) processSlider(pfodCmd, robot->motorSenseLeftScale, 0.01);
+  //  if (pfodCmd.startsWith("a21")) processSlider(pfodCmd, robot->motorSenseRightScale, 0.01);
+  //}
   //end add
 
   if (pfodCmd.startsWith("a02")) {
@@ -432,8 +432,8 @@ void RemoteControl::processMotorMenu(String pfodCmd) {
   else if (pfodCmd.startsWith("a09")) processSlider(pfodCmd, robot->DistPeriOutStop, 1);
   else if (pfodCmd.startsWith("a10")) robot->autoAdjustSlopeSpeed = !robot->autoAdjustSlopeSpeed;
   //else if (pfodCmd.startsWith("a11")) processSlider(pfodCmd, robot->motorAccel, 1);
-  else if (pfodCmd.startsWith("a12")) processSlider(pfodCmd, robot->motorBiDirSpeedRatio1, 0.01);
-  else if (pfodCmd.startsWith("a13")) processSlider(pfodCmd, robot->motorBiDirSpeedRatio2, 0.01);
+  //else if (pfodCmd.startsWith("a12")) processSlider(pfodCmd, robot->motorBiDirSpeedRatio1, 0.01);
+  //else if (pfodCmd.startsWith("a13")) processSlider(pfodCmd, robot->motorBiDirSpeedRatio2, 0.01);
   else if (pfodCmd.startsWith("a14")) processPIDSlider(pfodCmd, "a14", robot->motorLeftPID, 0.01, 3.0);
   else if (pfodCmd.startsWith("a18")) processSlider(pfodCmd, robot->motorPowerIgnoreTime, 1);
   else if (pfodCmd.startsWith("a22")) processSlider(pfodCmd, robot->motorRightOffsetFwd, 1);
@@ -581,16 +581,28 @@ void RemoteControl::sendSonarMenu(boolean update) {
   serialPort->print(robot->sonarDistRight);
   sendSlider("d03", F("Sonar Brake below"), robot->sonarTriggerBelow, "", 1, 150, 20);
   sendSlider("d09", F("Sonar To Front Dist"), robot->sonarToFrontDist, "", 1, 100, 0);
-
+  //bber500
+  serialPort->print(F("|d07~Trig Test"));
+  sendSlider("d08", F("Speed reduce coeff "), robot->sonarSpeedSettingCoeff, "", 0.1, 1, 0);
+  
+  
   serialPort->println("}");
 }
 
 void RemoteControl::processSonarMenu(String pfodCmd) {
-  if (pfodCmd == "d00") robot->sonarUse = !robot->sonarUse;
+  if (pfodCmd == "d00") {
+    robot->sonarUse = !robot->sonarUse;
+    robot->nextTimeCheckSonar=millis();
+    robot->sonarTest=false;
+  }
   else if (pfodCmd.startsWith ("d03")) processSlider(pfodCmd, robot->sonarTriggerBelow, 1);
   else if (pfodCmd == "d04") robot->sonarLeftUse = !robot->sonarLeftUse;
   else if (pfodCmd == "d05") robot->sonarCenterUse = !robot->sonarCenterUse;
   else if (pfodCmd == "d06") robot->sonarRightUse = !robot->sonarRightUse;
+  else if (pfodCmd == "d07") {
+    robot->sonarTest=true;
+  }
+  else if (pfodCmd.startsWith ("d08")) processSlider(pfodCmd, robot->sonarSpeedSettingCoeff, 0.1);
   else if (pfodCmd.startsWith ("d09")) processSlider(pfodCmd, robot->sonarToFrontDist, 1);
 
 
@@ -754,7 +766,7 @@ void RemoteControl::sendSdCardLogMenu(boolean update) {
   // array is used to manage the pfod id H00 to H98 and to show the detail menu of the correct file
   // H99 is menu reservation  to erase all SD file
   //int32_t logfiledateArray[1000];
-  if(!robot->sdCardReady){
+  if (!robot->sdCardReady) {
     sendMainMenu(false);
     return;
   }
@@ -1875,8 +1887,8 @@ void RemoteControl::processManualMenu(String pfodCmd) {
     sendManualMenu(true);
   } else if (pfodCmd == "nb") {
     // manual: reverse
-    robot->motorLeftSpeedRpmSet  = -robot->motorSpeedMaxRpm/2;
-    robot->motorRightSpeedRpmSet = -robot->motorSpeedMaxRpm/2;
+    robot->motorLeftSpeedRpmSet  = -robot->motorSpeedMaxRpm / 2;
+    robot->motorRightSpeedRpmSet = -robot->motorSpeedMaxRpm / 2;
     robot->stateOffAfter = millis() + 120000; //stop all after 2 minutes
     robot->setNextState(STATE_MANUAL, 0);
     sendManualMenu(true);

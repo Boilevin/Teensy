@@ -1037,7 +1037,7 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, batGoHomeIfBelow);
   eereadwrite(readflag, addr, batSwitchOffIfBelow);
   eereadwrite(readflag, addr, batSwitchOffIfIdle);
-  eereadwrite(readflag, addr, batFactor);  //float not use with ina226
+  eereadwrite(readflag, addr, sonarSpeedSettingCoeff);
   eereadwrite(readflag, addr, batChgFactor);  //float not use with ina226
   eereadwrite(readflag, addr, batSenseFactor); //float not use with ina226
   eereadwrite(readflag, addr, batFullCurrent);
@@ -1274,7 +1274,8 @@ void Robot::printSettingSerial() {
   ShowMessageln(sonarTriggerBelow);
   ShowMessage  ("sonarToFrontDist    : ");
   ShowMessageln(sonarToFrontDist);
-
+  ShowMessage  ("sonarSpeedSettingCoeff : ");
+  ShowMessageln( sonarSpeedSettingCoeff);
   //watchdogReset();
   delayWithWatchdog (500);
   // ------ perimeter --------------------------
@@ -1389,8 +1390,7 @@ void Robot::printSettingSerial() {
   ShowMessageln(batSwitchOffIfBelow);
   ShowMessage  (F("batSwitchOffIfIdle   : "));
   ShowMessageln(batSwitchOffIfIdle);
-  ShowMessage  (F("batFactor            : "));
-  ShowMessageln( batFactor);
+
   ShowMessage  (F("batChgFactor         : "));
   ShowMessageln( batChgFactor);
   ShowMessage  (F("batFull              : "));
@@ -5871,7 +5871,7 @@ void Robot::checkBumpersPerimeter() {
     nextTimeReadStationVoltage = millis() + 20;
     chgVoltage = ChargeIna226.readBusVoltage() ;
     chgVoltage = chgVoltage + ChargeVoltageOffset;
-    
+
   }
   if (chgVoltage > 5) {
     motorLeftRpmCurr = motorRightRpmCurr = 0 ;
@@ -6063,7 +6063,6 @@ void Robot::checkSonarPeriTrack() {
     //setBeeper(1000, 50, 50, 60, 60);
     Serial.println("Sonar reduce speed on tracking for 2 meters");
     whereToResetSpeed =  totalDistDrive + 200; // when a speed tag is read it's where the speed is back to maxpwm value
-
     nextTimeCheckSonar = millis() + 3000;  //wait before next reading
     ActualSpeedPeriPWM = MaxSpeedperiPwm * dockingSpeed / 100;
     trakBlockInnerWheel = 1; //don't want that a wheel reverse just before station check   /bber30
@@ -6078,7 +6077,26 @@ void Robot::checkSonar() {
   if (!sonarUse) return;
   if (millis() < nextTimeCheckSonar) return;
   nextTimeCheckSonar = millis() + 100;
-  sonarSpeedCoeff = 1;
+
+  //bber500
+  //gently accel if sonar is detecting nothing
+  //if something is detected speed coeef is set to setting value
+  //if no detection coeff increase to 0.05 each 100 millis
+
+  if (sonarSpeedCoeff != 1) {
+    sonarSpeedCoeff = sonarSpeedCoeff + 0.05;
+    if (sonarSpeedCoeff >= 1) sonarSpeedCoeff = 1;
+  }
+  else {
+    sonarSpeedCoeff = 1;
+  }
+
+
+  if (sonarTest) { //send over pfod to test the behaviour and adjust of setting speed coeff
+    sonarSpeedCoeff = sonarSpeedSettingCoeff;
+    nextTimeCheckSonar = millis() + 3000;
+    sonarTest = false;
+  }
 
   if (sonarRightUse) sonarDistRight = NewSonarRight.ping_cm();
   else sonarDistRight = NO_ECHO;
@@ -6105,7 +6123,7 @@ void Robot::checkSonar() {
 
       if ((sonarDistRight != NO_ECHO) && (sonarDistRight < sonarTriggerBelow)) {  //right
         if (!sonarLikeBumper) {
-          sonarSpeedCoeff = 0.70;
+          sonarSpeedCoeff = sonarSpeedSettingCoeff;
           nextTimeCheckSonar = millis() + 3000;
         }
         else {
@@ -6119,7 +6137,7 @@ void Robot::checkSonar() {
       }
       if ((sonarDistLeft != NO_ECHO) && (sonarDistLeft < sonarTriggerBelow)) {  //LEFT
         if (!sonarLikeBumper) {
-          sonarSpeedCoeff = 0.70;
+          sonarSpeedCoeff = sonarSpeedSettingCoeff;
           nextTimeCheckSonar = millis() + 3000;
         }
         else {

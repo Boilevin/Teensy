@@ -49,7 +49,7 @@ const int chipSelect = BUILTIN_SDCARD;
 
 
 // code version
-#define VER "1.494-Teensyber"
+#define VER "1.495-Teensyber"
 
 
 // sensors
@@ -704,7 +704,7 @@ class Robot
     // ultra sonic sensor distance-to-obstacle (cm)
     boolean sonarUse          ;      // use ultra sonic sensor?
     boolean sonarLikeBumper   ;      // sonar behaviour is the same as bumper
-
+    boolean sonarTest; 
     boolean sonarLeftUse;
     boolean sonarRightUse;
     boolean sonarCenterUse;
@@ -721,7 +721,8 @@ class Robot
     byte distToObstacle; //min distance to obstacle in CM of the 3 sonars
     byte sonarToFrontDist;
     float sonarSpeedCoeff; // coeff to reduce speed when sonar detect something
-
+    float sonarSpeedSettingCoeff;     // setting saved value coeff to reduce speed when sonar detect something
+    
     // --------- pfodApp ----------------------------------
     RemoteControl rc; // pfodApp
     unsigned long nextTimePfodLoop ;
@@ -777,7 +778,6 @@ class Robot
     float batGoHomeIfBelow ;     // drive home voltage (Volt)
     float batSwitchOffIfBelow ;  // switch off if below voltage (Volt)
     int batSwitchOffIfIdle;      // switch off battery if idle for minutes
-    float batFactor       ;     // battery conversion factor
     float batChgFactor       ;     // battery conversion factor
     float batChargingCurrentMax ; // maximum current your charger can devliver
     float batFull         ;      // battery reference Voltage (fully charged)
