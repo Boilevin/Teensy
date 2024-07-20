@@ -27,7 +27,8 @@ const String area3_ip = "10.0.0.158";
 #define PCB_V101
 //#define PCB_V103
 
-#define D5VoltageDrop 0.8  //correction of battery voltage
+#define BatteryVoltageOffset 0.2  //correction of battery voltage
+#define ChargeVoltageOffset 0.8  //correction of Charge voltage
 
 //**********************       COMPASS         **************************
 //#define COMPASS_IS HMC5883L

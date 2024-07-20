@@ -3958,9 +3958,10 @@ void Robot::readSensors() {
     }
     if (powerboard_I2c_line_Ok) {
       chgvolt = ChargeIna226.readBusVoltage() ;
+      chgvolt = chgvolt + ChargeVoltageOffset;
       curramp = ChargeIna226.readBusPower(); //  ?? sense don't work
       batvolt = MotRightIna226.readBusVoltage() ;
-      batvolt = batvolt + D5VoltageDrop;
+      batvolt = batvolt + BatteryVoltageOffset;
       readingDuration = millis() - nextTimeBattery + 500;
       if (readingDuration > 30 ) {  //leave 30 ms to I2C reading
         ShowMessage("Error in INA226 Bat Voltage Timeout reading I2C : ");
@@ -3968,7 +3969,7 @@ void Robot::readSensors() {
       }
     }
     if (chgvolt != 0) {
-      curramp = curramp / chgvolt;
+      curramp = curramp / chgVoltage;
     }
     else
     {
@@ -5864,11 +5865,13 @@ void Robot::checkBumpersPerimeter() {
     return;
   }
 
-  //if (!UseBumperDock) {   // read the station voltage
+  //if (!UseBumperDock) {   // read immediatly the station voltage
   //bber300
   if ((powerboard_I2c_line_Ok) && (millis() >= nextTimeReadStationVoltage)) {
     nextTimeReadStationVoltage = millis() + 20;
     chgVoltage = ChargeIna226.readBusVoltage() ;
+    chgVoltage = chgVoltage + ChargeVoltageOffset;
+    
   }
   if (chgVoltage > 5) {
     motorLeftRpmCurr = motorRightRpmCurr = 0 ;
@@ -8061,7 +8064,10 @@ void Robot::loop()  {
           //need to adapt if station is traversante
           // if (millis() >= delayToReadVoltageStation) { //wait 0.5 sec after all stop and before read voltage
           //bber300
-          if (powerboard_I2c_line_Ok) chgVoltage = ChargeIna226.readBusVoltage() ;
+          if (powerboard_I2c_line_Ok) {
+            chgVoltage = ChargeIna226.readBusVoltage() ;
+            chgVoltage = chgVoltage + ChargeVoltageOffset;
+          }
           if (chgVoltage > 5.0)  {
             ShowMessageln ("Charge Voltage detected ");
             setNextState(STATE_STATION, rollDir);// we are into the station
@@ -8082,7 +8088,10 @@ void Robot::loop()  {
         }
         // if (millis() >= delayToReadVoltageStation) { //wait 0.5 sec after all stop and before read voltage
         //bber300
-        if (powerboard_I2c_line_Ok) chgVoltage = ChargeIna226.readBusVoltage() ;
+        if (powerboard_I2c_line_Ok) {
+          chgVoltage = ChargeIna226.readBusVoltage() ;
+          chgVoltage = chgVoltage + ChargeVoltageOffset;
+        }
         if (chgVoltage > 5.0)  {
           ShowMessageln ("Charge Voltage detected ");
           setNextState(STATE_STATION, rollDir);// we are into the station
