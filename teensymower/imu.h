@@ -73,7 +73,8 @@ class IMUClass {
     float distance180(float x, float w);
     float rotate360(float x);
     float scale180(float v);
-    float CompassGyroOffset;           // compass yaw ofs (for gyro correction)
+    float CompassGyroOffset;           // compass yaw ofs in radian (for gyro correction)
+    int CompassGyroOffsetDeg;           // compass yaw ofs in degree  integer value for Pfod management
 
     IMUState state;
     // ---- mpu -------------------------------------------------

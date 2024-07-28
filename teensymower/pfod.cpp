@@ -1103,7 +1103,7 @@ void RemoteControl::sendByLaneMenu(boolean update) {
   }
   if (robot->developerActive)  sendSlider("w00", F("Dist between Lane CM"), robot->DistBetweenLane , "CM", 1, 200, 10);
   if (robot->developerActive)  sendSlider("w12", F("Lane Max Lenght M"), robot->maxLenghtByLane , "M", 1, 50, 3);
-
+  if (robot->developerActive)  sendSlider("w13", F("New Heading : "), robot->imu.CompassGyroOffsetDeg, "", 1, 180, 0);
 
   serialPort->println("}");
 }
@@ -1133,6 +1133,10 @@ void RemoteControl::processByLaneMenu(String pfodCmd) {
   else if (pfodCmd.startsWith("w12") && (robot->developerActive)) {
     processSlider(pfodCmd, robot->maxLenghtByLane, 1);
     robot->actualLenghtByLane = robot->maxLenghtByLane;
+  }
+  else if (pfodCmd.startsWith("w13") && (robot->developerActive)) {
+    processSlider(pfodCmd, robot->imu.CompassGyroOffsetDeg, 1);
+    robot->imu.CompassGyroOffset=robot->imu.CompassGyroOffsetDeg*PI / 180;
   }
   sendByLaneMenu(true);
 }
@@ -1620,8 +1624,6 @@ void RemoteControl::sendCommandMenu(boolean update) {
   sendOnOff(robot->motorMowEnable);
   serialPort->println(F("|rp~Pattern is "));
   serialPort->print(robot->mowPatternName());
-  sendSlider("rl", F("Heading offset"), robot->imu.CompassGyroOffset, "", 0.01, 2, 0);
-  //serialPort->print(F("|rk~Start Tracking"));
   serialPort->print(F("|rt~Power OFF PCB"));
   /*
     serialPort->print(F("|r1~User switch 1 is "));
@@ -1702,9 +1704,7 @@ void RemoteControl::processCommandMenu(String pfodCmd) {
     robot->setNextState(STATE_PERI_FIND, 0);
     sendCommandMenu(true);
   }
-  else if (pfodCmd.startsWith("rl")) {
-    processSlider(pfodCmd, robot->imu.CompassGyroOffset, 0.01);
-  }
+ 
   else if (pfodCmd == "ra") {
     robot->statusCurr = NORMAL_MOWING;
     robot->mowPatternDuration = 0;

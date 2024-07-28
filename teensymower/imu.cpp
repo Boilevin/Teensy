@@ -61,8 +61,8 @@ float yprtest[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and
 
 void IMUClass::begin() {
   if (!robot.imuUse) return;
-
-  //initialisation of Compass
+  
+    //initialisation of Compass
   if (robot.CompassUse) {
 
     if (COMPASS_IS == HMC5883L) {
@@ -132,6 +132,7 @@ void IMUClass::begin() {
   mpu.setZGyroOffset(gz_offset);//-2
 
   CompassGyroOffset = 0;
+  CompassGyroOffsetDeg = 0;
 
   // make sure it worked (returns 0 if so)
   if (devStatus == 0) {

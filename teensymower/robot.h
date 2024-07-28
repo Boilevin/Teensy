@@ -49,7 +49,7 @@ const int chipSelect = BUILTIN_SDCARD;
 
 
 // code version
-#define VER "1.495-Teensyber"
+#define VER "1.496-Teensyber"
 
 
 // sensors
@@ -438,8 +438,10 @@ class Robot
     int motorRightOffsetRev;
     int motorTickPerSecond;
     //bber400
-    float motorRpmCoeff; // coeff use to have a stable RPM on slope or when battery is full or empty
-
+    float motorRpmCoeff; // in straight line ony one coeff use to have a stable RPM on slope or when battery is full or empty
+    float motorLeftRpmCoeff; // coeff use to have a stable RPM on slope or when battery is full or empty
+    float motorRightRpmCoeff; // coeff use to have a stable RPM on slope or when battery is full or empty
+    
     unsigned long nextTimeMotorOdoControl ;
     unsigned long nextTimePidCompute;
     unsigned long accelDurationRight;
