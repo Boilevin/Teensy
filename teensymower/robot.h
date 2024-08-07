@@ -438,7 +438,6 @@ class Robot
     int motorRightOffsetRev;
     int motorTickPerSecond;
     //bber400
-    float motorRpmCoeff; // in straight line ony one coeff use to have a stable RPM on slope or when battery is full or empty
     float motorLeftRpmCoeff; // coeff use to have a stable RPM on slope or when battery is full or empty
     float motorRightRpmCoeff; // coeff use to have a stable RPM on slope or when battery is full or empty
     

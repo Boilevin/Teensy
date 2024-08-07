@@ -120,7 +120,7 @@ Robot::Robot() {
   rotateLeft = true;
   moveRightFinish = false;
   moveLeftFinish = false;
-  motorRpmCoeff = 1;
+
 
   remoteSteer = remoteSpeed = remoteMow = remoteSwitch = 0;
   remoteSteerLastTime = remoteSpeedLastTime = remoteMowLastTime = remoteSwitchLastTime = 0;
@@ -1845,6 +1845,8 @@ void Robot::OdoRampCompute() { //execute only one time when a new state executio
   stateStartOdometryRight = odometryRight;
 
   motorRightPID.reset();
+  motorLeftPID.reset();
+  
   PwmRightSpeed = min(motorSpeedMaxPwm, max(-motorSpeedMaxPwm, map(motorRightSpeedRpmSet, -motorSpeedMaxRpm, motorSpeedMaxRpm, -motorSpeedMaxPwm, motorSpeedMaxPwm)));
   PwmLeftSpeed = min(motorSpeedMaxPwm, max(-motorSpeedMaxPwm, map(motorLeftSpeedRpmSet, -motorSpeedMaxRpm, motorSpeedMaxRpm, -motorSpeedMaxPwm, motorSpeedMaxPwm)));
   //try to find when we need to brake the wheel (depend of the distance)
@@ -2086,7 +2088,7 @@ void Robot::motorControlOdo() {
 
   }
 
-  //DRIVE IN STRAIGHT LINE
+  //TRY TO DRIVE IN STRAIGHT LINE USING IMU
   if (stateCurr == STATE_FORWARD_ODO || (stateCurr == STATE_PERI_FIND) || (stateCurr == STATE_DRIVE1_TO_NEWAREA) || (stateCurr == STATE_DRIVE2_TO_NEWAREA))  { //PID compute to accel or brake the wheel to drive straight
     motorRightPID.Kp = motorLeftPID.Kp;
     motorRightPID.Ki = motorLeftPID.Ki;
@@ -2152,65 +2154,76 @@ void Robot::motorControlOdo() {
             else //adjust rpm speed only after 1 seconde
             {
       */
+      
       //bber400 //adjust RPM speed
       //PID version
-
+      //  loop Speed control in slope rpm can increase very fast on motor with low gear ratio
+      
       int RightSpeedRpmCible = min(motorSpeedMaxRpm, max(-motorSpeedMaxRpm, map(rightSpeed, -motorSpeedMaxPwm, motorSpeedMaxPwm, -motorSpeedMaxRpm, motorSpeedMaxRpm)));
       int LeftSpeedRpmCible = min(motorSpeedMaxRpm, max(-motorSpeedMaxRpm, map(leftSpeed, -motorSpeedMaxPwm, motorSpeedMaxPwm, -motorSpeedMaxRpm, motorSpeedMaxRpm)));
-
       motorRightPID.x = abs(motorRightRpmCurr);
       motorRightPID.w = abs(RightSpeedRpmCible);
       motorRightPID.y_min = -motorSpeedMaxRpm;
       motorRightPID.y_max = motorSpeedMaxRpm;
       motorRightPID.max_output = motorSpeedMaxRpm;
       motorRightPID.compute();
-      
-      motorRpmCoeff = abs((100 + 3*motorRightPID.y) / 100);
-      if (motorRpmCoeff < 0.10) motorRpmCoeff = 0.10;
-      if (motorRpmCoeff > 2.00) motorRpmCoeff = 2.00;
-      /*
-       
-       Serial.print(RightSpeedRpmCible);
-      Serial.print(" / ");
-      Serial.print(motorRightRpmCurr);
-      Serial.print(" / ");
-      Serial.print(motorRightPID.y);
-      Serial.print(" / ");
-      Serial.println(motorRpmCoeff);
-      */
-      //  loop Speed control in slope rpm can increase very fast on motor with low gear ratio
-      /*
 
-            if (abs((RightSpeedRpmCible / motorRightRpmCurr)) < 0.8 ) { //speed real is 20 % too high need a brake
-              Serial.print(rightSpeed);
-              Serial.print(" right rpm  ");
-              Serial.print(RightSpeedRpmCible);
-              Serial.print(" / ");
-              Serial.println(motorRightRpmCurr);
-             //motorRpmCoeff = 0.10;
-            }
+      motorRightRpmCoeff = (100 + 3 * motorRightPID.y) / 100;
+      if (motorRightRpmCoeff < 0.10) motorRightRpmCoeff = 0.10;
+      if (motorRightRpmCoeff > 2.00) motorRightRpmCoeff = 2.00;
 
-            if (abs((LeftSpeedRpmCible / motorLeftRpmCurr)) < 0.8 ) {
-              Serial.print(leftSpeed);
-              Serial.print(" left rpm  ");
-              Serial.print(LeftSpeedRpmCible);
-              Serial.print(" / ");
-              Serial.println(motorLeftRpmCurr);
-              //motorRpmCoeff = 0.10;
-            }
-      */
+      motorLeftPID.x = abs(motorLeftRpmCurr);
+      motorLeftPID.w = abs(LeftSpeedRpmCible);
+      motorLeftPID.y_min = -motorSpeedMaxRpm;
+      motorLeftPID.y_max = motorSpeedMaxRpm;
+      motorLeftPID.max_output = motorSpeedMaxRpm;
+      motorLeftPID.compute();
+
+      motorLeftRpmCoeff = (100 + 3 * motorLeftPID.y) / 100;
+      if (motorLeftRpmCoeff < 0.10) motorLeftRpmCoeff = 0.10;
+      if (motorLeftRpmCoeff > 2.00) motorLeftRpmCoeff = 2.00;
+
+      if (abs((motorRightRpmCurr / RightSpeedRpmCible)) > 2 ) { //speed real is 2 * too high need a brake
+        ShowMessageln("Right wheel over speed SLOPE ??");
+        /*
+        Serial.print(rightSpeed);
+        Serial.print(" right rpm  ");
+        Serial.print(RightSpeedRpmCible);
+        Serial.print(" / ");
+        Serial.println(motorRightRpmCurr);
+        */
+        motorRightRpmCoeff = 0.1;
+        rightSpeed = 0;
+      }
+      else {
+        rightSpeed = (motorRightRpmCoeff * rightSpeed) + imuDirPID.y / 2;
+      }
+
+      if (abs((motorLeftRpmCurr / LeftSpeedRpmCible)) > 2 ) { //speed real is 2 * too high need a brake
+        ShowMessageln("Left wheel over speed SLOPE ??");
+        /*
+        Serial.print(leftSpeed);
+        Serial.print(" left rpm  ");
+        Serial.print(LeftSpeedRpmCible);
+        Serial.print(" / ");
+        Serial.println(motorLeftRpmCurr);
+        */
+        motorLeftRpmCoeff = 0.1;
+        leftSpeed = 0;
+      }
+      else {
+        leftSpeed =  (motorLeftRpmCoeff * leftSpeed) - imuDirPID.y / 2;
+      }
 
 
       if ((sonarSpeedCoeff != 1) || (!autoAdjustSlopeSpeed)) { //do not change speed if sonar is activate or not wanted
-        motorRpmCoeff = 1;
+        motorRightRpmCoeff = 1;
+        motorLeftRpmCoeff = 1;
       }
-      if (highGrassDetect) motorRpmCoeff = highGrassSpeedCoeff; //reduce speed when mower detect high grass
-      rightSpeed = (motorRpmCoeff * rightSpeed) + imuDirPID.y / 2;
-      leftSpeed =  (motorRpmCoeff * leftSpeed) - imuDirPID.y / 2;
-
-
-
-
+      if (highGrassDetect) {
+        motorRightRpmCoeff = highGrassSpeedCoeff; //reduce speed when mower detect high grass
+        motorLeftRpmCoeff = highGrassSpeedCoeff; //reduce speed when mower detect high grass
+      }
     }
     else
       //// Random mowing or roll etc...
@@ -2241,8 +2254,10 @@ void Robot::motorControlOdo() {
         motorRightPID.y_max = motorSpeedMaxRpm;
         motorRightPID.max_output = motorSpeedMaxRpm;
         motorRightPID.compute();
-        
-        
+
+        motorRightRpmCoeff = (100 + 3 * motorRightPID.y) / 100;
+        if (motorRightRpmCoeff < 0.10) motorRightRpmCoeff = 0.10;
+        if (motorRightRpmCoeff > 2.00) motorRightRpmCoeff = 2.00;
 
         motorLeftPID.x = abs(motorLeftRpmCurr);
         motorLeftPID.w = abs(LeftSpeedRpmCible);
@@ -2251,23 +2266,48 @@ void Robot::motorControlOdo() {
         motorLeftPID.max_output = motorSpeedMaxRpm;
         motorLeftPID.compute();
 
-        motorLeftRpmCoeff = (100 + 3*motorLeftPID.y) / 100;
+        motorLeftRpmCoeff = (100 + 3 * motorLeftPID.y) / 100;
         if (motorLeftRpmCoeff < 0.10) motorLeftRpmCoeff = 0.10;
         if (motorLeftRpmCoeff > 2.00) motorLeftRpmCoeff = 2.00;
 
-        
-        
-        motorRightRpmCoeff = (100 + 3*motorRightPID.y) / 100;
-        if (motorRightRpmCoeff < 0.10) motorRightRpmCoeff = 0.10;
-        if (motorRightRpmCoeff > 2.00) motorRightRpmCoeff = 2.00;
+        if (abs((motorRightRpmCurr / RightSpeedRpmCible)) > 2 ) { //speed real is 2 * too high need a brake
+          ShowMessageln("Right wheel over speed SLOPE ??");
+          /*
+          Serial.print(rightSpeed);
+          Serial.print(" right rpm  ");
+          Serial.print(RightSpeedRpmCible);
+          Serial.print(" / ");
+          Serial.println(motorRightRpmCurr);
+          */
+          motorRightRpmCoeff = 0.1;
+          rightSpeed = 0;
+        }
+        else {
+          rightSpeed = (motorRightRpmCoeff * rightSpeed) + imuDirPID.y / 2;
+        }
+
+        if (abs((motorLeftRpmCurr / LeftSpeedRpmCible)) > 2 ) { //speed real is 2 * too high need a brake
+          ShowMessageln("Right wheel over speed SLOPE ??");
+          /*
+          Serial.print(leftSpeed);
+          Serial.print(" left rpm  ");
+          Serial.print(LeftSpeedRpmCible);
+          Serial.print(" / ");
+          Serial.println(motorLeftRpmCurr);
+          */
+          motorLeftRpmCoeff = 0.1;
+          leftSpeed = 0;
+        }
+        else {
+          leftSpeed =  (motorLeftRpmCoeff * leftSpeed) - imuDirPID.y / 2;
+        }
 
         if ((sonarSpeedCoeff != 1) || (!autoAdjustSlopeSpeed)) { //do not change speed if sonar is activate
           motorRightRpmCoeff = 1;
           motorLeftRpmCoeff = 1;
         }
 
-        rightSpeed = (motorRightRpmCoeff * rightSpeed) + imuDirPID.y / 2;
-        leftSpeed =  (motorLeftRpmCoeff * leftSpeed) - imuDirPID.y / 2;
+
 
       }
       else   /// use only the odometry  for straight line
@@ -2287,9 +2327,8 @@ void Robot::motorControlOdo() {
       }
     }
 
-    //bber200
-
-    //bber200 reduce perimeter speed only if both perimeter and sonar are actif
+    // reduce  speed  near perimeter but if both perimeter and sonar are actif at same time use only one reduction
+    // sonarSpeedCoeff is always=1
     if (perimeterSpeedCoeff == 1) {
       rightSpeed = rightSpeed * sonarSpeedCoeff;
       leftSpeed = leftSpeed * sonarSpeedCoeff;
@@ -2312,7 +2351,6 @@ void Robot::motorControlOdo() {
       if (perimeterSpeedCoeff != 1) {
       ShowMessageln(perimeterSpeedCoeff);
       }
-
         ShowMessage(millis());
         ShowMessage(" Moving Average Dist= ");
         ShowMessage(currDistToDrive);
@@ -4289,9 +4327,9 @@ void Robot::setNextState(byte stateNew, byte dir) {
       UseBrakeLeft = 0;
       UseAccelRight = 1;
       UseBrakeRight = 0;
-      motorRightSpeedRpmSet = motorSpeedMaxRpm / 2;
-      motorLeftSpeedRpmSet = motorSpeedMaxRpm / 2;
-      stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriObstacleForw);//50cm
+      motorRightSpeedRpmSet = motorSpeedMaxRpm ;
+      motorLeftSpeedRpmSet = motorSpeedMaxRpm ;
+      stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistPeriObstacleForw);//25cm
       stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistPeriObstacleForw);
       OdoRampCompute();
 
@@ -4842,7 +4880,7 @@ void Robot::setNextState(byte stateNew, byte dir) {
         UseAccelRight = 1;
         UseBrakeRight = 1;
       }
-      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm/1.5;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
       stateEndOdometryRight = odometryRight - (odometryTicksPerCm * DistPeriOutRev) - PrevStateOdoDepassRight;
       stateEndOdometryLeft = odometryLeft - (odometryTicksPerCm * DistPeriOutRev) - PrevStateOdoDepassLeft;
       /*
@@ -4859,9 +4897,9 @@ void Robot::setNextState(byte stateNew, byte dir) {
 
 
       OdoRampCompute();
-     // wdt.feed();
-     // delay(500);
-     // wdt.feed();
+      // wdt.feed();
+      // delay(500);
+      // wdt.feed();
       break;
 
     case STATE_PERI_OUT_ROLL: //roll left or right in normal mode
@@ -5054,8 +5092,8 @@ void Robot::setNextState(byte stateNew, byte dir) {
       UseAccelRight = 1;
       UseBrakeRight = 1;
       if (dir == RIGHT) {
-        motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.5;
-        motorRightSpeedRpmSet = -motorSpeedMaxRpm/1.5;
+        motorLeftSpeedRpmSet = motorSpeedMaxRpm / 1.5;
+        motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
         stateEndOdometryRight =  odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassRight ;
         stateEndOdometryLeft =  odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassLeft ;
       } else {
@@ -5074,7 +5112,7 @@ void Robot::setNextState(byte stateNew, byte dir) {
       UseAccelRight = 1;
       UseAccelLeft = 1;
       UseAccelRight = 1;
-      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm/1.5;
+      motorLeftSpeedRpmSet = motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.5;
 
       stateEndOdometryRight = odometryRight + (int)(odometryTicksPerCm * DistBetweenLane) - PrevStateOdoDepassRight; //forward for  distance between lane
       stateEndOdometryLeft = odometryLeft + (int)(odometryTicksPerCm * DistBetweenLane) - PrevStateOdoDepassLeft;
@@ -5094,13 +5132,13 @@ void Robot::setNextState(byte stateNew, byte dir) {
       UseBrakeRight = 1;
 
       if (dir == RIGHT) {
-        motorLeftSpeedRpmSet = motorSpeedMaxRpm/1.5;
-        motorRightSpeedRpmSet = -motorSpeedMaxRpm/1.5;
+        motorLeftSpeedRpmSet = motorSpeedMaxRpm / 1.5;
+        motorRightSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
         stateEndOdometryRight =  odometryRight - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassRight ;
         stateEndOdometryLeft =  odometryLeft + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassLeft ;
       } else {
-        motorLeftSpeedRpmSet = -motorSpeedMaxRpm/1.5;
-        motorRightSpeedRpmSet = motorSpeedMaxRpm/1.5;
+        motorLeftSpeedRpmSet = -motorSpeedMaxRpm / 1.5;
+        motorRightSpeedRpmSet = motorSpeedMaxRpm / 1.5;
         stateEndOdometryRight = odometryRight + (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassRight;
         stateEndOdometryLeft = odometryLeft - (int)100 * (odometryTicksPerCm * PI * odometryWheelBaseCm / Tempovar) - PrevStateOdoDepassLeft;
       }
@@ -6736,7 +6774,7 @@ void Robot::loop()  {
     case STATE_PERI_OBSTACLE_FORW:
       //forward
       motorControlOdo();
-      if ((odometryRight >= stateEndOdometryRight) && (odometryLeft >= stateEndOdometryLeft)) {
+      if ((odometryRight >= stateEndOdometryRight) || (odometryLeft >= stateEndOdometryLeft)) {
         setNextState(STATE_PERI_OBSTACLE_AVOID, 0);
       }
       if (millis() > (stateStartTime + MaxOdoStateDuration)) {

@@ -373,8 +373,11 @@ void RemoteControl::sendMotorMenu(boolean update) {
 
 
   //bber400
-  serialPort->print(F("|a04~Actual Speed coeff : "));
-  serialPort->print(robot->motorRpmCoeff);
+  serialPort->print(F("|a04~ Speed coeff R/L : "));
+  serialPort->print(robot->motorRightRpmCoeff);
+  serialPort->print(F(" / "));
+  serialPort->print(robot->motorLeftRpmCoeff);
+  
 
   sendSlider("a06", F("Speed max in rpm"), robot->motorSpeedMaxRpm, "", 1, 50, 20);
   sendSlider("a15", F("Speed max in pwm"), robot->motorSpeedMaxPwm, "", 1, 255, 50);

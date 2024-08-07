@@ -133,7 +133,7 @@ Mower::Mower() {
     DistPeriOutForw = 60; // distance to accell
   }
   DistPeriOutStop = 15; //slowing distance after crossover the wire
-  DistPeriObstacleForw = 25; //distance while arc circle in peri obstacle avoid
+  DistPeriObstacleForw = 10; //distance while arc circle in peri obstacle avoid
   perimeterPID.Kp    = 16.5;  // perimeter PID controller
   perimeterPID.Ki    = 8;
   perimeterPID.Kd    = 0;
