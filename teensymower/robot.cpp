@@ -3220,66 +3220,116 @@ void Robot::setup()  {
 
 
   ShowMessageln ("Starting Ina226 current sensor ");
-  MotLeftIna226.begin(0x41);
-  ChargeIna226.begin(0x40);
-  MotRightIna226.begin(0x44);
-  Mow1Ina226.begin_I2C1(0x40);  //MOW1 is connect on I2C1
-  if (INA226_MOW2_PRESENT) Mow2Ina226.begin_I2C1(0x41);  //MOW2 is connect on I2C1
-  if (INA226_MOW3_PRESENT) Mow3Ina226.begin_I2C1(0x44);  //MOW3 is connect on I2C1
 
-  ShowMessageln ("Checking  ina226 current sensor connection");
-  //check sense powerboard i2c connection
-  powerboard_I2c_line_Ok = true;
-  if (!ChargeIna226.isConnected(0x40)) {
+//bber500
+  #if defined (POWERPCB_V100_SMALL)  // here ina226 setting for pcb small with only one mow motor
+   //For Power PCB Small on I2C1
+   ShowMessageln ("For Power PCB Small on I2C1");
+   ChargeIna226.begin_I2C1(0x40);
+   MotLeftIna226.begin_I2C1(0x41);
+   MotRightIna226.begin_I2C1(0x44);
+   Mow1Ina226.begin_I2C1(0x45);  
+
+   ShowMessageln ("Checking  ina226 current sensor connection");
+   //check sense powerboard i2c connection
+   powerboard_I2c_line_Ok = true;
+   if (!ChargeIna226.isConnected_I2C1(0x40)) {
     ShowMessageln("INA226 Battery Charge is not OK");
     powerboard_I2c_line_Ok = false;
-  }
-  if (!MotRightIna226.isConnected(0x44)) {
+   }
+   if (!MotRightIna226.isConnected_I2C1(0x44)) {
     ShowMessageln("INA226 Motor Right is not OK");
     powerboard_I2c_line_Ok = false;
-  }
-  if (!MotLeftIna226.isConnected(0x41)) {
+   }
+   if (!MotLeftIna226.isConnected_I2C1(0x41)) {
     ShowMessageln("INA226 Motor Left is not OK");
     powerboard_I2c_line_Ok = false;
-  }
-  if (!Mow1Ina226.isConnected_I2C1(0x40)) {
+   }
+   if (!Mow1Ina226.isConnected_I2C1(0x45)) {
     ShowMessageln("INA226 MOW1 is not OK");
     powerboard_I2c_line_Ok = false;
-  }
-  if ((INA226_MOW2_PRESENT) && (!Mow2Ina226.isConnected_I2C1(0x41))) {
+   }
+     
+  #else
+  //Power PCB standard on I2C0 and I2C1
+   ShowMessageln ("For Power PCB standard on I2C0 and I2C1");
+   ChargeIna226.begin(0x40);
+   MotLeftIna226.begin(0x41);
+   MotRightIna226.begin(0x44);
+  
+   Mow1Ina226.begin_I2C1(0x40);  //MOW1 is connect on I2C1
+   if (INA226_MOW2_PRESENT) Mow2Ina226.begin_I2C1(0x41);  //MOW2 is connect on I2C1
+   if (INA226_MOW3_PRESENT) Mow3Ina226.begin_I2C1(0x44);  //MOW3 is connect on I2C1
+
+   ShowMessageln ("Checking  ina226 current sensor connection");
+   //check sense powerboard i2c connection
+   powerboard_I2c_line_Ok = true;
+   if (!ChargeIna226.isConnected(0x40)) {
+    ShowMessageln("INA226 Battery Charge is not OK");
+    powerboard_I2c_line_Ok = false;
+   }
+   if (!MotRightIna226.isConnected(0x44)) {
+    ShowMessageln("INA226 Motor Right is not OK");
+    powerboard_I2c_line_Ok = false;
+   }
+   if (!MotLeftIna226.isConnected(0x41)) {
+    ShowMessageln("INA226 Motor Left is not OK");
+    powerboard_I2c_line_Ok = false;
+   }
+   if (!Mow1Ina226.isConnected_I2C1(0x40)) {
+    ShowMessageln("INA226 MOW1 is not OK");
+    powerboard_I2c_line_Ok = false;
+   }
+   if ((INA226_MOW2_PRESENT) && (!Mow2Ina226.isConnected_I2C1(0x41))) {
     ShowMessageln("INA226 MOW2 is not OK");
     powerboard_I2c_line_Ok = false;
-  }
-  if ((INA226_MOW3_PRESENT) && (!Mow3Ina226.isConnected_I2C1(0x44))) {
+   }
+   if ((INA226_MOW3_PRESENT) && (!Mow3Ina226.isConnected_I2C1(0x44))) {
     ShowMessageln("INA226 MOW3 is not OK");
     powerboard_I2c_line_Ok = false;
-  }
-
+   }
+  
+ #endif
 
   if (powerboard_I2c_line_Ok)
   {
     ShowMessageln ("Ina226 Begin OK ");
     // Configure INA226
 
+    #if defined (POWERPCB_V100_SMALL)  // here ina226 setting for pcb small with only one mow motor
+      ChargeIna226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
+      MotLeftIna226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
+      MotRightIna226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
+      Mow1Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
+      ShowMessageln ("Ina226 Configuration OK ");
+      // Calibrate INA226. Rshunt = 0.01 ohm, Max excepted current = 4A
+      ChargeIna226.calibrate_I2C1(0.02, 4);
+      MotLeftIna226.calibrate_I2C1(0.02, 4);
+      MotRightIna226.calibrate_I2C1(0.02, 4);
+      Mow1Ina226.calibrate_I2C1(0.02, 4);
+      ShowMessageln ("Ina226 Calibration finish ");
 
-    ChargeIna226.configure(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
-    MotLeftIna226.configure(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
-    MotRightIna226.configure(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
-    //I2C1 bus
-    Mow1Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
-    if (INA226_MOW2_PRESENT) Mow2Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
-    if (INA226_MOW3_PRESENT) Mow3Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
+    #else
+      ChargeIna226.configure(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
+      MotLeftIna226.configure(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
+      MotRightIna226.configure(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
+      //I2C1 bus
+      Mow1Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
+      if (INA226_MOW2_PRESENT) Mow2Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
+      if (INA226_MOW3_PRESENT) Mow3Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
 
-    ShowMessageln ("Ina226 Configure OK ");
-    // Calibrate INA226. Rshunt = 0.01 ohm, Max excepted current = 4A
-    ChargeIna226.calibrate(0.02, 4);
-    MotLeftIna226.calibrate(0.02, 4);
-    MotRightIna226.calibrate(0.02, 4);
-    //I2C1 bus
-    Mow1Ina226.calibrate_I2C1(0.02, 4);
-    if (INA226_MOW2_PRESENT) Mow2Ina226.calibrate_I2C1(0.02, 4);
-    if (INA226_MOW3_PRESENT) Mow3Ina226.calibrate_I2C1(0.02, 4);
-
+      ShowMessageln ("Ina226 Configure OK ");
+      // Calibrate INA226. Rshunt = 0.01 ohm, Max excepted current = 4A
+      ChargeIna226.calibrate(0.02, 4);
+      MotLeftIna226.calibrate(0.02, 4);
+      MotRightIna226.calibrate(0.02, 4);
+      //I2C1 bus
+      Mow1Ina226.calibrate_I2C1(0.02, 4);
+      if (INA226_MOW2_PRESENT) Mow2Ina226.calibrate_I2C1(0.02, 4);
+      if (INA226_MOW3_PRESENT) Mow3Ina226.calibrate_I2C1(0.02, 4);
+      ShowMessageln ("Ina226 Calibration finish ");
+    #endif
+    
     ShowMessageln ("Ina226 Calibration OK ");
   }
   else
@@ -3287,6 +3337,12 @@ void Robot::setup()  {
     ShowMessageln ("************** WARNING **************");
     ShowMessageln ("INA226 powerboard connection is not OK");
   }
+
+
+
+
+
+
 
 
   // watchdog part

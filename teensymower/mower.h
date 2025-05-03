@@ -27,6 +27,14 @@ const String area3_ip = "10.0.0.158";
 #define PCB_V101
 //#define PCB_V103
 
+
+//**************************************************************
+// ------- select one PowerPCB -------------------
+//**************************************************************
+#define POWERPCB_V100_SMALL  // comment out for other PCB
+//#define POWERPCB_Standard
+
+
 #define BatteryVoltageOffset 0.2  //correction of battery voltage
 #define ChargeVoltageOffset 0.8  //correction of Charge voltage
 
@@ -41,7 +49,7 @@ const String area3_ip = "10.0.0.158";
 #define RaspberryPIPort Serial  //A Rasspberry PI is connected over USB cable and run PiArdu
 
 #define Bluetooth Serial1  // Ardumower default OK for ESP32 or HC05
-#define BLUETOOTH_BAUDRATE  19200  // baudrate used for communication with Bluetooth module
+#define BLUETOOTH_BAUDRATE  19200  // baudrate used for communication with Bluetooth module warning don't work at 115200 with PFOD
 
 #define GpsPort Serial3  // GPS 
 
