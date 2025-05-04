@@ -1099,7 +1099,7 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, DistPeriOutStop);
   eereadwrite(readflag, addr, Enable_Screen);
   eereadwrite(readflag, addr, RaspberryPIUse);
-  //RaspberryPIUse=false;
+  RaspberryPIUse=false;
   eereadwrite(readflag, addr, sonarToFrontDist);
   eereadwrite(readflag, addr, maxTemperature);
   eereadwrite(readflag, addr, dockingSpeed);
@@ -3143,7 +3143,10 @@ void Robot::setup()  {
   //initialise PFOD com
   rc.initSerial(&Bluetooth, BLUETOOTH_BAUDRATE);
 
-  if (RaspberryPIUse) MyRpi.init();
+  if (RaspberryPIUse){
+    ShowMessageln("Raspberry pi is Enable , try to initialise ");
+    MyRpi.init();
+  }
 
 
 
@@ -3176,12 +3179,22 @@ void Robot::setup()  {
   if (!statsOverride) loadSaveRobotStats(true);
   else loadSaveRobotStats(false);
   setUserSwitches();
-  if (rfidUse) loadRfidList();
+  if (rfidUse) {
+    ShowMessageln("Rfid is Enable , try to initialise ");
+    loadRfidList();
+  }
   //------------------------  SCREEN parts  ----------------------------------------
   if (Enable_Screen) {
+    ShowMessageln("Screen is Enable , try to initialise ");
     MyScreen.init();
-  }
+   }
+    else
+    {
+    ShowMessageln("Screen disable ");
+    }
+  
   if (imuUse) {
+    ShowMessageln("Imu is Enable , try to initialise ");
     imu.begin();
   }
   else
@@ -3361,6 +3374,8 @@ void Robot::setup()  {
   nextTimeInfo = millis();
   ShowMessageln("Setup finish");
 
+
+  //printSettingSerial();
 
 }
 void Robot::resetWatchdogForPfod() {
@@ -3851,6 +3866,11 @@ void Robot::readSensors() {
     unsigned long readingDuration;
 
     if (powerboard_I2c_line_Ok) {
+      #if defined (POWERPCB_V100_SMALL)  // here ina226 setting for pcb small with only one mow motor
+      motorRightPower = MotRightIna226.readBusPower_I2C1() ;
+      motorLeftPower  = MotLeftIna226.readBusPower_I2C1() ;
+      Mow1_Power = Mow1Ina226.readBusPower_I2C1() ;
+      #else
       motorRightPower = MotRightIna226.readBusPower() ;
       motorLeftPower  = MotLeftIna226.readBusPower() ;
       Mow1_Power = Mow1Ina226.readBusPower_I2C1() ;
@@ -3866,6 +3886,8 @@ void Robot::readSensors() {
       else {
         Mow3_Power = 0;
       }
+      #endif
+      
       readingDuration = millis() - nextTimeMotorSense + 50;
       if (readingDuration > 30 ) {  //leave 30 ms to I2C reading
         ShowMessage("Error in INA226 motor power Timeout reading I2C : ");
@@ -3874,7 +3896,7 @@ void Robot::readSensors() {
     }
     //Mow2_Power = 0 ;
     //Mow3_Power = 0 ;
-
+    
     motorMowPower   = max(Mow1_Power, Mow2_Power);
     motorMowPower   = max(motorMowPower, Mow3_Power);
 
@@ -4088,10 +4110,23 @@ void Robot::readSensors() {
       batCapacity += (chgCurrent / 36.0);
     }
     if (powerboard_I2c_line_Ok) {
+
+      #if defined (POWERPCB_V100_SMALL)  // here ina226 setting for pcb small with only one mow motor
+      chgvolt = ChargeIna226.readBusVoltage_I2C1() ;
+      ShowMessage("Volt charge : ");
+      ShowMessageln(chgvolt);
+      chgvolt = chgvolt + ChargeVoltageOffset;
+      curramp = ChargeIna226.readBusPower_I2C1(); //  ?? sense don't work
+      
+      batvolt = MotRightIna226.readBusVoltage_I2C1() ;
+      #else
+      
       chgvolt = ChargeIna226.readBusVoltage() ;
       chgvolt = chgvolt + ChargeVoltageOffset;
       curramp = ChargeIna226.readBusPower(); //  ?? sense don't work
       batvolt = MotRightIna226.readBusVoltage() ;
+      #endif
+      
       batvolt = batvolt + BatteryVoltageOffset;
       readingDuration = millis() - nextTimeBattery + 500;
       if (readingDuration > 30 ) {  //leave 30 ms to I2C reading
@@ -4106,7 +4141,8 @@ void Robot::readSensors() {
     {
       curramp = 0;
     }
-
+    ShowMessage("sense charge : ");
+    ShowMessageln(curramp);
 
 
     double accel = 0.05;  //filter percent
@@ -6000,7 +6036,12 @@ void Robot::checkBumpersPerimeter() {
   //bber300
   if ((powerboard_I2c_line_Ok) && (millis() >= nextTimeReadStationVoltage)) {
     nextTimeReadStationVoltage = millis() + 20;
+    #if defined (POWERPCB_V100_SMALL)  // here ina226 setting for pcb small with only one mow motor
+    chgVoltage = ChargeIna226.readBusVoltage_I2C1() ;
+    #else
     chgVoltage = ChargeIna226.readBusVoltage() ;
+    #endif
+    
     chgVoltage = chgVoltage + ChargeVoltageOffset;
 
   }
@@ -8214,7 +8255,11 @@ void Robot::loop()  {
           // if (millis() >= delayToReadVoltageStation) { //wait 0.5 sec after all stop and before read voltage
           //bber300
           if (powerboard_I2c_line_Ok) {
-            chgVoltage = ChargeIna226.readBusVoltage() ;
+            #if defined (POWERPCB_V100_SMALL)  // here ina226 setting for pcb small with only one mow motor
+              chgVoltage = ChargeIna226.readBusVoltage_I2C1() ;
+            #else
+              chgVoltage = ChargeIna226.readBusVoltage() ;
+            #endif
             chgVoltage = chgVoltage + ChargeVoltageOffset;
           }
           if (chgVoltage > 5.0)  {
@@ -8238,9 +8283,16 @@ void Robot::loop()  {
         // if (millis() >= delayToReadVoltageStation) { //wait 0.5 sec after all stop and before read voltage
         //bber300
         if (powerboard_I2c_line_Ok) {
-          chgVoltage = ChargeIna226.readBusVoltage() ;
+
+          
+          #if defined (POWERPCB_V100_SMALL)  // here ina226 setting for pcb small with only one mow motor
+              chgVoltage = ChargeIna226.readBusVoltage_I2C1() ;
+          #else
+              chgVoltage = ChargeIna226.readBusVoltage() ;
+          #endif
           chgVoltage = chgVoltage + ChargeVoltageOffset;
         }
+        
         if (chgVoltage > 5.0)  {
           ShowMessageln ("Charge Voltage detected ");
           setNextState(STATE_STATION, rollDir);// we are into the station
