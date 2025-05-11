@@ -710,7 +710,10 @@ void RemoteControl::sendRainMenu(boolean update) {
 
 void RemoteControl::processRainMenu(String pfodCmd) {
   if (pfodCmd == "m00") robot->rainUse = !robot->rainUse;
-  else if (pfodCmd == "m03") robot->Enable_Screen = !robot->Enable_Screen;
+  else if (pfodCmd == "m03") {
+    robot->Enable_Screen = !robot->Enable_Screen;
+    robot->saveUserSettings();
+  }
   else if (pfodCmd.startsWith("m06")) processSlider(pfodCmd, robot->maxTemperature, 1);
   sendRainMenu(true);
 }

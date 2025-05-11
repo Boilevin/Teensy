@@ -1099,7 +1099,6 @@ void Robot::loadSaveUserSettings(boolean readflag) {
   eereadwrite(readflag, addr, DistPeriOutStop);
   eereadwrite(readflag, addr, Enable_Screen);
   eereadwrite(readflag, addr, RaspberryPIUse);
-  RaspberryPIUse=false;
   eereadwrite(readflag, addr, sonarToFrontDist);
   eereadwrite(readflag, addr, maxTemperature);
   eereadwrite(readflag, addr, dockingSpeed);
@@ -1579,68 +1578,6 @@ void Robot::resetMotorFault() {
   */
 }
 
-/*
-  void Robot::readMowerSensor(char type) {
-
-  // the azurit readsensor send an integer to robot.cpp so can't use getVoltage from adcman as it's float
-  switch (type) {
-
-    // motors------------------------------------------------------------------------------------------------
-    case SEN_MOTOR_MOW: return ADCMan.getValue(pinMotorMowSense); break;
-    case SEN_MOTOR_RIGHT: checkMotorFault(); return ADCMan.getValue(pinMotorRightSense); break;
-    case SEN_MOTOR_LEFT: checkMotorFault(); return ADCMan.getValue(pinMotorLeftSense); break;
-
-
-
-    //case SEN_MOTOR_MOW_RPM: break; // not used - rpm is upated via interrupt
-
-    // perimeter----------------------------------------------------------------------------------------------
-    case SEN_PERIM_LEFT: return perimeter.getMagnitude(0); break;
-    case SEN_PERIM_RIGHT: return perimeter.getMagnitude(1); break;
-
-    // battery------------------------------------------------------------------------------------------------
-    case SEN_BAT_VOLTAGE: return ADCMan.getValue(pinBatteryVoltage) ; break;
-    case SEN_CHG_VOLTAGE: return ADCMan.getValue(pinChargeVoltage)  ; break;
-    case SEN_CHG_CURRENT: return ADCMan.getValue(pinChargeCurrent) ;  break;
-
-    // buttons------------------------------------------------------------------------------------------------
-    case SEN_BUTTON: return (digitalRead(pinButton)); break;
-
-    //bumper----------------------------------------------------------------------------------------------------
-    case SEN_BUMPER_RIGHT: return (digitalRead(pinBumperRight)); break;
-    case SEN_BUMPER_LEFT: return (digitalRead(pinBumperLeft)); break;
-
-
-    // sonar---------------------------------------------------------------------------------------------------
-
-    case SEN_SONAR_CENTER: return (NewSonarCenter.ping_cm()); break;
-    case SEN_SONAR_LEFT: return (NewSonarLeft.ping_cm()); break;
-
-    case SEN_SONAR_RIGHT: return (NewSonarRight.ping_cm()); break;
-
-
-    // case SEN_LAWN_FRONT: return(measureLawnCapacity(pinLawnFrontSend, pinLawnFrontRecv)); break;
-    //case SEN_LAWN_BACK: return(measureLawnCapacity(pinLawnBackSend, pinLawnBackRecv)); break;
-
-
-    // rtc--------------------------------------------------------------------------------------------------------
-    case SEN_RTC:
-      if (!readDS1307(datetime)) {
-        ShowMessageln("RTC data error!");
-        addErrorCounter(ERR_RTC_DATA);
-        setNextState(STATE_ERROR, 0);
-      }
-      break;
-
-
-    // rain--------------------------------------------------------------------------------------------------------
-    case SEN_RAIN: if (digitalRead(pinRain) == LOW) return 1; break;
-
-  }
-  return 0;
-
-  }
-*/
 
 
 
@@ -3078,24 +3015,7 @@ void Robot::setup()  {
 
 
   ShowMessageln("------------------- Initializing SD card... ---------------------");
-  /*
     // see if the card is present and can be initialized:
-    if (!SD.begin(chipSelect)) {
-      ShowMessageln("SD Card failed, or not present");
-      sdCardReady = false;
-    }
-    else {
-      ShowMessageln("SD card Ok.");
-      sdCardReady = true;
-      sprintf(historyFilenameChar, "%02u%02u%02u%02u%02u.txt", datetime.date.year-2000, datetime.date.month, datetime.date.day, datetime.time.hour, datetime.time.minute);
-      ShowMessage(F("Log Filename : "));
-      ShowMessageln(historyFilenameChar);
-
-    }
-
-  */
-
-  // see if the card is present and can be initialized:
   if (!SD.sdfs.begin(SdioConfig(DMA_SDIO))) {
     ShowMessageln("SD Card failed, or not present");
     sdCardReady = false;
@@ -3147,11 +3067,6 @@ void Robot::setup()  {
     ShowMessageln("Raspberry pi is Enable , try to initialise ");
     MyRpi.init();
   }
-
-
-
-
-
 
 
 
@@ -3316,10 +3231,10 @@ void Robot::setup()  {
       Mow1Ina226.configure_I2C1(INA226_AVERAGES_4, INA226_BUS_CONV_TIME_1100US, INA226_SHUNT_CONV_TIME_1100US, INA226_MODE_SHUNT_BUS_CONT);
       ShowMessageln ("Ina226 Configuration OK ");
       // Calibrate INA226. Rshunt = 0.01 ohm, Max excepted current = 4A
-      ChargeIna226.calibrate_I2C1(0.02, 4);
-      MotLeftIna226.calibrate_I2C1(0.02, 4);
-      MotRightIna226.calibrate_I2C1(0.02, 4);
-      Mow1Ina226.calibrate_I2C1(0.02, 4);
+      ChargeIna226.calibrate_I2C1(0.01, 4);
+      MotLeftIna226.calibrate_I2C1(0.01, 4);
+      MotRightIna226.calibrate_I2C1(0.01, 4);
+      Mow1Ina226.calibrate_I2C1(0.01, 4);
       ShowMessageln ("Ina226 Calibration finish ");
 
     #else
@@ -3364,8 +3279,8 @@ void Robot::setup()  {
 
   ShowMessageln("Watchdog configuration start ");
   WDT_timings_t config;
-  config.trigger = 100; /* in seconds, 0->128 */
-  config.timeout = 120; /* in seconds, 0->128 */
+  config.trigger = 2; /* in seconds, 0->128 ; defaut 2 */
+  config.timeout = 10; /* in seconds, 0->128 ; defaut 10*/
   config.callback = myCallback;
   wdt.begin(config);
   ShowMessageln("Watchdog configuration Finish ");
@@ -4096,9 +4011,9 @@ void Robot::readSensors() {
 
   if (millis() >= nextTimeBattery) {
     // read battery
-    double chgvolt = 0.1 ;
-    double curramp = 0.1; //  0.1 instead 0 to avoid div/0
-    double batvolt = 0.1 ;
+    float chgvolt = 0.1 ;
+    float curramp = 0.1; //  0.1 instead 0 to avoid div/0
+    float batvolt = 0.1 ;
     unsigned long readingDuration;
     nextTimeBattery = millis() + 500;
     if ((millis() > 30000) and (millis() < 30550) and (!powerboard_I2c_line_Ok)) {
@@ -4113,10 +4028,12 @@ void Robot::readSensors() {
 
       #if defined (POWERPCB_V100_SMALL)  // here ina226 setting for pcb small with only one mow motor
       chgvolt = ChargeIna226.readBusVoltage_I2C1() ;
-      ShowMessage("Volt charge : ");
-      ShowMessageln(chgvolt);
+      
       chgvolt = chgvolt + ChargeVoltageOffset;
       curramp = ChargeIna226.readBusPower_I2C1(); //  ?? sense don't work
+      if (isnan(curramp)){ //fop unknow reason value nan is return sometime on startup
+      curramp = 0;
+      }
       
       batvolt = MotRightIna226.readBusVoltage_I2C1() ;
       #else
@@ -4141,8 +4058,8 @@ void Robot::readSensors() {
     {
       curramp = 0;
     }
-    ShowMessage("sense charge : ");
-    ShowMessageln(curramp);
+    
+    
 
 
     double accel = 0.05;  //filter percent
@@ -4150,6 +4067,9 @@ void Robot::readSensors() {
     if (abs(batVoltage - batvolt) > 8)   batVoltage = batvolt; else batVoltage = (1.0 - accel) * batVoltage + accel * batvolt;
     if (abs(chgVoltage - chgvolt) > 8)   chgVoltage = chgvolt; else chgVoltage = (1.0 - accel) * chgVoltage + accel * chgvolt;
     if (abs(chgCurrent - curramp) > 0.4) chgCurrent = curramp; else chgCurrent = (1.0 - accel) * chgCurrent + accel * curramp; //Deaktiviert fÃ¼r Ladestromsensor berechnung
+    
+    }
+   
     //bber30 tracking not ok because reduce the speed loop with this but can check the chgvoltage
 
     /*
@@ -4162,7 +4082,7 @@ void Robot::readSensors() {
        ShowMessage("/curramp ");
        ShowMessageln(curramp);
     */
-  }
+  
 
   if ((rainUse) && (millis() >= nextTimeRain)) {
     // read rain sensor
@@ -6422,27 +6342,9 @@ void Robot::ResetWatchdog() {
 
 void Robot::readAllTemperature() {
   if (millis() > nextTimeReadTemperature) {
-    nextTimeReadTemperature = millis() + 3000;
+    nextTimeReadTemperature = millis() + 15000; //check temp each 15 second
     temperatureTeensy = InternalTemperature.readTemperatureC();
     //imu.readImuTemperature();// not use 18/05/2024
-
-    if ((temperatureTeensy >= 0.9 * maxTemperature) && (stateCurr == STATE_FORWARD_ODO)) { // at 90% of max temp mower try to find the station
-      ShowMessageln("Temperature is 90 % of max ");
-      ShowMessageln("Mower search the station ");
-      ShowMessage("Maxi Setting = ");
-      ShowMessage(maxTemperature);
-      ShowMessage(" Actual Temperature = ");
-      ShowMessageln(temperatureTeensy);
-      nextTimeReadTemperature = nextTimeReadTemperature + 180000; // do not read again the temp for the next 3 minute and set the idle bat to 2 minute to poweroff the PCB
-      periFindDriveHeading = scalePI(imu.ypr.yaw);
-      areaToGo = 1;
-      whereToStart = 99999;
-      nextTimeTimer = millis() + 3600000;
-      statusCurr = BACK_TO_STATION;
-      setNextState(STATE_PERI_FIND, 0);
-      return;
-    }
-
     if (temperatureTeensy >= maxTemperature) {
       ShowMessageln("Temperature too high ***************");
       ShowMessageln("PCB AutoStop in the next 2 minutes *");
@@ -6452,7 +6354,24 @@ void Robot::readAllTemperature() {
       ShowMessageln(temperatureTeensy);
       nextTimeReadTemperature = nextTimeReadTemperature + 180000; // do not read again the temp for the next 3 minute and set the idle bat to 2 minute to poweroff the PCB
       batSwitchOffIfIdle = 2; //use to switch all off after 2 minutes
+      addErrorCounter(ERR_IMU_TILT);
       setNextState(STATE_ERROR, 0);
+      return;
+    }
+    if ((temperatureTeensy >= 0.9 * maxTemperature) && (stateCurr == STATE_FORWARD_ODO)) { // at 90% of max temp mower try to find the station
+      ShowMessageln("Temperature is 90 % of max ");
+      ShowMessageln("Mower search the station ");
+      ShowMessage("Maxi Setting = ");
+      ShowMessage(maxTemperature);
+      ShowMessage(" Actual Temperature = ");
+      ShowMessageln(temperatureTeensy);
+      nextTimeReadTemperature = nextTimeReadTemperature + 720000; // do not read again the temp for the next 12 minute   
+      periFindDriveHeading = scalePI(imu.ypr.yaw);
+      areaToGo = 1;
+      whereToStart = 99999;
+      nextTimeTimer = millis() + 3600000;
+      statusCurr = BACK_TO_STATION;
+      setNextState(STATE_PERI_FIND, 0);
       return;
     }
 

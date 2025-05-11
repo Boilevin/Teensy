@@ -11,7 +11,7 @@
 
 const String area1_ip = "10.0.0.150";
 const String area2_ip = "10.0.0.151";
-const String area3_ip = "10.0.0.158";
+const String area3_ip = "10.0.0.154";
 
 //**************************************************************
 // ------- select one platform type -------------------
@@ -35,8 +35,8 @@ const String area3_ip = "10.0.0.158";
 //#define POWERPCB_Standard
 
 
-#define BatteryVoltageOffset 0.2  //correction of battery voltage
-#define ChargeVoltageOffset 0.8  //correction of Charge voltage
+#define BatteryVoltageOffset -0.9 //correction of battery voltage
+#define ChargeVoltageOffset -0.9  //correction of Charge voltage
 
 //**********************       COMPASS         **************************
 //#define COMPASS_IS HMC5883L

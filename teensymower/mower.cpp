@@ -35,9 +35,6 @@ Mower::Mower() {
 
   //factory main setting for all platform (see specific detail at the end for particular platform)
 
-
-  //Enable_Screen = false;  // a OLED 0.96 is connected to I2C2
-
   motorAccel       = 1500;  // motor wheel acceleration - only functional when odometry is not in use (warning: do not set too low)
   //bb
   motorLeftChange = 500;
@@ -96,7 +93,7 @@ Mower::Mower() {
 
   // ------ DHT22Use ------------------------------------
   //DHT22Use          = 0;      // use DHT22 sensor?
-  maxTemperature    = 55;     // max temp before switch off
+  maxTemperature    = 75;     // max temp before switch off
   //bber35
   // ------ RFID ------------------------------------
   rfidUse          = 0;      // use rfid

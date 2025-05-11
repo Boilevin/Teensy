@@ -153,12 +153,21 @@ void start_stop_AreaSender() {
   //line_receive is a char array separate by ,
   //example to stop sender on ip 15  "#SENDER,10.0.0.15,A0
   //example to start sender on ip 15  "#SENDER,10.0.0.15,A1
+  if (debug)  Serial.print("Start sender : ");
+  if (debug)  Serial.println(line_receive);
   HTTPClient http;
   char val1[10], val2[20], val3[10];
   sscanf(line_receive, "%[^,],%[^,],%[^,]", val1, val2, val3);
   String serverPath = "http://" + String(val2) + "/" + String(val3);
   http.begin(serverPath.c_str());
-  http.GET();
+  
+  int httpResponseCode = http.GET();
+  if (httpResponseCode > 0) {
+    if (debug) Serial.printf("Code de réponse : %d\n", httpResponseCode);
+  } else {
+    if (debug) Serial.printf("Erreur HTTP : %s\n", http.errorToString(httpResponseCode).c_str());
+  }
+  http.end();
 }
 
 void esp32_Mqtt_sta() {
@@ -194,7 +203,7 @@ void esp32_Mqtt_sta() {
 void setup() {
   delay(500);
   Serial.begin(115200);
-  Serial2.begin(115200);
+  Serial2.begin(19200, SERIAL_8N1, 16, 17);
   if (debug) Serial.println("********* ESP32 BT and WiFi serial bridge ******************");
 
   //********************************WIFI init code*************************************
@@ -388,7 +397,7 @@ void loop() {
           // End of record detected. Time to parse and check for non pfod sentence
           //here data coming from mqtt or pfod over wifi
           if (debug) Serial.println(line_receive);
-          if (strncmp(line_receive, "$SENDER", 7) == 0) {
+          if (strncmp(line_receive, "#SENDER", 7) == 0) {
             start_stop_AreaSender();
           }
           if (strncmp(line_receive, "#RMSTA", 6) == 0) {
